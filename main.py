@@ -50,10 +50,17 @@ def main():
         else:
             recommendation = get_recommendation(st.session_state.scenario, st.session_state.answers)
             st.header("Recommendation")
-            st.write(f"Based on your responses, we recommend:")
-            st.write(f"**DLT Framework:** {recommendation['dlt']}")
-            st.write(f"**Consensus Algorithm:** {recommendation['consensus']}")
-            st.write(f"**Explanation:** {recommendation['explanation']}")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.subheader("DLT Framework")
+                st.info(recommendation['dlt'])
+            with col2:
+                st.subheader("Consensus Algorithm")
+                st.info(recommendation['consensus'])
+            
+            st.subheader("Detailed Explanation")
+            st.markdown(recommendation['explanation'])
 
             if st.button("Save Recommendation"):
                 save_recommendation(st.session_state.username, st.session_state.scenario, recommendation)
