@@ -67,3 +67,21 @@ def get_recommendation(scenario, answers):
     
     recommendation['explanation'] = detailed_explanation
     return recommendation
+
+def get_sunburst_data():
+    def traverse(node, parent=""):
+        data = []
+        if node.question:
+            data.append({"id": node.question, "parent": parent, "name": node.question})
+            data.extend(traverse(node.yes_node, node.question))
+            data.extend(traverse(node.no_node, node.question))
+        elif node.recommendation:
+            data.append({
+                "id": f"{parent}_{node.recommendation['dlt']}",
+                "parent": parent,
+                "name": node.recommendation['dlt'],
+                "consensus": node.recommendation['consensus']
+            })
+        return data
+
+    return traverse(decision_tree)

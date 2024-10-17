@@ -1,11 +1,38 @@
 import streamlit as st
 import plotly.express as px
+import plotly.graph_objects as go
 import pandas as pd
 from user_management import login, register, is_authenticated
 from database import get_user_recommendations, save_recommendation
-from decision_logic import get_recommendation
+from decision_logic import get_recommendation, get_sunburst_data
 from dlt_data import scenarios, questions
 from utils import init_session_state
+
+def create_sunburst_chart(data):
+    df = pd.DataFrame(data)
+    fig = px.sunburst(df, ids='id', names='name', parents='parent', hover_data=['consensus'])
+    fig.update_layout(title="Decision Tree Visualization")
+    return fig
+
+def create_flow_diagram(scenario, current_step):
+    steps = [q['id'] for q in questions[scenario]]
+    edges = [(steps[i], steps[i+1]) for i in range(len(steps)-1)]
+    
+    nodes = [
+        {
+            'id': step,
+            'label': step.replace('_', ' ').title(),
+            'color': 'lightblue' if i < current_step else ('yellow' if i == current_step else 'white')
+        }
+        for i, step in enumerate(steps)
+    ]
+    
+    edges = [
+        {'from': edge[0], 'to': edge[1], 'arrows': 'to'}
+        for edge in edges
+    ]
+    
+    return nodes, edges
 
 def main():
     st.set_page_config(page_title="SeletorDLTSaude", page_icon="🏥", layout="wide")
@@ -42,6 +69,17 @@ def main():
             st.write(question['text'])
             answer = st.radio("Select an option:", question['options'])
             
+            # Display Interactive Flow Diagram
+            nodes, edges = create_flow_diagram(st.session_state.scenario, st.session_state.step - 1)
+            st.graphviz_chart(f"""
+                digraph {{
+                    rankdir=LR;
+                    node [shape=box];
+                    {'; '.join([f'{node["id"]} [label="{node["label"]}", style=filled, fillcolor={node["color"]}]' for node in nodes])}
+                    {'; '.join([f'{edge["from"]} -> {edge["to"]}' for edge in edges])}
+                }}
+            """)
+            
             if st.button("Next"):
                 st.session_state.answers[question['id']] = answer
                 st.session_state.step += 1
@@ -66,10 +104,18 @@ def main():
                 save_recommendation(st.session_state.username, st.session_state.scenario, recommendation)
                 st.success("Recommendation saved successfully!")
 
-            st.header("Response Visualization")
+            st.header("Visualizations")
+            
+            # Sunburst Chart
+            sunburst_data = get_sunburst_data()
+            fig_sunburst = create_sunburst_chart(sunburst_data)
+            st.plotly_chart(fig_sunburst)
+
+            # Response Visualization
+            st.subheader("Your Responses")
             df = pd.DataFrame(list(st.session_state.answers.items()), columns=['Question', 'Answer'])
-            fig = px.bar(df, x='Question', y='Answer', title="Your Responses")
-            st.plotly_chart(fig)
+            fig_responses = px.bar(df, x='Question', y='Answer', title="Your Responses")
+            st.plotly_chart(fig_responses)
 
             if st.button("Start Over"):
                 st.session_state.step = 0
