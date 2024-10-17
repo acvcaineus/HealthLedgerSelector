@@ -108,6 +108,42 @@ def create_flow_diagram(scenario, current_step):
     
     return nodes, edges
 
+def create_decision_flow_diagram(scenario, answers):
+    questions_list = questions[scenario]
+    
+    nodes = []
+    edges = []
+    
+    for i, question in enumerate(questions_list):
+        node_id = f"q{i}"
+        nodes.append({
+            'id': node_id,
+            'label': question['text'],
+            'color': 'lightblue' if question['id'] in answers else 'lightgray'
+        })
+        
+        if i > 0:
+            edges.append({
+                'from': f"q{i-1}",
+                'to': node_id,
+                'color': 'blue' if question['id'] in answers else 'gray'
+            })
+        
+        if question['id'] in answers:
+            answer_node_id = f"a{i}"
+            nodes.append({
+                'id': answer_node_id,
+                'label': answers[question['id']],
+                'color': 'green'
+            })
+            edges.append({
+                'from': node_id,
+                'to': answer_node_id,
+                'color': 'green'
+            })
+    
+    return nodes, edges
+
 def show_home_page():
     st.header("Bem-vindo ao SeletorDLTSaude")
     st.write("""
@@ -306,6 +342,26 @@ def show_recommendation():
         ''')
 
     st.header("Visualizações")
+    
+    st.subheader("Fluxo de Decisão")
+    nodes, edges = create_decision_flow_diagram(st.session_state.scenario, st.session_state.answers)
+    st.graphviz_chart(f'''
+        digraph {{
+            rankdir=LR;
+            node [shape=box];
+            {'; '.join([f'{node["id"]} [label="{node["label"]}", style=filled, fillcolor={node["color"]}]' for node in nodes])}
+            {'; '.join([f'{edge["from"]} -> {edge["to"]} [color={edge["color"]}]' for edge in edges])}
+        }}
+    ''')
+
+    st.markdown('''
+    **Como interpretar o Fluxo de Decisão:**
+    - Cada caixa representa uma pergunta do questionário.
+    - As caixas em azul são as perguntas que você respondeu.
+    - As caixas em cinza são perguntas que não foram respondidas devido às suas escolhas anteriores.
+    - As setas verdes mostram o caminho que você seguiu com suas respostas.
+    - As caixas verdes mostram suas respostas específicas.
+    ''')
     
     with st.expander("Como interpretar o Gráfico Sunburst"):
         st.markdown("""
