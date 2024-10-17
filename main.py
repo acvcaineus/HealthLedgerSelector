@@ -189,43 +189,60 @@ def show_scenario_selection():
         st.session_state.page = "questionnaire"
         st.rerun()
 
+def define_weights():
+    st.subheader("Defina os Pesos para os Critérios")
+    st.write("Atribua um valor de 0 a 10 para cada critério com base na sua importância.")
+    
+    weights = {}
+    weights["security"] = st.slider("Peso de Segurança", 0, 10, 5)
+    weights["scalability"] = st.slider("Peso de Escalabilidade", 0, 10, 5)
+    weights["energy_efficiency"] = st.slider("Peso de Eficiência Energética", 0, 10, 5)
+    weights["governance"] = st.slider("Peso de Governança", 0, 10, 5)
+    
+    return weights
+
 def show_questionnaire():
     if st.session_state.scenario not in questions:
         st.error(f"Cenário '{st.session_state.scenario}' não encontrado.")
         return
 
     scenario_questions = questions[st.session_state.scenario]
-    if st.session_state.step > len(scenario_questions):
+    if st.session_state.step > len(scenario_questions) + 1:  # +1 for weights step
         st.error("Todas as perguntas foram respondidas.")
         st.session_state.page = "recommendation"
         st.rerun()
         return
 
-    question = scenario_questions[st.session_state.step - 1]
-    st.header(f"Pergunta {st.session_state.step}")
-    st.write(question['text'])
-    
-    with st.expander("Mais informações sobre esta pergunta"):
-        st.write(question['explanation'])
-    
-    answer = st.radio("Selecione uma opção:", question['options'])
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Voltar") and st.session_state.step > 1:
-            st.session_state.step -= 1
-            st.rerun()
-    with col2:
-        if st.button("Próximo"):
-            st.session_state.answers[question['id']] = answer
-            if st.session_state.step < len(scenario_questions):
-                st.session_state.step += 1
-            else:
-                st.session_state.page = "recommendation"
-            st.rerun()
+    if st.session_state.step == 1:
+        st.session_state.weights = define_weights()
+        st.session_state.step += 1
+        st.rerun()
+    else:
+        question = scenario_questions[st.session_state.step - 2]  # -2 because of weights step
+        st.header(f"Pergunta {st.session_state.step - 1}")
+        st.write(question['text'])
+        
+        with st.expander("Mais informações sobre esta pergunta"):
+            st.write(question['explanation'])
+        
+        answer = st.radio("Selecione uma opção:", question['options'])
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Voltar") and st.session_state.step > 2:
+                st.session_state.step -= 1
+                st.rerun()
+        with col2:
+            if st.button("Próximo"):
+                st.session_state.answers[question['id']] = answer
+                if st.session_state.step < len(scenario_questions) + 1:
+                    st.session_state.step += 1
+                else:
+                    st.session_state.page = "recommendation"
+                st.rerun()
     
     st.markdown("### Diagrama de Fluxo Interativo")
-    nodes, edges = create_flow_diagram(st.session_state.scenario, st.session_state.step - 1)
+    nodes, edges = create_flow_diagram(st.session_state.scenario, st.session_state.step - 2)
     st.graphviz_chart(f"""
         digraph {{
             rankdir=LR;
@@ -237,7 +254,8 @@ def show_questionnaire():
 
 def show_recommendation():
     answers = st.session_state.answers
-    recommendation = get_recommendation(answers)
+    weights = st.session_state.weights
+    recommendation = get_recommendation(answers, weights)
     st.header("Recomendação")
     
     col1, col2 = st.columns(2)
@@ -250,6 +268,12 @@ def show_recommendation():
     with col2:
         st.subheader("Algoritmo de Consenso")
         st.info(recommendation['consensus'])
+    
+    st.subheader("Pesos Utilizados")
+    st.write(f"Segurança: {weights['security']}")
+    st.write(f"Escalabilidade: {weights['scalability']}")
+    st.write(f"Eficiência Energética: {weights['energy_efficiency']}")
+    st.write(f"Governança: {weights['governance']}")
     
     with st.expander("Explicação Detalhada"):
         if recommendation['dlt'] == "Distributed Ledger" and recommendation['consensus'] == "Directed Acyclic Graph (DAG)":
