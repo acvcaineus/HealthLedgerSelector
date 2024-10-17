@@ -1,54 +1,84 @@
 # Perguntas que o sistema faz para determinar o tipo de DLT e o algoritmo de consenso.
-questions = [
-    {
-        "id": "privacy",
-        "text": "A privacidade é crítica?",
-        "options": ["Sim", "Não"],
-        "explanation": "Esta pergunta avalia a necessidade de controle de acesso e proteção de dados sensíveis na rede."
-    },
-    {
-        "id": "integration",
-        "text": "A integração com outros sistemas é necessária?",
-        "options": ["Sim", "Não"],
-        "explanation": "Determina se a solução DLT precisa se comunicar e interoperar com sistemas externos."
-    },
-    {
-        "id": "data_volume",
-        "text": "A rede lida com grandes volumes de dados?",
-        "options": ["Sim", "Não"],
-        "explanation": "Avalia a necessidade de alta capacidade de armazenamento e processamento de dados."
-    },
-    {
-        "id": "energy_efficiency",
-        "text": "A eficiência energética é importante?",
-        "options": ["Sim", "Não"],
-        "explanation": "Considera o impacto ambiental e os custos operacionais relacionados ao consumo de energia."
-    },
-    {
-        "id": "network_security",
-        "text": "A segurança da rede é alta?",
-        "options": ["Sim", "Não"],
-        "explanation": "Avalia a necessidade de proteção contra ataques e manipulação de dados."
-    },
-    {
-        "id": "scalability",
-        "text": "A escalabilidade é chave para o sucesso?",
-        "options": ["Sim", "Não"],
-        "explanation": "Determina se a rede precisa crescer e lidar com um aumento significativo no número de transações."
-    },
-    {
-        "id": "governance_flexibility",
-        "text": "A governança da rede precisa ser flexível?",
-        "options": ["Sim", "Não"],
-        "explanation": "Avalia a necessidade de adaptar as regras e protocolos da rede ao longo do tempo."
-    },
-    {
-        "id": "interoperability",
-        "text": "A interoperabilidade com outras redes é importante?",
-        "options": ["Sim", "Não"],
-        "explanation": "Considera a necessidade de comunicação e troca de dados com outras redes blockchain ou sistemas externos."
-    }
-]
+questions = {
+    "Registros Médicos Eletrônicos": [
+        {
+            "id": "privacy",
+            "text": "A privacidade é crítica?",
+            "options": ["Sim", "Não"],
+            "explanation": "Esta pergunta avalia a necessidade de controle de acesso e proteção de dados sensíveis na rede."
+        },
+        {
+            "id": "integration",
+            "text": "A integração com outros sistemas é necessária?",
+            "options": ["Sim", "Não"],
+            "explanation": "Determina se a solução DLT precisa se comunicar e interoperar com sistemas externos."
+        },
+        {
+            "id": "data_volume",
+            "text": "A rede lida com grandes volumes de dados?",
+            "options": ["Sim", "Não"],
+            "explanation": "Avalia a necessidade de alta capacidade de armazenamento e processamento de dados."
+        },
+        {
+            "id": "energy_efficiency",
+            "text": "A eficiência energética é importante?",
+            "options": ["Sim", "Não"],
+            "explanation": "Considera o impacto ambiental e os custos operacionais relacionados ao consumo de energia."
+        }
+    ],
+    "Cadeia de Suprimentos": [
+        {
+            "id": "network_security",
+            "text": "A segurança da rede é alta?",
+            "options": ["Sim", "Não"],
+            "explanation": "Avalia a necessidade de proteção contra ataques e manipulação de dados."
+        },
+        {
+            "id": "scalability",
+            "text": "A escalabilidade é chave para o sucesso?",
+            "options": ["Sim", "Não"],
+            "explanation": "Determina se a rede precisa crescer e lidar com um aumento significativo no número de transações."
+        },
+        {
+            "id": "governance_flexibility",
+            "text": "A governança da rede precisa ser flexível?",
+            "options": ["Sim", "Não"],
+            "explanation": "Avalia a necessidade de adaptar as regras e protocolos da rede ao longo do tempo."
+        },
+        {
+            "id": "interoperability",
+            "text": "A interoperabilidade com outras redes é importante?",
+            "options": ["Sim", "Não"],
+            "explanation": "Considera a necessidade de comunicação e troca de dados com outras redes blockchain ou sistemas externos."
+        }
+    ],
+    "Consentimento do Paciente": [
+        {
+            "id": "privacy",
+            "text": "A privacidade é crítica?",
+            "options": ["Sim", "Não"],
+            "explanation": "Esta pergunta avalia a necessidade de controle de acesso e proteção de dados sensíveis na rede."
+        },
+        {
+            "id": "integration",
+            "text": "A integração com outros sistemas é necessária?",
+            "options": ["Sim", "Não"],
+            "explanation": "Determina se a solução DLT precisa se comunicar e interoperar com sistemas externos."
+        },
+        {
+            "id": "network_security",
+            "text": "A segurança da rede é alta?",
+            "options": ["Sim", "Não"],
+            "explanation": "Avalia a necessidade de proteção contra ataques e manipulação de dados."
+        },
+        {
+            "id": "governance_flexibility",
+            "text": "A governança da rede precisa ser flexível?",
+            "options": ["Sim", "Não"],
+            "explanation": "Avalia a necessidade de adaptar as regras e protocolos da rede ao longo do tempo."
+        }
+    ]
+}
 
 # Classes de DLT (Distributed Ledger Technology) que podem ser recomendadas pelo sistema.
 dlt_classes = {
@@ -157,13 +187,13 @@ metrics = {
     }
 }
 
-# Adding the missing 'scenarios' variable
+# Adding the 'scenarios' variable
 scenarios = {
     "Registros Médicos Eletrônicos": "Gerenciar e proteger registros de saúde dos pacientes",
     "Cadeia de Suprimentos": "Rastrear produtos farmacêuticos ao longo da cadeia de suprimentos",
     "Consentimento do Paciente": "Gerenciar e verificar o consentimento do paciente para compartilhamento de dados e procedimentos"
 }
 
-# Adding the missing 'dlt_options' and 'consensus_options' variables
+# Adding the 'dlt_options' and 'consensus_options' variables
 dlt_options = list(dlt_classes.keys())
 consensus_options = list(consensus_algorithms.keys())

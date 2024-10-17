@@ -94,7 +94,18 @@ def show_scenario_selection():
         st.rerun()
 
 def show_questionnaire():
-    question = questions[st.session_state.scenario][st.session_state.step - 1]
+    if st.session_state.scenario not in questions:
+        st.error(f"Cenário '{st.session_state.scenario}' não encontrado.")
+        return
+
+    scenario_questions = questions[st.session_state.scenario]
+    if st.session_state.step > len(scenario_questions):
+        st.error("Todas as perguntas foram respondidas.")
+        st.session_state.page = "recommendation"
+        st.rerun()
+        return
+
+    question = scenario_questions[st.session_state.step - 1]
     st.header(f"Pergunta {st.session_state.step}")
     st.write(question['text'])
     
@@ -111,7 +122,7 @@ def show_questionnaire():
     with col2:
         if st.button("Próximo"):
             st.session_state.answers[question['id']] = answer
-            if st.session_state.step < len(questions[st.session_state.scenario]):
+            if st.session_state.step < len(scenario_questions):
                 st.session_state.step += 1
             else:
                 st.session_state.page = "recommendation"
@@ -158,12 +169,10 @@ def show_recommendation():
     
     comparison_data = get_comparison_data(recommendation['dlt'], recommendation['consensus'])
     
-    # Tabela comparativa
     st.subheader("Tabela Comparativa")
     df_comparison = pd.DataFrame(comparison_data)
     st.table(df_comparison)
 
-    # Gráfico de Radar
     st.subheader("Comparação Visual (Gráfico de Radar)")
     
     metrics_to_plot = [
@@ -179,11 +188,11 @@ def show_recommendation():
 
     for system in df_comparison.index:
         values = df_comparison.loc[system, metrics_to_plot].values.tolist()
-        values += values[:1]  # Duplicate first value to close the polygon
+        values += values[:1]
         
         fig.add_trace(go.Scatterpolar(
             r=values,
-            theta=metrics_to_plot + [metrics_to_plot[0]],  # Duplicate first category to close the polygon
+            theta=metrics_to_plot + [metrics_to_plot[0]],
             fill='toself',
             name=system
         ))
