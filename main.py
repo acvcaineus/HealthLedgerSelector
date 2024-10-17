@@ -69,6 +69,12 @@ def main():
             st.write(question['text'])
             answer = st.radio("Select an option:", question['options'])
             
+            # Explanation for Interactive Flow Diagram
+            st.markdown("""
+            ### Interactive Flow Diagram
+            This diagram shows your journey through the decision-making process. Each box represents a question, and the highlighted box is your current step. As you progress, you'll see how each answer leads to the next question, ultimately resulting in your personalized recommendation.
+            """)
+            
             # Display Interactive Flow Diagram
             nodes, edges = create_flow_diagram(st.session_state.scenario, st.session_state.step - 1)
             st.graphviz_chart(f"""
@@ -105,6 +111,12 @@ def main():
                 st.success("Recommendation saved successfully!")
 
             st.header("Visualizations")
+            
+            # Explanation for Sunburst Chart
+            st.markdown("""
+            ### Sunburst Chart
+            This Sunburst chart shows how different factors influence the choice of DLT and consensus algorithm. The center represents the starting point, and each ring outwards shows a decision point. The final ring shows the recommended DLT and consensus algorithm based on your choices.
+            """)
             
             # Sunburst Chart
             sunburst_data = get_sunburst_data()
