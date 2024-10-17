@@ -147,19 +147,31 @@ def show_recommendation():
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("Framework DLT")
-        st.info(recommendation['dlt'])
+        if recommendation['dlt'] == "Distributed Ledger" and recommendation['consensus'] == "Directed Acyclic Graph (DAG)":
+            st.info("Distributed Ledger (DAG)")
+        else:
+            st.info(recommendation['dlt'])
     with col2:
         st.subheader("Algoritmo de Consenso")
         st.info(recommendation['consensus'])
     
     with st.expander("Explicação Detalhada"):
-        st.markdown(f"""
-        **DLT Recomendada:** {recommendation['dlt']}
-        {recommendation['dlt_explanation']}
+        if recommendation['dlt'] == "Distributed Ledger" and recommendation['consensus'] == "Directed Acyclic Graph (DAG)":
+            st.markdown('''
+            **DLT Recomendada: Distributed Ledger (DAG)**
+            Não utiliza necessariamente a tecnologia de blockchain. Indica-se a adoção de **Directed Acyclic Graph (DAG)**.
+            
+            **Algoritmo de Consenso Recomendado: IOTA**
+            Adotado para IoT e alta escalabilidade. O IOTA é uma implementação específica de DAG otimizada para dispositivos IoT e casos de uso que requerem alta escalabilidade.
+            ''')
+        else:
+            st.markdown(f'''
+            **DLT Recomendada:** {recommendation['dlt']}
+            {recommendation['dlt_explanation']}
 
-        **Algoritmo de Consenso Recomendado:** {recommendation['consensus']}
-        {recommendation['consensus_explanation']}
-        """)
+            **Algoritmo de Consenso Recomendado:** {recommendation['consensus']}
+            {recommendation['consensus_explanation']}
+            ''')
 
     if st.button("Salvar Recomendação"):
         save_recommendation(st.session_state.username, st.session_state.scenario, recommendation)
