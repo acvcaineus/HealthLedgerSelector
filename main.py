@@ -34,7 +34,7 @@ def main():
                 st.session_state.scenario = scenario
                 st.session_state.step = 1
                 st.session_state.answers = {}
-                st.experimental_rerun()
+                st.rerun()
 
         elif st.session_state.step <= len(questions[st.session_state.scenario]):
             question = questions[st.session_state.scenario][st.session_state.step - 1]
@@ -45,7 +45,7 @@ def main():
             if st.button("Next"):
                 st.session_state.answers[question['id']] = answer
                 st.session_state.step += 1
-                st.experimental_rerun()
+                st.rerun()
 
         else:
             recommendation = get_recommendation(st.session_state.scenario, st.session_state.answers)
@@ -66,7 +66,7 @@ def main():
 
             if st.button("Start Over"):
                 st.session_state.step = 0
-                st.experimental_rerun()
+                st.rerun()
 
         st.sidebar.header("Previous Recommendations")
         user_recommendations = get_user_recommendations(st.session_state.username)
@@ -78,7 +78,7 @@ def main():
 def logout():
     for key in list(st.session_state.keys()):
         del st.session_state[key]
-    st.experimental_rerun()
+    st.rerun()
 
 if __name__ == "__main__":
     main()
