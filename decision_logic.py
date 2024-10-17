@@ -105,3 +105,18 @@ def get_comparison_data(recommended_dlt, recommended_consensus):
         }
 
     return comparison_data
+
+def get_sunburst_data():
+    return [
+        {"id": "DLT", "parent": "", "name": "Tecnologias DLT"},
+        {"id": "Public", "parent": "DLT", "name": "Blockchain Público"},
+        {"id": "Private", "parent": "DLT", "name": "Blockchain Privado"},
+        {"id": "Permissioned", "parent": "DLT", "name": "Blockchain Permissionado"},
+        {"id": "Hybrid", "parent": "DLT", "name": "Blockchain Híbrido"},
+        {"id": "PoW", "parent": "Public", "name": "Proof of Work", "consensus": "PoW"},
+        {"id": "PoS", "parent": "Public", "name": "Proof of Stake", "consensus": "PoS"},
+        {"id": "PBFT", "parent": "Private", "name": "PBFT", "consensus": "PBFT"},
+        {"id": "PoA", "parent": "Permissioned", "name": "Proof of Authority", "consensus": "PoA"},
+        {"id": "Raft", "parent": "Private", "name": "Raft", "consensus": "Raft"},
+        {"id": "DPoS", "parent": "Hybrid", "name": "Delegated Proof of Stake", "consensus": "DPoS"}
+    ]

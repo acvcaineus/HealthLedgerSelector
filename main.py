@@ -10,8 +10,25 @@ from utils import init_session_state
 
 def create_sunburst_chart(data):
     df = pd.DataFrame(data)
-    fig = px.sunburst(df, ids='id', names='name', parents='parent', hover_data=['consensus'])
-    fig.update_layout(title="Visualização da Árvore de Decisão")
+    fig = px.sunburst(
+        df,
+        ids='id',
+        names='name',
+        parents='parent',
+        hover_data=['consensus'],
+        title="Visualização da Hierarquia de Tecnologias DLT",
+        color='id',
+        color_discrete_sequence=px.colors.qualitative.Pastel
+    )
+    fig.update_layout(
+        font=dict(size=14),
+        margin=dict(t=50, l=25, r=25, b=25),
+        height=600
+    )
+    fig.update_traces(
+        textinfo='label',
+        insidetextorientation='radial'
+    )
     return fig
 
 def create_flow_diagram(scenario, current_step):

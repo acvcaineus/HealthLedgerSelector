@@ -156,3 +156,14 @@ metrics = {
         "IOTA": 9
     }
 }
+
+# Adding the missing 'scenarios' variable
+scenarios = {
+    "Registros Médicos Eletrônicos": "Gerenciar e proteger registros de saúde dos pacientes",
+    "Cadeia de Suprimentos": "Rastrear produtos farmacêuticos ao longo da cadeia de suprimentos",
+    "Consentimento do Paciente": "Gerenciar e verificar o consentimento do paciente para compartilhamento de dados e procedimentos"
+}
+
+# Adding the missing 'dlt_options' and 'consensus_options' variables
+dlt_options = list(dlt_classes.keys())
+consensus_options = list(consensus_algorithms.keys())
