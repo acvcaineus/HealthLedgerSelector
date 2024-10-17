@@ -4,11 +4,11 @@ from database import create_user, get_user
 
 def register():
     st.subheader("Create an Account")
-    new_username = st.text_input("Username")
-    new_password = st.text_input("Password", type="password")
-    confirm_password = st.text_input("Confirm Password", type="password")
+    new_username = st.text_input("Username", key="register_username")
+    new_password = st.text_input("Password", type="password", key="register_password")
+    confirm_password = st.text_input("Confirm Password", type="password", key="register_confirm_password")
 
-    if st.button("Register"):
+    if st.button("Register", key="register_button"):
         if new_password != confirm_password:
             st.error("Passwords do not match")
         elif len(new_password) < 6:
@@ -22,10 +22,10 @@ def register():
 
 def login():
     st.subheader("Login")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
+    username = st.text_input("Username", key="login_username")
+    password = st.text_input("Password", type="password", key="login_password")
 
-    if st.button("Login"):
+    if st.button("Login", key="login_button"):
         user = get_user(username)
         if user and bcrypt.checkpw(password.encode('utf-8'), user['password']):
             st.session_state.authenticated = True
