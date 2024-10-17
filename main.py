@@ -31,6 +31,62 @@ def create_sunburst_chart(data):
     )
     return fig
 
+def plot_dag_dlt_radar():
+    dag_dlt_data = {
+        'DLT': ['IOTA (DAG)', 'Hashgraph', 'Tangle', 'DLT Recomendado (DAG)'],
+        'Escalabilidade': [9, 8, 9, 9],
+        'Segurança': [7, 8, 7, 7],
+        'Eficiência Energética': [9, 9, 8, 9],
+        'Descentralização': [8, 7, 8, 8],
+        'Tempo de Confirmação': [8, 7, 7, 8]
+    }
+    dag_dlt_df = pd.DataFrame(dag_dlt_data)
+    
+    fig = go.Figure()
+    for i in range(len(dag_dlt_df)):
+        fig.add_trace(go.Scatterpolar(
+            r=[dag_dlt_df['Escalabilidade'][i], dag_dlt_df['Segurança'][i], dag_dlt_df['Eficiência Energética'][i], 
+               dag_dlt_df['Descentralização'][i], dag_dlt_df['Tempo de Confirmação'][i]],
+            theta=['Escalabilidade', 'Segurança', 'Eficiência Energética', 'Descentralização', 'Tempo de Confirmação'],
+            fill='toself',
+            name=dag_dlt_df['DLT'][i]
+        ))
+    
+    fig.update_layout(
+        polar=dict(radialaxis=dict(visible=True, range=[0, 10])),
+        showlegend=True,
+        title="Comparação das DLTs Baseadas em DAG com a Recomendação"
+    )
+    return fig
+
+def plot_dag_consensus_radar():
+    dag_algorithms_data = {
+        'Algoritmo': ['IOTA (Tangle)', 'SCP (Stellar)', 'PoA', 'Algoritmo Recomendado (DAG)'],
+        'Escalabilidade': [9, 8, 6, 9],
+        'Segurança': [7, 8, 7, 7],
+        'Eficiência Energética': [9, 8, 7, 9],
+        'Descentralização': [8, 6, 5, 8],
+        'Tempo de Confirmação': [8, 7, 6, 8]
+    }
+    dag_algorithms_df = pd.DataFrame(dag_algorithms_data)
+    
+    fig = go.Figure()
+    for i in range(len(dag_algorithms_df)):
+        fig.add_trace(go.Scatterpolar(
+            r=[dag_algorithms_df['Escalabilidade'][i], dag_algorithms_df['Segurança'][i], dag_algorithms_df['Eficiência Energética'][i], 
+               dag_algorithms_df['Descentralização'][i], dag_algorithms_df['Tempo de Confirmação'][i]],
+            theta=['Escalabilidade', 'Segurança', 'Eficiência Energética', 'Descentralização', 'Tempo de Confirmação'],
+            fill='toself',
+            name=dag_algorithms_df['Algoritmo'][i]
+        ))
+    
+    fig.update_layout(
+        polar=dict(radialaxis=dict(visible=True, range=[0, 10])),
+        showlegend=True,
+        title="Comparação dos Algoritmos de Consenso em DAG com a Recomendação"
+    )
+    return fig
+
 def create_flow_diagram(scenario, current_step):
     steps = [q['id'] for q in questions[scenario]]
     edges = [(steps[i], steps[i+1]) for i in range(len(steps)-1)]
@@ -227,6 +283,23 @@ def show_recommendation():
     - Compare as áreas formadas por cada solução para uma visão geral do desempenho.
     - Observe que algumas métricas podem ser mais importantes que outras dependendo do seu caso de uso.
     """)
+
+    if recommendation['dlt'] == "Distributed Ledger" and recommendation['consensus'] == "Directed Acyclic Graph (DAG)":
+        st.subheader("Comparação de DLTs baseadas em DAG")
+        fig_dag_dlt = plot_dag_dlt_radar()
+        st.plotly_chart(fig_dag_dlt)
+        
+        st.subheader("Comparação de Algoritmos de Consenso em DAG")
+        fig_dag_consensus = plot_dag_consensus_radar()
+        st.plotly_chart(fig_dag_consensus)
+        
+        st.markdown('''
+        **Como interpretar os gráficos de radar para DLTs e Algoritmos baseados em DAG:**
+        - Cada eixo representa uma característica diferente (Escalabilidade, Segurança, etc.).
+        - Quanto mais distante do centro, melhor o desempenho naquela característica.
+        - Compare as áreas formadas por cada solução para uma visão geral do desempenho.
+        - O "DLT Recomendado (DAG)" e "Algoritmo Recomendado (DAG)" representam a solução sugerida com base nas suas respostas.
+        ''')
 
     st.header("Visualizações")
     
