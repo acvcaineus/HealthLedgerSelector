@@ -344,23 +344,32 @@ def show_recommendation():
     st.header("Visualizações")
     
     st.subheader("Fluxo de Decisão")
-    nodes, edges = create_decision_flow_diagram(st.session_state.scenario, st.session_state.answers)
-    st.graphviz_chart(f'''
-        digraph {{
-            rankdir=LR;
-            node [shape=box];
-            {'; '.join([f'{node["id"]} [label="{node["label"]}", style=filled, fillcolor={node["color"]}]' for node in nodes])}
-            {'; '.join([f'{edge["from"]} -> {edge["to"]} [color={edge["color"]}]' for edge in edges])}
-        }}
-    ''')
+    df = pd.DataFrame(list(st.session_state.answers.items()), columns=['question_id', 'answer'])
+    df['full_question'] = df['question_id'].map({q['id']: q['text'] for q in questions[st.session_state.scenario]})
+    df['color'] = df['answer'].map({'Sim': 'green', 'Não': 'red'})
+
+    fig = px.bar(df, 
+                 y='full_question', 
+                 x=[1]*len(df),
+                 color='color',
+                 orientation='h',
+                 title="Suas Respostas",
+                 labels={'full_question': 'Pergunta', 'x': ''})
+
+    fig.update_traces(showlegend=False)
+    fig.update_layout(height=400, yaxis={'categoryorder':'total ascending'})
+
+    for i, row in enumerate(df.itertuples()):
+        fig.add_annotation(x=0.5, y=i, text=row.answer, showarrow=False, font=dict(color='white'))
+
+    st.plotly_chart(fig, use_container_width=True)
 
     st.markdown('''
     **Como interpretar o Fluxo de Decisão:**
-    - Cada caixa representa uma pergunta do questionário.
-    - As caixas em azul são as perguntas que você respondeu.
-    - As caixas em cinza são perguntas que não foram respondidas devido às suas escolhas anteriores.
-    - As setas verdes mostram o caminho que você seguiu com suas respostas.
-    - As caixas verdes mostram suas respostas específicas.
+    - Cada barra representa uma pergunta do questionário.
+    - As barras verdes indicam respostas "Sim".
+    - As barras vermelhas indicam respostas "Não".
+    - O texto em cada barra mostra a resposta específica para cada pergunta.
     ''')
     
     with st.expander("Como interpretar o Gráfico Sunburst"):
@@ -380,10 +389,17 @@ def show_recommendation():
     fig_sunburst = create_sunburst_chart(sunburst_data)
     st.plotly_chart(fig_sunburst)
 
-    st.subheader("Suas Respostas")
-    df = pd.DataFrame(list(st.session_state.answers.items()), columns=['Pergunta', 'Resposta'])
-    fig_responses = px.bar(df, x='Pergunta', y='Resposta', title="Suas Respostas")
-    st.plotly_chart(fig_responses)
+    st.subheader("Atualizações em Tempo Real sobre DLT na Saúde")
+    news_articles = fetch_dlt_healthcare_news()
+    
+    if news_articles:
+        for article in news_articles:
+            with st.expander(article['title']):
+                st.write(article['description'])
+                st.write(f"Publicado em: {article['publishedAt']}")
+                st.markdown(f"[Leia mais]({article['url']})")
+    else:
+        st.info("Nenhuma notícia recente disponível. Por favor, tente novamente mais tarde.")
 
     if st.button("Voltar para a Página Inicial"):
         st.session_state.page = "home"
@@ -431,7 +447,6 @@ def main():
             show_questionnaire()
         elif st.session_state.page == "recommendation":
             show_recommendation()
-            show_news_updates()
 
         st.sidebar.header("Recomendações Anteriores")
         user_recommendations = get_user_recommendations(st.session_state.username)
