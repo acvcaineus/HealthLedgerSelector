@@ -3,7 +3,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 from user_management import login, register, is_authenticated
-from database import get_user_recommendations, save_recommendation
+from database import get_user_recommendations, save_recommendation, save_feedback
 from decision_logic import get_recommendation, get_comparison_data, get_sunburst_data
 from dlt_data import scenarios, questions, dlt_options, consensus_options, metrics
 from utils import init_session_state
@@ -412,6 +412,19 @@ def show_recommendation():
     sunburst_data = get_sunburst_data()
     fig_sunburst = create_sunburst_chart(sunburst_data)
     st.plotly_chart(fig_sunburst)
+
+    st.header("Feedback")
+    st.write("Por favor, forneça seu feedback sobre a recomendação:")
+    
+    feedback_text = st.text_area("Seus comentários:", max_chars=500)
+    rating = st.slider("Avalie a qualidade da recomendação:", 1, 5, 3)
+    
+    if st.button("Enviar Feedback"):
+        if feedback_text.strip() == "":
+            st.warning("Por favor, escreva um comentário antes de enviar o feedback.")
+        else:
+            save_feedback(st.session_state.username, st.session_state.scenario, recommendation, feedback_text, rating)
+            st.success("Obrigado pelo seu feedback!")
 
     st.subheader("Atualizações em Tempo Real sobre DLT na Saúde")
     news_articles = fetch_dlt_healthcare_news()

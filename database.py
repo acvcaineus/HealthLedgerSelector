@@ -18,6 +18,15 @@ def init_db():
                   dlt TEXT,
                   consensus TEXT,
                   timestamp DATETIME)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS feedback
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  username TEXT,
+                  scenario TEXT,
+                  dlt TEXT,
+                  consensus TEXT,
+                  feedback_text TEXT,
+                  rating INTEGER,
+                  timestamp DATETIME)''')
     conn.commit()
     conn.close()
 
@@ -63,5 +72,17 @@ def get_user_recommendations(username):
     recommendations = c.fetchall()
     conn.close()
     return recommendations
+
+def save_feedback(username, scenario, recommendation, feedback_text, rating):
+    conn = get_db_connection()
+    c = conn.cursor()
+    timestamp = datetime.datetime.now().isoformat()
+    c.execute("""INSERT INTO feedback 
+                 (username, scenario, dlt, consensus, feedback_text, rating, timestamp) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?)""",
+              (username, scenario, recommendation['dlt'], 
+               recommendation['consensus'], feedback_text, rating, timestamp))
+    conn.commit()
+    conn.close()
 
 init_db()
