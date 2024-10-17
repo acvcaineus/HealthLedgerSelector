@@ -5,7 +5,7 @@ import pandas as pd
 from user_management import login, register, is_authenticated
 from database import get_user_recommendations, save_recommendation
 from decision_logic import get_recommendation, get_sunburst_data
-from dlt_data import scenarios, questions
+from dlt_data import scenarios, questions, dlt_options, consensus_options
 from utils import init_session_state
 
 def create_sunburst_chart(data):
@@ -33,6 +33,46 @@ def create_flow_diagram(scenario, current_step):
     ]
     
     return nodes, edges
+
+def create_comparison_table(dlt_options):
+    comparison_data = {
+        "Blockchain Público": {
+            "Descentralização": "Alta",
+            "Privacidade": "Baixa",
+            "Escalabilidade": "Baixa",
+            "Velocidade": "Baixa",
+            "Consenso": "PoW, PoS",
+            "Uso": "Criptomoedas, aplicações descentralizadas"
+        },
+        "Blockchain Permissionado": {
+            "Descentralização": "Média",
+            "Privacidade": "Alta",
+            "Escalabilidade": "Média",
+            "Velocidade": "Alta",
+            "Consenso": "PBFT, PoA",
+            "Uso": "Registros médicos, rastreamento de cadeia de suprimentos"
+        },
+        "Blockchain Híbrido": {
+            "Descentralização": "Média",
+            "Privacidade": "Média",
+            "Escalabilidade": "Alta",
+            "Velocidade": "Alta",
+            "Consenso": "Variado",
+            "Uso": "Aplicações que requerem tanto privacidade quanto transparência"
+        },
+        "Grafo Acíclico Direcionado (DAG)": {
+            "Descentralização": "Alta",
+            "Privacidade": "Média",
+            "Escalabilidade": "Alta",
+            "Velocidade": "Alta",
+            "Consenso": "Baseado em DAG",
+            "Uso": "IoT, micropagamentos"
+        }
+    }
+    
+    df = pd.DataFrame(comparison_data).T.reset_index()
+    df.columns = ['DLT'] + list(df.columns[1:])
+    return df
 
 def main():
     st.set_page_config(page_title="SeletorDLTSaude", page_icon="🏥", layout="wide")
@@ -141,6 +181,43 @@ def main():
             df = pd.DataFrame(list(st.session_state.answers.items()), columns=['Pergunta', 'Resposta'])
             fig_responses = px.bar(df, x='Pergunta', y='Resposta', title="Suas Respostas")
             st.plotly_chart(fig_responses)
+
+            st.header("Comparação de Soluções DLT")
+            st.markdown("""
+            Esta tabela permite comparar diferentes soluções DLT lado a lado. 
+            Você pode ver como cada solução se compara em termos de descentralização, privacidade, 
+            escalabilidade, velocidade, mecanismos de consenso comuns e casos de uso típicos.
+            """)
+            
+            comparison_df = create_comparison_table(dlt_options)
+            st.dataframe(comparison_df)
+
+            st.subheader("Comparação Visual das Soluções DLT")
+            selected_dlts = st.multiselect("Selecione as DLTs para comparar", dlt_options, default=[recommendation['dlt']])
+            
+            if selected_dlts:
+                radar_data = comparison_df[comparison_df['DLT'].isin(selected_dlts)]
+                fig = go.Figure()
+
+                for dlt in selected_dlts:
+                    dlt_data = radar_data[radar_data['DLT'] == dlt].iloc[0]
+                    fig.add_trace(go.Scatterpolar(
+                        r=[['Baixa', 'Média', 'Alta'].index(dlt_data[col]) + 1 for col in ['Descentralização', 'Privacidade', 'Escalabilidade', 'Velocidade']],
+                        theta=['Descentralização', 'Privacidade', 'Escalabilidade', 'Velocidade'],
+                        fill='toself',
+                        name=dlt
+                    ))
+
+                fig.update_layout(
+                    polar=dict(
+                        radialaxis=dict(
+                            visible=True,
+                            range=[0, 3]
+                        )),
+                    showlegend=True
+                )
+
+                st.plotly_chart(fig)
 
             if st.button("Recomeçar"):
                 st.session_state.step = 0
