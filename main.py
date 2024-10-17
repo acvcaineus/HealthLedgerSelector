@@ -11,7 +11,7 @@ from utils import init_session_state
 def create_sunburst_chart(data):
     df = pd.DataFrame(data)
     fig = px.sunburst(df, ids='id', names='name', parents='parent', hover_data=['consensus'])
-    fig.update_layout(title="Decision Tree Visualization")
+    fig.update_layout(title="Visualização da Árvore de Decisão")
     return fig
 
 def create_flow_diagram(scenario, current_step):
@@ -42,22 +42,22 @@ def main():
     st.sidebar.image("assets/logo.svg", use_column_width=True)
 
     if not is_authenticated():
-        tab1, tab2 = st.tabs(["Login", "Register"])
+        tab1, tab2 = st.tabs(["Login", "Registrar"])
         with tab1:
             login()
         with tab2:
             register()
     else:
-        st.sidebar.success(f"Logged in as {st.session_state.username}")
-        st.sidebar.button("Logout", on_click=logout)
+        st.sidebar.success(f"Logado como {st.session_state.username}")
+        st.sidebar.button("Sair", on_click=logout)
 
         if 'step' not in st.session_state:
             st.session_state.step = 0
 
         if st.session_state.step == 0:
-            st.header("Choose a Healthcare Scenario")
-            scenario = st.selectbox("Select a scenario", list(scenarios.keys()))
-            if st.button("Start"):
+            st.header("Escolha um Cenário de Saúde")
+            scenario = st.selectbox("Selecione um cenário", list(scenarios.keys()))
+            if st.button("Iniciar"):
                 st.session_state.scenario = scenario
                 st.session_state.step = 1
                 st.session_state.answers = {}
@@ -65,17 +65,24 @@ def main():
 
         elif st.session_state.step <= len(questions[st.session_state.scenario]):
             question = questions[st.session_state.scenario][st.session_state.step - 1]
-            st.header(f"Question {st.session_state.step}")
+            st.header(f"Pergunta {st.session_state.step}")
             st.write(question['text'])
-            answer = st.radio("Select an option:", question['options'])
+            st.write(question['explanation'])
+            answer = st.radio("Selecione uma opção:", question['options'])
             
-            # Explanation for Interactive Flow Diagram
             st.markdown("""
-            ### Interactive Flow Diagram
-            This diagram shows your journey through the decision-making process. Each box represents a question, and the highlighted box is your current step. As you progress, you'll see how each answer leads to the next question, ultimately resulting in your personalized recommendation.
+            ### Diagrama de Fluxo Interativo
+            Este diagrama mostra sua jornada através do processo de tomada de decisão. Cada caixa representa uma pergunta, e a caixa destacada é sua etapa atual. À medida que você avança, verá como cada resposta leva à próxima pergunta, resultando em uma recomendação personalizada.
+
+            O diagrama ajuda a visualizar:
+            1. As perguntas já respondidas (azul claro)
+            2. A pergunta atual (amarelo)
+            3. As perguntas futuras (branco)
+            4. A sequência lógica das decisões
+
+            Isso permite que você entenda melhor como suas escolhas influenciam a recomendação final de tecnologia DLT e algoritmo de consenso para seu cenário de saúde.
             """)
             
-            # Display Interactive Flow Diagram
             nodes, edges = create_flow_diagram(st.session_state.scenario, st.session_state.step - 1)
             st.graphviz_chart(f"""
                 digraph {{
@@ -86,59 +93,65 @@ def main():
                 }}
             """)
             
-            if st.button("Next"):
+            if st.button("Próximo"):
                 st.session_state.answers[question['id']] = answer
                 st.session_state.step += 1
                 st.rerun()
 
         else:
             recommendation = get_recommendation(st.session_state.scenario, st.session_state.answers)
-            st.header("Recommendation")
+            st.header("Recomendação")
             
             col1, col2 = st.columns(2)
             with col1:
-                st.subheader("DLT Framework")
+                st.subheader("Framework DLT")
                 st.info(recommendation['dlt'])
             with col2:
-                st.subheader("Consensus Algorithm")
+                st.subheader("Algoritmo de Consenso")
                 st.info(recommendation['consensus'])
             
-            st.subheader("Detailed Explanation")
+            st.subheader("Explicação Detalhada")
             st.markdown(recommendation['explanation'])
 
-            if st.button("Save Recommendation"):
+            if st.button("Salvar Recomendação"):
                 save_recommendation(st.session_state.username, st.session_state.scenario, recommendation)
-                st.success("Recommendation saved successfully!")
+                st.success("Recomendação salva com sucesso!")
 
-            st.header("Visualizations")
+            st.header("Visualizações")
             
-            # Explanation for Sunburst Chart
             st.markdown("""
-            ### Sunburst Chart
-            This Sunburst chart shows how different factors influence the choice of DLT and consensus algorithm. The center represents the starting point, and each ring outwards shows a decision point. The final ring shows the recommended DLT and consensus algorithm based on your choices.
+            ### Gráfico Sunburst
+            Este gráfico Sunburst mostra como diferentes fatores influenciam a escolha da tecnologia DLT e do algoritmo de consenso. 
+
+            Como interpretar:
+            1. O centro representa o ponto de partida da decisão.
+            2. Cada anel em direção ao exterior representa um ponto de decisão (uma pergunta que você respondeu).
+            3. O anel mais externo mostra a DLT e o algoritmo de consenso recomendados com base em suas escolhas.
+            4. As cores representam diferentes caminhos de decisão.
+            5. Ao passar o mouse sobre cada seção, você verá informações detalhadas sobre aquele ponto de decisão.
+
+            Este gráfico ajuda a visualizar como cada resposta afeta a recomendação final, permitindo uma compreensão mais profunda do processo de seleção de tecnologia para seu cenário de saúde.
             """)
             
-            # Sunburst Chart
             sunburst_data = get_sunburst_data()
             fig_sunburst = create_sunburst_chart(sunburst_data)
             st.plotly_chart(fig_sunburst)
 
-            # Response Visualization
-            st.subheader("Your Responses")
-            df = pd.DataFrame(list(st.session_state.answers.items()), columns=['Question', 'Answer'])
-            fig_responses = px.bar(df, x='Question', y='Answer', title="Your Responses")
+            st.subheader("Suas Respostas")
+            df = pd.DataFrame(list(st.session_state.answers.items()), columns=['Pergunta', 'Resposta'])
+            fig_responses = px.bar(df, x='Pergunta', y='Resposta', title="Suas Respostas")
             st.plotly_chart(fig_responses)
 
-            if st.button("Start Over"):
+            if st.button("Recomeçar"):
                 st.session_state.step = 0
                 st.rerun()
 
-        st.sidebar.header("Previous Recommendations")
+        st.sidebar.header("Recomendações Anteriores")
         user_recommendations = get_user_recommendations(st.session_state.username)
         for rec in user_recommendations:
             with st.sidebar.expander(f"{rec['scenario']} - {rec['timestamp']}"):
                 st.write(f"DLT: {rec['dlt']}")
-                st.write(f"Consensus: {rec['consensus']}")
+                st.write(f"Consenso: {rec['consensus']}")
 
 def logout():
     for key in list(st.session_state.keys()):

@@ -8,12 +8,10 @@ class DecisionNode:
         self.recommendation = recommendation
 
 def build_decision_tree():
-    # Leaf nodes with recommendations
-    leaf_permissioned = DecisionNode(None, None, None, {"dlt": "Permissioned Blockchain", "consensus": "Practical Byzantine Fault Tolerance (PBFT)"})
-    leaf_hybrid = DecisionNode(None, None, None, {"dlt": "Hybrid Blockchain", "consensus": "Proof of Authority (PoA)"})
-    leaf_public = DecisionNode(None, None, None, {"dlt": "Public Blockchain", "consensus": "Proof of Stake (PoS)"})
+    leaf_permissioned = DecisionNode(None, None, None, {"dlt": "Blockchain Permissionado", "consensus": "Tolerância a Falhas Bizantinas Prática (PBFT)"})
+    leaf_hybrid = DecisionNode(None, None, None, {"dlt": "Blockchain Híbrido", "consensus": "Prova de Autoridade (PoA)"})
+    leaf_public = DecisionNode(None, None, None, {"dlt": "Blockchain Público", "consensus": "Prova de Participação (PoS)"})
 
-    # Build the decision tree
     node_fast = DecisionNode("fast_transactions", leaf_permissioned, leaf_hybrid)
     node_scalability = DecisionNode("high_scalability", node_fast, leaf_hybrid)
     root = DecisionNode("privacy", node_scalability, leaf_public)
@@ -26,8 +24,8 @@ def traverse_tree(node, answers):
     if node.recommendation:
         return node.recommendation
     
-    answer = answers.get(node.question, "No")
-    if answer == "Yes":
+    answer = answers.get(node.question, "Não")
+    if answer == "Sim":
         return traverse_tree(node.yes_node, answers)
     else:
         return traverse_tree(node.no_node, answers)
@@ -36,15 +34,15 @@ def get_recommendation(scenario, answers):
     recommendation = traverse_tree(decision_tree, answers)
     
     dlt_explanation = {
-        "Permissioned Blockchain": f"For your {scenario} use case, a Permissioned Blockchain is recommended. This type of DLT offers controlled access, which is crucial for healthcare applications where data privacy and security are paramount. It allows for faster transaction processing and better scalability compared to public blockchains, making it suitable for handling large volumes of sensitive medical data.",
-        "Hybrid Blockchain": f"Considering your requirements for the {scenario}, a Hybrid Blockchain is suggested. This solution combines elements of both public and private blockchains, offering a balance between transparency and privacy. It's particularly useful in healthcare scenarios where some data needs to be publicly accessible while keeping sensitive information private.",
-        "Public Blockchain": f"Based on your answers for the {scenario}, a Public Blockchain could be suitable. While it offers the highest level of transparency and decentralization, it's important to note that in healthcare applications, additional measures may be needed to ensure data privacy and compliance with regulations like HIPAA."
+        "Blockchain Permissionado": f"Para o seu cenário de {scenario}, um Blockchain Permissionado é recomendado. Este tipo de DLT oferece acesso controlado, crucial para aplicações de saúde onde a privacidade e segurança dos dados são primordiais. Permite processamento de transações mais rápido e melhor escalabilidade em comparação com blockchains públicos, sendo adequado para lidar com grandes volumes de dados médicos sensíveis.",
+        "Blockchain Híbrido": f"Considerando seus requisitos para o cenário de {scenario}, um Blockchain Híbrido é sugerido. Esta solução combina elementos de blockchains públicos e privados, oferecendo um equilíbrio entre transparência e privacidade. É particularmente útil em cenários de saúde onde alguns dados precisam ser publicamente acessíveis, mantendo informações sensíveis privadas.",
+        "Blockchain Público": f"Com base em suas respostas para o cenário de {scenario}, um Blockchain Público pode ser adequado. Embora ofereça o mais alto nível de transparência e descentralização, é importante notar que em aplicações de saúde, medidas adicionais podem ser necessárias para garantir a privacidade dos dados e conformidade com regulamentações como a LGPD."
     }
     
     consensus_explanation = {
-        "Practical Byzantine Fault Tolerance (PBFT)": "PBFT is recommended for its ability to provide high transaction throughput with low latency, which is crucial in healthcare systems where quick access to information can be life-saving. It's also energy-efficient and well-suited for permissioned networks, aligning with the privacy needs of healthcare data.",
-        "Proof of Authority (PoA)": "PoA is suggested for its efficiency and scalability. In a healthcare context, it allows for fast transaction processing while maintaining a level of trust through authorized validators. This can be particularly useful in scenarios where quick decision-making is crucial, such as in emergency medical situations.",
-        "Proof of Stake (PoS)": "PoS is recommended for its energy efficiency and improved transaction speed compared to Proof of Work. In a healthcare setting, it can provide a good balance between security and performance, allowing for faster updates to medical records or supply chain information while maintaining the integrity of the data."
+        "Tolerância a Falhas Bizantinas Prática (PBFT)": "PBFT é recomendado por sua capacidade de fornecer alto rendimento de transações com baixa latência, crucial em sistemas de saúde onde o acesso rápido à informação pode salvar vidas. Também é energeticamente eficiente e bem adequado para redes permissionadas, alinhando-se às necessidades de privacidade dos dados de saúde.",
+        "Prova de Autoridade (PoA)": "PoA é sugerido por sua eficiência e escalabilidade. Em um contexto de saúde, permite processamento rápido de transações enquanto mantém um nível de confiança através de validadores autorizados. Isso pode ser particularmente útil em cenários onde a tomada de decisão rápida é crucial, como em situações médicas de emergência.",
+        "Prova de Participação (PoS)": "PoS é recomendado por sua eficiência energética e velocidade de transação melhorada em comparação com a Prova de Trabalho. Em um ambiente de saúde, pode fornecer um bom equilíbrio entre segurança e desempenho, permitindo atualizações mais rápidas de registros médicos ou informações da cadeia de suprimentos, mantendo a integridade dos dados."
     }
     
     decision_path = []
@@ -52,17 +50,30 @@ def get_recommendation(scenario, answers):
         decision_path.append(f"{question.replace('_', ' ').title()}: {answer}")
     
     detailed_explanation = f"""
-    DLT Recommendation: {recommendation['dlt']}
+    Recomendação de DLT: {recommendation['dlt']}
     {dlt_explanation[recommendation['dlt']]}
     
-    Consensus Algorithm Recommendation: {recommendation['consensus']}
+    Recomendação de Algoritmo de Consenso: {recommendation['consensus']}
     {consensus_explanation[recommendation['consensus']]}
     
-    This recommendation is based on your specific requirements for the {scenario} use case.
-    The decision path that led to this recommendation:
+    Esta recomendação é baseada em seus requisitos específicos para o cenário de {scenario}.
+    O caminho de decisão que levou a esta recomendação:
     {' -> '.join(decision_path)}
     
-    The combination of {recommendation['dlt']} with {recommendation['consensus']} provides an optimal solution that addresses your requirements, offering a balance of security, efficiency, and performance tailored to your healthcare application needs.
+    Impacto das suas escolhas:
+    """
+    
+    for question, answer in answers.items():
+        if question == "privacy" and answer == "Sim":
+            detailed_explanation += "\n- Sua preocupação com privacidade levou à recomendação de uma solução mais controlada e segura."
+        elif question == "high_scalability" and answer == "Sim":
+            detailed_explanation += "\n- A necessidade de alta escalabilidade influenciou a escolha de uma solução capaz de lidar com um grande volume de transações."
+        elif question == "fast_transactions" and answer == "Sim":
+            detailed_explanation += "\n- Sua necessidade de transações rápidas direcionou a recomendação para um algoritmo de consenso mais eficiente."
+    
+    detailed_explanation += f"""
+    
+    A combinação de {recommendation['dlt']} com {recommendation['consensus']} fornece uma solução ideal que atende aos seus requisitos, oferecendo um equilíbrio de segurança, eficiência e desempenho adaptado às necessidades da sua aplicação de saúde.
     """
     
     recommendation['explanation'] = detailed_explanation
