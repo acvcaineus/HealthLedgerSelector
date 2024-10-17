@@ -4,8 +4,8 @@ import plotly.graph_objects as go
 import pandas as pd
 from user_management import login, register, is_authenticated
 from database import get_user_recommendations, save_recommendation
-from decision_logic import get_recommendation, get_sunburst_data
-from dlt_data import scenarios, questions, dlt_options, consensus_options
+from decision_logic import get_recommendation, get_comparison_data, get_sunburst_data
+from dlt_data import scenarios, questions, dlt_options, consensus_options, metrics
 from utils import init_session_state
 
 def create_sunburst_chart(data):
@@ -112,7 +112,8 @@ def show_questionnaire():
     """)
 
 def show_recommendation():
-    recommendation = get_recommendation(st.session_state.scenario, st.session_state.answers)
+    answers = st.session_state.answers
+    recommendation = get_recommendation(answers)
     st.header("Recomendação")
     
     col1, col2 = st.columns(2)
@@ -124,11 +125,70 @@ def show_recommendation():
         st.info(recommendation['consensus'])
     
     with st.expander("Explicação Detalhada"):
-        st.markdown(recommendation['explanation'])
+        st.markdown(f"""
+        **DLT Recomendada:** {recommendation['dlt']}
+        {recommendation['dlt_explanation']}
+
+        **Algoritmo de Consenso Recomendado:** {recommendation['consensus']}
+        {recommendation['consensus_explanation']}
+        """)
 
     if st.button("Salvar Recomendação"):
         save_recommendation(st.session_state.username, st.session_state.scenario, recommendation)
         st.success("Recomendação salva com sucesso!")
+
+    st.header("Comparação de Soluções DLT")
+    
+    comparison_data = get_comparison_data(recommendation['dlt'], recommendation['consensus'])
+    
+    # Tabela comparativa
+    st.subheader("Tabela Comparativa")
+    df_comparison = pd.DataFrame(comparison_data)
+    st.table(df_comparison)
+
+    # Gráfico de Radar
+    st.subheader("Comparação Visual (Gráfico de Radar)")
+    
+    metrics_to_plot = [
+        "Tempo de confirmação de transação (segundos)",
+        "Throughput (transações por segundo)",
+        "Nível de descentralização (1-10)",
+        "Flexibilidade de programação (1-10)",
+        "Interoperabilidade (1-10)",
+        "Resistência a ataques quânticos (1-10)"
+    ]
+
+    fig = go.Figure()
+
+    for system in df_comparison.index:
+        values = df_comparison.loc[system, metrics_to_plot].values.tolist()
+        values += values[:1]  # Duplicate first value to close the polygon
+        
+        fig.add_trace(go.Scatterpolar(
+            r=values,
+            theta=metrics_to_plot + [metrics_to_plot[0]],  # Duplicate first category to close the polygon
+            fill='toself',
+            name=system
+        ))
+
+    fig.update_layout(
+        polar=dict(
+            radialaxis=dict(
+                visible=True,
+                range=[0, max([max(df_comparison[metric]) for metric in metrics_to_plot])]
+            )),
+        showlegend=True
+    )
+
+    st.plotly_chart(fig)
+
+    st.markdown("""
+    **Como interpretar o gráfico de radar:**
+    - Cada eixo representa uma métrica diferente.
+    - Quanto mais distante do centro, melhor o desempenho naquela métrica.
+    - Compare as áreas formadas por cada solução para uma visão geral do desempenho.
+    - Observe que algumas métricas podem ser mais importantes que outras dependendo do seu caso de uso.
+    """)
 
     st.header("Visualizações")
     

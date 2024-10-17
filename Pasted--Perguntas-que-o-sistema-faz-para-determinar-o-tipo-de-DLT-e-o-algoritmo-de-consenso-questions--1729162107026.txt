@@ -1,53 +1,13 @@
 # Perguntas que o sistema faz para determinar o tipo de DLT e o algoritmo de consenso.
 questions = [
-    {
-        "id": "privacy",
-        "text": "A privacidade é crítica?",
-        "options": ["Sim", "Não"],
-        "explanation": "Esta pergunta avalia a necessidade de controle de acesso e proteção de dados sensíveis na rede."
-    },
-    {
-        "id": "integration",
-        "text": "A integração com outros sistemas é necessária?",
-        "options": ["Sim", "Não"],
-        "explanation": "Determina se a solução DLT precisa se comunicar e interoperar com sistemas externos."
-    },
-    {
-        "id": "data_volume",
-        "text": "A rede lida com grandes volumes de dados?",
-        "options": ["Sim", "Não"],
-        "explanation": "Avalia a necessidade de alta capacidade de armazenamento e processamento de dados."
-    },
-    {
-        "id": "energy_efficiency",
-        "text": "A eficiência energética é importante?",
-        "options": ["Sim", "Não"],
-        "explanation": "Considera o impacto ambiental e os custos operacionais relacionados ao consumo de energia."
-    },
-    {
-        "id": "network_security",
-        "text": "A segurança da rede é alta?",
-        "options": ["Sim", "Não"],
-        "explanation": "Avalia a necessidade de proteção contra ataques e manipulação de dados."
-    },
-    {
-        "id": "scalability",
-        "text": "A escalabilidade é chave para o sucesso?",
-        "options": ["Sim", "Não"],
-        "explanation": "Determina se a rede precisa crescer e lidar com um aumento significativo no número de transações."
-    },
-    {
-        "id": "governance_flexibility",
-        "text": "A governança da rede precisa ser flexível?",
-        "options": ["Sim", "Não"],
-        "explanation": "Avalia a necessidade de adaptar as regras e protocolos da rede ao longo do tempo."
-    },
-    {
-        "id": "interoperability",
-        "text": "A interoperabilidade com outras redes é importante?",
-        "options": ["Sim", "Não"],
-        "explanation": "Considera a necessidade de comunicação e troca de dados com outras redes blockchain ou sistemas externos."
-    }
+    "A privacidade é crítica?",  # Pergunta 1 (Fase 1)
+    "A integração com outros sistemas é necessária?",  # Pergunta 2 (Fase 1)
+    "A rede lida com grandes volumes de dados?",  # Pergunta 3 (Fase 2)
+    "A eficiência energética é importante?",  # Pergunta 4 (Fase 2)
+    "A segurança da rede é alta?",  # Pergunta 5 (Fase 3)
+    "A escalabilidade é chave para o sucesso?",  # Pergunta 6 (Fase 3)
+    "A governança da rede precisa ser flexível?",  # Pergunta 7 (Fase 4)
+    "A interoperabilidade com outras redes é importante?"  # Pergunta 8 (Fase 4)
 ]
 
 # Classes de DLT (Distributed Ledger Technology) que podem ser recomendadas pelo sistema.
@@ -73,7 +33,7 @@ consensus_algorithms = {
     "Tangle": "Estrutura de consenso usada pela IOTA, especialmente para redes de IoT, oferecendo alta escalabilidade."
 }
 
-# Métricas de avaliação de diferentes DLTs
+# Métricas de avaliação de diferentes DLTs (valores fictícios apenas como exemplo).
 metrics = {
     "Tempo de confirmação de transação (segundos)": {
         "Hyperledger Fabric (PBFT)": 1,
