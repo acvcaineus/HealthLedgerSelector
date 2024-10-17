@@ -1,81 +1,133 @@
 # Perguntas que o sistema faz para determinar o tipo de DLT e o algoritmo de consenso.
 questions = {
-    "Registros Médicos Eletrônicos": [
+    "Registros Médicos Eletrônicos (EMR)": [
         {
             "id": "privacy",
-            "text": "A privacidade é crítica?",
+            "text": "A privacidade dos dados do paciente é crítica?",
             "options": ["Sim", "Não"],
             "explanation": "Esta pergunta avalia a necessidade de controle de acesso e proteção de dados sensíveis na rede."
         },
         {
-            "id": "integration",
-            "text": "A integração com outros sistemas é necessária?",
+            "id": "interoperability",
+            "text": "A interoperabilidade com outros sistemas de saúde é necessária?",
             "options": ["Sim", "Não"],
-            "explanation": "Determina se a solução DLT precisa se comunicar e interoperar com sistemas externos."
+            "explanation": "Determina se a solução DLT precisa se comunicar e trocar dados com outros sistemas de saúde."
         },
         {
-            "id": "data_volume",
-            "text": "A rede lida com grandes volumes de dados?",
+            "id": "scalability",
+            "text": "O sistema precisa lidar com um grande volume de registros médicos?",
             "options": ["Sim", "Não"],
             "explanation": "Avalia a necessidade de alta capacidade de armazenamento e processamento de dados."
         },
         {
-            "id": "energy_efficiency",
-            "text": "A eficiência energética é importante?",
+            "id": "access_control",
+            "text": "É necessário um controle de acesso granular aos registros?",
             "options": ["Sim", "Não"],
-            "explanation": "Considera o impacto ambiental e os custos operacionais relacionados ao consumo de energia."
+            "explanation": "Verifica se é necessário um sistema de permissões detalhado para acesso aos registros médicos."
         }
     ],
-    "Cadeia de Suprimentos": [
+    "Cadeia de Suprimentos Farmacêutica": [
         {
-            "id": "network_security",
-            "text": "A segurança da rede é alta?",
+            "id": "traceability",
+            "text": "A rastreabilidade completa dos produtos é essencial?",
             "options": ["Sim", "Não"],
-            "explanation": "Avalia a necessidade de proteção contra ataques e manipulação de dados."
+            "explanation": "Avalia a necessidade de rastrear cada etapa do produto na cadeia de suprimentos."
         },
         {
-            "id": "scalability",
-            "text": "A escalabilidade é chave para o sucesso?",
+            "id": "real_time_updates",
+            "text": "São necessárias atualizações em tempo real do status dos produtos?",
             "options": ["Sim", "Não"],
-            "explanation": "Determina se a rede precisa crescer e lidar com um aumento significativo no número de transações."
+            "explanation": "Determina se é necessário um sistema que forneça informações atualizadas constantemente."
         },
         {
-            "id": "governance_flexibility",
-            "text": "A governança da rede precisa ser flexível?",
+            "id": "regulatory_compliance",
+            "text": "O cumprimento de regulamentações é um fator crítico?",
             "options": ["Sim", "Não"],
-            "explanation": "Avalia a necessidade de adaptar as regras e protocolos da rede ao longo do tempo."
+            "explanation": "Verifica a necessidade de conformidade com regulamentações específicas do setor farmacêutico."
         },
         {
-            "id": "interoperability",
-            "text": "A interoperabilidade com outras redes é importante?",
+            "id": "multi_party_collaboration",
+            "text": "É necessária colaboração entre múltiplas partes na cadeia de suprimentos?",
             "options": ["Sim", "Não"],
-            "explanation": "Considera a necessidade de comunicação e troca de dados com outras redes blockchain ou sistemas externos."
+            "explanation": "Avalia a necessidade de um sistema que permita a colaboração entre diferentes entidades na cadeia."
+        }
+    ],
+    "Pesquisa Clínica": [
+        {
+            "id": "data_integrity",
+            "text": "A integridade dos dados da pesquisa é crucial?",
+            "options": ["Sim", "Não"],
+            "explanation": "Avalia a necessidade de garantir que os dados da pesquisa não sejam alterados ou corrompidos."
+        },
+        {
+            "id": "consent_management",
+            "text": "É necessário gerenciar o consentimento dos participantes da pesquisa?",
+            "options": ["Sim", "Não"],
+            "explanation": "Verifica se é necessário um sistema para gerenciar e rastrear o consentimento dos participantes."
+        },
+        {
+            "id": "data_sharing",
+            "text": "O compartilhamento seguro de dados entre instituições é necessário?",
+            "options": ["Sim", "Não"],
+            "explanation": "Determina se é necessário um sistema que permita o compartilhamento seguro de dados entre diferentes instituições de pesquisa."
+        },
+        {
+            "id": "audit_trail",
+            "text": "É importante manter um registro de auditoria detalhado?",
+            "options": ["Sim", "Não"],
+            "explanation": "Avalia a necessidade de um sistema que mantenha um registro imutável de todas as ações e mudanças nos dados da pesquisa."
         }
     ],
     "Consentimento do Paciente": [
         {
-            "id": "privacy",
-            "text": "A privacidade é crítica?",
+            "id": "dynamic_consent",
+            "text": "É necessário um sistema de consentimento dinâmico?",
             "options": ["Sim", "Não"],
-            "explanation": "Esta pergunta avalia a necessidade de controle de acesso e proteção de dados sensíveis na rede."
+            "explanation": "Verifica se é necessário um sistema que permita aos pacientes atualizar suas preferências de consentimento ao longo do tempo."
         },
         {
-            "id": "integration",
-            "text": "A integração com outros sistemas é necessária?",
+            "id": "granular_permissions",
+            "text": "São necessárias permissões granulares para diferentes tipos de dados?",
             "options": ["Sim", "Não"],
-            "explanation": "Determina se a solução DLT precisa se comunicar e interoperar com sistemas externos."
+            "explanation": "Avalia a necessidade de um sistema que permita aos pacientes dar consentimento para tipos específicos de dados ou usos."
         },
         {
-            "id": "network_security",
-            "text": "A segurança da rede é alta?",
+            "id": "consent_verification",
+            "text": "É importante ter um sistema de verificação de consentimento em tempo real?",
             "options": ["Sim", "Não"],
-            "explanation": "Avalia a necessidade de proteção contra ataques e manipulação de dados."
+            "explanation": "Determina se é necessário um sistema que possa verificar instantaneamente o status de consentimento de um paciente."
         },
         {
-            "id": "governance_flexibility",
-            "text": "A governança da rede precisa ser flexível?",
+            "id": "regulatory_compliance",
+            "text": "O cumprimento de regulamentações de privacidade é crítico?",
             "options": ["Sim", "Não"],
-            "explanation": "Avalia a necessidade de adaptar as regras e protocolos da rede ao longo do tempo."
+            "explanation": "Verifica a necessidade de conformidade com regulamentações específicas de privacidade e consentimento do paciente."
+        }
+    ],
+    "Faturamento e Reivindicações": [
+        {
+            "id": "automated_claims",
+            "text": "É necessário um sistema de reivindicações automatizado?",
+            "options": ["Sim", "Não"],
+            "explanation": "Avalia a necessidade de um sistema que possa processar reivindicações de forma automática e eficiente."
+        },
+        {
+            "id": "fraud_detection",
+            "text": "A detecção de fraudes é uma prioridade?",
+            "options": ["Sim", "Não"],
+            "explanation": "Verifica se é necessário um sistema robusto para detectar e prevenir fraudes em reivindicações e faturamento."
+        },
+        {
+            "id": "real_time_processing",
+            "text": "O processamento em tempo real de reivindicações é necessário?",
+            "options": ["Sim", "Não"],
+            "explanation": "Determina se é necessário um sistema que possa processar reivindicações instantaneamente."
+        },
+        {
+            "id": "multi_party_reconciliation",
+            "text": "É necessária a reconciliação entre múltiplas partes (provedores, pagadores, pacientes)?",
+            "options": ["Sim", "Não"],
+            "explanation": "Avalia a necessidade de um sistema que possa reconciliar informações entre diferentes partes envolvidas no processo de faturamento e reivindicações."
         }
     ]
 }
@@ -103,7 +155,7 @@ consensus_algorithms = {
     "Tangle": "Estrutura de consenso usada pela IOTA, especialmente para redes de IoT, oferecendo alta escalabilidade."
 }
 
-# Métricas de avaliação de diferentes DLTs
+# Métricas de avaliação de diferentes DLTs (valores fictícios apenas como exemplo).
 metrics = {
     "Tempo de confirmação de transação (segundos)": {
         "Hyperledger Fabric (PBFT)": 1,
@@ -187,13 +239,15 @@ metrics = {
     }
 }
 
-# Adding the 'scenarios' variable
+# Adicionando a variável 'scenarios'
 scenarios = {
-    "Registros Médicos Eletrônicos": "Gerenciar e proteger registros de saúde dos pacientes",
-    "Cadeia de Suprimentos": "Rastrear produtos farmacêuticos ao longo da cadeia de suprimentos",
-    "Consentimento do Paciente": "Gerenciar e verificar o consentimento do paciente para compartilhamento de dados e procedimentos"
+    "Registros Médicos Eletrônicos (EMR)": "Gerenciar e proteger registros de saúde dos pacientes",
+    "Cadeia de Suprimentos Farmacêutica": "Rastrear produtos farmacêuticos ao longo da cadeia de suprimentos",
+    "Pesquisa Clínica": "Gerenciar dados de pesquisas clínicas de forma segura e transparente",
+    "Consentimento do Paciente": "Gerenciar e verificar o consentimento do paciente para compartilhamento de dados e procedimentos",
+    "Faturamento e Reivindicações": "Gerenciar processos de faturamento e reivindicações de forma eficiente e transparente"
 }
 
-# Adding the 'dlt_options' and 'consensus_options' variables
+# Adicionando as variáveis 'dlt_options' e 'consensus_options'
 dlt_options = list(dlt_classes.keys())
 consensus_options = list(consensus_algorithms.keys())

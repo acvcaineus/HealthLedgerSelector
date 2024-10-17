@@ -143,6 +143,9 @@ def show_home_page():
 def show_scenario_selection():
     st.header("Escolha um Cenário de Saúde")
     scenario = st.selectbox("Selecione um cenário", list(scenarios.keys()))
+    
+    st.write(f"**Descrição do cenário:** {scenarios[scenario]}")
+    
     if st.button("Iniciar"):
         st.session_state.scenario = scenario
         st.session_state.step = 1
@@ -331,17 +334,17 @@ def show_recommendation():
         st.rerun()
 
 def show_news_updates():
-    st.header("Real-time Updates on DLT in Healthcare")
+    st.header("Atualizações em Tempo Real sobre DLT na Saúde")
     news_articles = fetch_dlt_healthcare_news()
     
     if news_articles:
         for article in news_articles:
             with st.expander(article['title']):
                 st.write(article['description'])
-                st.write(f"Published at: {article['publishedAt']}")
-                st.markdown(f"[Read more]({article['url']})")
+                st.write(f"Publicado em: {article['publishedAt']}")
+                st.markdown(f"[Leia mais]({article['url']})")
     else:
-        st.info("No recent news available. Please try again later.")
+        st.info("Nenhuma notícia recente disponível. Por favor, tente novamente mais tarde.")
 
 def main():
     st.set_page_config(page_title="SeletorDLTSaude", page_icon="🏥", layout="wide")
