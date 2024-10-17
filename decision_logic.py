@@ -1,23 +1,39 @@
 from dlt_data import dlt_options, consensus_options
 
-def get_recommendation(scenario, answers):
-    privacy_score = 1 if answers.get('privacy', '') == 'Yes' else 0
-    scalability_score = 1 if answers.get('scalability', '') == 'High' else 0
-    speed_score = 1 if answers.get('speed', '') == 'Fast' else 0
-    transparency_score = 1 if answers.get('transparency', '') == 'Yes' else 0
-    auditability_score = 1 if answers.get('auditability', '') == 'Yes' else 0
+class DecisionNode:
+    def __init__(self, question, yes_node, no_node, recommendation=None):
+        self.question = question
+        self.yes_node = yes_node
+        self.no_node = no_node
+        self.recommendation = recommendation
+
+def build_decision_tree():
+    # Leaf nodes with recommendations
+    leaf_permissioned = DecisionNode(None, None, None, {"dlt": "Permissioned Blockchain", "consensus": "Practical Byzantine Fault Tolerance (PBFT)"})
+    leaf_hybrid = DecisionNode(None, None, None, {"dlt": "Hybrid Blockchain", "consensus": "Proof of Authority (PoA)"})
+    leaf_public = DecisionNode(None, None, None, {"dlt": "Public Blockchain", "consensus": "Proof of Stake (PoS)"})
+
+    # Build the decision tree
+    node_fast = DecisionNode("fast_transactions", leaf_permissioned, leaf_hybrid)
+    node_scalability = DecisionNode("high_scalability", node_fast, leaf_hybrid)
+    root = DecisionNode("privacy", node_scalability, leaf_public)
+
+    return root
+
+decision_tree = build_decision_tree()
+
+def traverse_tree(node, answers):
+    if node.recommendation:
+        return node.recommendation
     
-    total_score = privacy_score + scalability_score + speed_score + transparency_score + auditability_score
-    
-    if total_score >= 3:
-        dlt = "Permissioned Blockchain"
-        consensus = "Practical Byzantine Fault Tolerance (PBFT)"
-    elif total_score == 2:
-        dlt = "Hybrid Blockchain"
-        consensus = "Proof of Authority (PoA)"
+    answer = answers.get(node.question, "No")
+    if answer == "Yes":
+        return traverse_tree(node.yes_node, answers)
     else:
-        dlt = "Public Blockchain"
-        consensus = "Proof of Stake (PoS)"
+        return traverse_tree(node.no_node, answers)
+
+def get_recommendation(scenario, answers):
+    recommendation = traverse_tree(decision_tree, answers)
     
     dlt_explanation = {
         "Permissioned Blockchain": f"For your {scenario} use case, a Permissioned Blockchain is recommended. This type of DLT offers controlled access, which is crucial for healthcare applications where data privacy and security are paramount. It allows for faster transaction processing and better scalability compared to public blockchains, making it suitable for handling large volumes of sensitive medical data.",
@@ -31,25 +47,23 @@ def get_recommendation(scenario, answers):
         "Proof of Stake (PoS)": "PoS is recommended for its energy efficiency and improved transaction speed compared to Proof of Work. In a healthcare setting, it can provide a good balance between security and performance, allowing for faster updates to medical records or supply chain information while maintaining the integrity of the data."
     }
     
+    decision_path = []
+    for question, answer in answers.items():
+        decision_path.append(f"{question.replace('_', ' ').title()}: {answer}")
+    
     detailed_explanation = f"""
-    DLT Recommendation: {dlt}
-    {dlt_explanation[dlt]}
+    DLT Recommendation: {recommendation['dlt']}
+    {dlt_explanation[recommendation['dlt']]}
     
-    Consensus Algorithm Recommendation: {consensus}
-    {consensus_explanation[consensus]}
+    Consensus Algorithm Recommendation: {recommendation['consensus']}
+    {consensus_explanation[recommendation['consensus']]}
     
-    This recommendation is based on your specific requirements for the {scenario} use case:
-    - Privacy: {"High priority" if privacy_score else "Lower priority"}
-    - Scalability: {"High" if scalability_score else "Lower"}
-    - Speed: {"Fast" if speed_score else "Not as critical"}
-    - Transparency: {"Required" if transparency_score else "Not as important"}
-    - Auditability: {"Critical" if auditability_score else "Less emphasized"}
+    This recommendation is based on your specific requirements for the {scenario} use case.
+    The decision path that led to this recommendation:
+    {' -> '.join(decision_path)}
     
-    The combination of {dlt} with {consensus} provides an optimal solution that addresses these requirements, offering a balance of security, efficiency, and performance tailored to your healthcare application needs.
+    The combination of {recommendation['dlt']} with {recommendation['consensus']} provides an optimal solution that addresses your requirements, offering a balance of security, efficiency, and performance tailored to your healthcare application needs.
     """
     
-    return {
-        "dlt": dlt,
-        "consensus": consensus,
-        "explanation": detailed_explanation
-    }
+    recommendation['explanation'] = detailed_explanation
+    return recommendation

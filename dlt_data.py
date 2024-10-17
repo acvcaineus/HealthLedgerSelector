@@ -12,14 +12,14 @@ questions = {
             "options": ["Yes", "No"]
         },
         {
-            "id": "scalability",
-            "text": "What level of scalability do you need?",
-            "options": ["Low", "Medium", "High"]
+            "id": "high_scalability",
+            "text": "Do you need high scalability?",
+            "options": ["Yes", "No"]
         },
         {
-            "id": "speed",
-            "text": "How fast do you need transactions to be processed?",
-            "options": ["Slow", "Moderate", "Fast"]
+            "id": "fast_transactions",
+            "text": "Do you need fast transaction processing?",
+            "options": ["Yes", "No"]
         }
     ],
     "Supply Chain": [
@@ -29,14 +29,14 @@ questions = {
             "options": ["Yes", "No"]
         },
         {
-            "id": "scalability",
-            "text": "What level of scalability do you need?",
-            "options": ["Low", "Medium", "High"]
+            "id": "high_scalability",
+            "text": "Do you need high scalability?",
+            "options": ["Yes", "No"]
         },
         {
-            "id": "speed",
-            "text": "How fast do you need transactions to be processed?",
-            "options": ["Slow", "Moderate", "Fast"]
+            "id": "fast_transactions",
+            "text": "Do you need fast transaction processing?",
+            "options": ["Yes", "No"]
         }
     ],
     "Patient Consent": [
@@ -51,9 +51,9 @@ questions = {
             "options": ["Yes", "No"]
         },
         {
-            "id": "speed",
-            "text": "How fast do you need transactions to be processed?",
-            "options": ["Slow", "Moderate", "Fast"]
+            "id": "fast_transactions",
+            "text": "Do you need fast transaction processing?",
+            "options": ["Yes", "No"]
         }
     ]
 }
