@@ -7,6 +7,7 @@ from database import get_user_recommendations, save_recommendation
 from decision_logic import get_recommendation, get_comparison_data, get_sunburst_data
 from dlt_data import scenarios, questions, dlt_options, consensus_options, metrics
 from utils import init_session_state
+from news_updates import fetch_dlt_healthcare_news
 
 def create_sunburst_chart(data):
     df = pd.DataFrame(data)
@@ -329,6 +330,19 @@ def show_recommendation():
         st.session_state.page = "home"
         st.rerun()
 
+def show_news_updates():
+    st.header("Real-time Updates on DLT in Healthcare")
+    news_articles = fetch_dlt_healthcare_news()
+    
+    if news_articles:
+        for article in news_articles:
+            with st.expander(article['title']):
+                st.write(article['description'])
+                st.write(f"Published at: {article['publishedAt']}")
+                st.markdown(f"[Read more]({article['url']})")
+    else:
+        st.info("No recent news available. Please try again later.")
+
 def main():
     st.set_page_config(page_title="SeletorDLTSaude", page_icon="🏥", layout="wide")
     init_session_state()
@@ -351,12 +365,14 @@ def main():
 
         if st.session_state.page == "home":
             show_home_page()
+            show_news_updates()
         elif st.session_state.page == "scenario_selection":
             show_scenario_selection()
         elif st.session_state.page == "questionnaire":
             show_questionnaire()
         elif st.session_state.page == "recommendation":
             show_recommendation()
+            show_news_updates()
 
         st.sidebar.header("Recomendações Anteriores")
         user_recommendations = get_user_recommendations(st.session_state.username)
