@@ -13,31 +13,31 @@ def get_recommendation(answers, weights):
     # Calcula as pontuações de acordo com as respostas e os pesos
     for question_id, answer in answers.items():
         if question_id == "privacy" and answer == "Sim":
-            score["Permissioned Blockchain"] += 2 * weights["security"]
-            score["Private Blockchain"] += 2 * weights["security"]
-            score["Consortium Blockchain"] += 2 * weights["security"]
+            score["Permissioned Blockchain"] += 2 * weights.get("security", 5)
+            score["Private Blockchain"] += 2 * weights.get("security", 5)
+            score["Consortium Blockchain"] += 2 * weights.get("security", 5)
         elif question_id == "integration" and answer == "Sim":
-            score["Hybrid Blockchain"] += 2 * weights["scalability"]
-            score["Distributed Ledger"] += 1 * weights["scalability"]
+            score["Hybrid Blockchain"] += 2 * weights.get("scalability", 5)
+            score["Distributed Ledger"] += 1 * weights.get("scalability", 5)
         elif question_id == "data_volume" and answer == "Sim":
-            score["Distributed Ledger"] += 2 * weights["scalability"]
-            score["Public Blockchain"] += 1 * weights["scalability"]
+            score["Distributed Ledger"] += 2 * weights.get("scalability", 5)
+            score["Public Blockchain"] += 1 * weights.get("scalability", 5)
         elif question_id == "energy_efficiency" and answer == "Sim":
-            score["Permissioned Blockchain"] += 1 * weights["energy_efficiency"]
-            score["Private Blockchain"] += 1 * weights["energy_efficiency"]
-            score["Distributed Ledger"] += 2 * weights["energy_efficiency"]
+            score["Permissioned Blockchain"] += 1 * weights.get("energy_efficiency", 5)
+            score["Private Blockchain"] += 1 * weights.get("energy_efficiency", 5)
+            score["Distributed Ledger"] += 2 * weights.get("energy_efficiency", 5)
         elif question_id == "network_security" and answer == "Sim":
-            score["Public Blockchain"] += 2 * weights["security"]
-            score["Consortium Blockchain"] += 1 * weights["security"]
+            score["Public Blockchain"] += 2 * weights.get("security", 5)
+            score["Consortium Blockchain"] += 1 * weights.get("security", 5)
         elif question_id == "scalability" and answer == "Sim":
-            score["Public Blockchain"] += 1 * weights["scalability"]
-            score["Distributed Ledger"] += 2 * weights["scalability"]
+            score["Public Blockchain"] += 1 * weights.get("scalability", 5)
+            score["Distributed Ledger"] += 2 * weights.get("scalability", 5)
         elif question_id == "governance_flexibility" and answer == "Sim":
-            score["Consortium Blockchain"] += 2 * weights["governance"]
-            score["Hybrid Blockchain"] += 1 * weights["governance"]
+            score["Consortium Blockchain"] += 2 * weights.get("governance", 5)
+            score["Hybrid Blockchain"] += 1 * weights.get("governance", 5)
         elif question_id == "interoperability" and answer == "Sim":
-            score["Hybrid Blockchain"] += 2 * weights["scalability"]
-            score["Public Blockchain"] += 1 * weights["scalability"]
+            score["Hybrid Blockchain"] += 2 * weights.get("scalability", 5)
+            score["Public Blockchain"] += 1 * weights.get("scalability", 5)
 
     # Recomenda a DLT com a maior pontuação
     recommended_dlt = max(score, key=score.get)
@@ -56,27 +56,27 @@ def get_recommendation(answers, weights):
     }
 
     if recommended_dlt in ["Public Blockchain", "Hybrid Blockchain"]:
-        consensus_score["Proof of Stake (PoS)"] += 2 * weights["energy_efficiency"]
-        consensus_score["Proof of Work (PoW)"] += 1 * weights["security"]
-        consensus_score["Delegated Proof of Stake (DPoS)"] += 2 * weights["scalability"]
+        consensus_score["Proof of Stake (PoS)"] += 2 * weights.get("energy_efficiency", 5)
+        consensus_score["Proof of Work (PoW)"] += 1 * weights.get("security", 5)
+        consensus_score["Delegated Proof of Stake (DPoS)"] += 2 * weights.get("scalability", 5)
     elif recommended_dlt in ["Permissioned Blockchain", "Private Blockchain", "Consortium Blockchain"]:
-        consensus_score["Practical Byzantine Fault Tolerance (PBFT)"] += 2 * weights["security"]
-        consensus_score["Proof of Authority (PoA)"] += 2 * weights["governance"]
-        consensus_score["Raft Consensus"] += 1 * weights["scalability"]
+        consensus_score["Practical Byzantine Fault Tolerance (PBFT)"] += 2 * weights.get("security", 5)
+        consensus_score["Proof of Authority (PoA)"] += 2 * weights.get("governance", 5)
+        consensus_score["Raft Consensus"] += 1 * weights.get("scalability", 5)
     elif recommended_dlt == "Distributed Ledger":
-        consensus_score["Directed Acyclic Graph (DAG)"] += 2 * weights["scalability"]
-        consensus_score["Tangle"] += 2 * weights["scalability"]
+        consensus_score["Directed Acyclic Graph (DAG)"] += 2 * weights.get("scalability", 5)
+        consensus_score["Tangle"] += 2 * weights.get("scalability", 5)
 
     # Ajusta a pontuação com base na eficiência energética e escalabilidade
     if answers.get("energy_efficiency") == "Sim":
-        consensus_score["Proof of Stake (PoS)"] += 1 * weights["energy_efficiency"]
-        consensus_score["Practical Byzantine Fault Tolerance (PBFT)"] += 1 * weights["energy_efficiency"]
-        consensus_score["Proof of Authority (PoA)"] += 1 * weights["energy_efficiency"]
+        consensus_score["Proof of Stake (PoS)"] += 1 * weights.get("energy_efficiency", 5)
+        consensus_score["Practical Byzantine Fault Tolerance (PBFT)"] += 1 * weights.get("energy_efficiency", 5)
+        consensus_score["Proof of Authority (PoA)"] += 1 * weights.get("energy_efficiency", 5)
 
     if answers.get("scalability") == "Sim":
-        consensus_score["Delegated Proof of Stake (DPoS)"] += 1 * weights["scalability"]
-        consensus_score["Directed Acyclic Graph (DAG)"] += 2 * weights["scalability"]
-        consensus_score["Tangle"] += 2 * weights["scalability"]
+        consensus_score["Delegated Proof of Stake (DPoS)"] += 1 * weights.get("scalability", 5)
+        consensus_score["Directed Acyclic Graph (DAG)"] += 2 * weights.get("scalability", 5)
+        consensus_score["Tangle"] += 2 * weights.get("scalability", 5)
 
     # Recomenda o algoritmo de consenso com a maior pontuação
     recommended_consensus = max(consensus_score, key=consensus_score.get)

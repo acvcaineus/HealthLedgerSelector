@@ -8,6 +8,19 @@ from decision_logic import get_recommendation, get_comparison_data, get_sunburst
 from dlt_data import scenarios, questions, dlt_options, consensus_options, metrics
 from utils import init_session_state
 
+def define_weights():
+    st.subheader("Defina os Pesos para os Critérios")
+    st.write("Atribua um valor de 0 a 10 para cada critério com base na sua importância.")
+    
+    weights = {
+        "security": st.slider("Peso de Segurança", 0, 10, 5),
+        "scalability": st.slider("Peso de Escalabilidade", 0, 10, 5),
+        "energy_efficiency": st.slider("Peso de Eficiência Energética", 0, 10, 5),
+        "governance": st.slider("Peso de Governança", 0, 10, 5)
+    }
+    
+    return weights
+
 def show_recommendation():
     if 'recommendation' not in st.session_state:
         st.error("Por favor, complete o questionário primeiro para receber uma recomendação.")
@@ -77,6 +90,7 @@ def show_questionnaire():
     scenario_questions = questions[st.session_state.scenario]
     if st.session_state.step > len(scenario_questions):
         st.session_state.page = "recommendation"
+        st.session_state.weights = define_weights()
         recommendation = get_recommendation(st.session_state.answers, st.session_state.weights)
         st.session_state.recommendation = recommendation
         st.rerun()
@@ -100,6 +114,7 @@ def show_questionnaire():
                 st.session_state.step += 1
             else:
                 st.session_state.page = "recommendation"
+                st.session_state.weights = define_weights()
                 recommendation = get_recommendation(st.session_state.answers, st.session_state.weights)
                 st.session_state.recommendation = recommendation
             st.rerun()
