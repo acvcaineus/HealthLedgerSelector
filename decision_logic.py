@@ -10,6 +10,7 @@ def get_recommendation(answers, weights):
         "Consortium Blockchain": 0
     }
 
+    # Calcula as pontuações de acordo com as respostas e os pesos
     for question_id, answer in answers.items():
         if question_id == "privacy" and answer == "Sim":
             score["Permissioned Blockchain"] += 2 * weights["security"]
@@ -38,8 +39,10 @@ def get_recommendation(answers, weights):
             score["Hybrid Blockchain"] += 2 * weights["scalability"]
             score["Public Blockchain"] += 1 * weights["scalability"]
 
+    # Recomenda a DLT com a maior pontuação
     recommended_dlt = max(score, key=score.get)
-    
+
+    # Calcula a pontuação para os algoritmos de consenso
     consensus_score = {
         "Proof of Stake (PoS)": 0,
         "Proof of Work (PoW)": 0,
@@ -64,16 +67,18 @@ def get_recommendation(answers, weights):
         consensus_score["Directed Acyclic Graph (DAG)"] += 2 * weights["scalability"]
         consensus_score["Tangle"] += 2 * weights["scalability"]
 
+    # Ajusta a pontuação com base na eficiência energética e escalabilidade
     if answers.get("energy_efficiency") == "Sim":
         consensus_score["Proof of Stake (PoS)"] += 1 * weights["energy_efficiency"]
         consensus_score["Practical Byzantine Fault Tolerance (PBFT)"] += 1 * weights["energy_efficiency"]
         consensus_score["Proof of Authority (PoA)"] += 1 * weights["energy_efficiency"]
-    
+
     if answers.get("scalability") == "Sim":
         consensus_score["Delegated Proof of Stake (DPoS)"] += 1 * weights["scalability"]
         consensus_score["Directed Acyclic Graph (DAG)"] += 2 * weights["scalability"]
         consensus_score["Tangle"] += 2 * weights["scalability"]
 
+    # Recomenda o algoritmo de consenso com a maior pontuação
     recommended_consensus = max(consensus_score, key=consensus_score.get)
 
     return {

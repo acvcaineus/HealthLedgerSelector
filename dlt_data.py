@@ -239,7 +239,7 @@ metrics = {
     }
 }
 
-# Adicionando a variável 'scenarios'
+# Cenários de aplicação para o sistema.
 scenarios = {
     "Registros Médicos Eletrônicos (EMR)": "Gerenciar e proteger registros de saúde dos pacientes",
     "Cadeia de Suprimentos Farmacêutica": "Rastrear produtos farmacêuticos ao longo da cadeia de suprimentos",
@@ -248,6 +248,6 @@ scenarios = {
     "Faturamento e Reivindicações": "Gerenciar processos de faturamento e reivindicações de forma eficiente e transparente"
 }
 
-# Adicionando as variáveis 'dlt_options' e 'consensus_options'
+# Opções de DLT e consenso para o sistema.
 dlt_options = list(dlt_classes.keys())
 consensus_options = list(consensus_algorithms.keys())
