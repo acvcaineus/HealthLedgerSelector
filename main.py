@@ -151,15 +151,20 @@ def show_questionnaire():
         return
 
     scenario_questions = questions[st.session_state.scenario]
-    if st.session_state.step > len(scenario_questions):
+    
+    # Sort questions by Shermin layer
+    shermin_layers = ['Aplicação', 'Consenso', 'Infraestrutura', 'Internet']
+    sorted_questions = sorted(scenario_questions, key=lambda q: shermin_layers.index(q['shermin_layer']))
+
+    if st.session_state.step > len(sorted_questions):
         st.session_state.page = "recommendation"
         recommendation = get_recommendation(st.session_state.answers, st.session_state.weights)
         st.session_state.recommendation = recommendation
         st.rerun()
         return
 
-    question = scenario_questions[st.session_state.step - 1]
-    st.subheader(f"Pergunta {st.session_state.step}")
+    question = sorted_questions[st.session_state.step - 1]
+    st.subheader(f"Pergunta {st.session_state.step} - Camada {question['shermin_layer']}")
     st.write(question['text'])
 
     st.info(f"Camada Shermin: {question['shermin_layer']}")
@@ -175,13 +180,17 @@ def show_questionnaire():
     with col2:
         if st.button("Próximo"):
             st.session_state.answers[question['id']] = answer
-            if st.session_state.step < len(scenario_questions):
+            if st.session_state.step < len(sorted_questions):
                 st.session_state.step += 1
             else:
                 st.session_state.page = "recommendation"
                 recommendation = get_recommendation(st.session_state.answers, st.session_state.weights)
                 st.session_state.recommendation = recommendation
             st.rerun()
+
+    # Show progress through Shermin layers
+    st.progress(st.session_state.step / len(sorted_questions))
+    st.write(f"Progresso: Camada {question['shermin_layer']} - Pergunta {st.session_state.step} de {len(sorted_questions)}")
 
 def show_scenario_selection():
     st.header("Escolha um Cenário de Saúde")

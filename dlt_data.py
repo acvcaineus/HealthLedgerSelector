@@ -32,6 +32,22 @@ questions = {
             "explanation": "Verifica se é necessário um sistema de permissões detalhado para acesso aos registros médicos.",
             "shermin_layer": "Aplicação",
             "characteristics": ["Segurança", "Privacidade"]
+        },
+        {
+            "id": "data_integrity",
+            "text": "A integridade dos dados é uma preocupação crítica?",
+            "options": ["Sim", "Não"],
+            "explanation": "Avalia a necessidade de garantir que os dados não sejam alterados sem autorização.",
+            "shermin_layer": "Consenso",
+            "characteristics": ["Segurança", "Confiabilidade"]
+        },
+        {
+            "id": "real_time_access",
+            "text": "O acesso em tempo real aos dados é necessário?",
+            "options": ["Sim", "Não"],
+            "explanation": "Determina se o sistema precisa fornecer acesso imediato aos dados atualizados.",
+            "shermin_layer": "Internet",
+            "characteristics": ["Desempenho", "Acessibilidade"]
         }
     ],
     # ... other scenarios ...
