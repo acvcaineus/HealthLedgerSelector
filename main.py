@@ -29,27 +29,47 @@ def show_decision_flow():
     
     G = nx.DiGraph()
     
-    previous_question = None
+    shermin_layers = ['Aplicação', 'Consenso', 'Infraestrutura', 'Internet']
+    layer_positions = {layer: i for i, layer in enumerate(shermin_layers)}
+    
     for question in st.session_state.answers:
         question_data = next(q for q in questions[st.session_state.scenario] if q['id'] == question)
+        answer = st.session_state.answers[question]
+        
+        # Add question node
         G.add_node(question, label=question_data['text'], color='lightblue', 
+                   pos=(layer_positions[question_data['shermin_layer']], 0),
                    shermin_layer=question_data['shermin_layer'], 
                    characteristics=', '.join(question_data['characteristics']))
-        answer = st.session_state.answers[question]
-        G.add_node(answer, label=answer, color='green' if answer == 'Sim' else 'red')
-        G.add_edge(question, answer)
-        if previous_question:
-            G.add_edge(previous_question, question)
-        previous_question = question
+        
+        # Add answer node
+        answer_node = f"{question}_{answer}"
+        G.add_node(answer_node, label=answer, color='green' if answer == 'Sim' else 'red',
+                   pos=(layer_positions[question_data['shermin_layer']], 1),
+                   shape='box')
+        
+        # Add edge from question to answer
+        G.add_edge(question, answer_node)
+        
+        # Add edge to next question based on the answer
+        next_layer = question_data['next_layer'][answer]
+        next_questions = [q for q in questions[st.session_state.scenario] if q['shermin_layer'] == next_layer]
+        if next_questions:
+            next_question = next_questions[0]['id']
+            G.add_edge(answer_node, next_question, color='gray', style='dashed')
+    
+    # Use Graphviz layout for better organization
+    pos = nx.spring_layout(G)
     
     net = Network(height="500px", width="100%", directed=True)
     net.from_nx(G)
     
     for node in net.nodes:
-        if node['label'] in ['Sim', 'Não']:
-            node['shape'] = 'box'
-        else:
-            node['shape'] = 'ellipse'
+        if 'shape' in node:
+            node['shape'] = node['shape']
+        if 'pos' in node:
+            node['x'], node['y'] = node['pos']
+        if 'shermin_layer' in node:
             node['title'] = f"Camada Shermin: {node['shermin_layer']}<br>Características: {node['characteristics']}"
     
     html = net.generate_html()
@@ -59,7 +79,7 @@ def show_decision_flow():
     st.write("- Círculos azuis: Perguntas (Passe o mouse para ver a camada Shermin e características)")
     st.write("- Quadrados verdes: Respostas 'Sim'")
     st.write("- Quadrados vermelhos: Respostas 'Não'")
-    st.write("- Setas: Fluxo de decisão")
+    st.write("- Setas pontilhadas: Fluxo para a próxima pergunta")
 
 def show_recommendation():
     if 'recommendation' not in st.session_state:
@@ -152,45 +172,41 @@ def show_questionnaire():
 
     scenario_questions = questions[st.session_state.scenario]
     
-    # Sort questions by Shermin layer
-    shermin_layers = ['Aplicação', 'Consenso', 'Infraestrutura', 'Internet']
-    sorted_questions = sorted(scenario_questions, key=lambda q: shermin_layers.index(q['shermin_layer']))
-
-    if st.session_state.step > len(sorted_questions):
+    if 'current_layer' not in st.session_state:
+        st.session_state.current_layer = 'Aplicação'
+    
+    current_question = next((q for q in scenario_questions if q['shermin_layer'] == st.session_state.current_layer), None)
+    
+    if current_question is None:
         st.session_state.page = "recommendation"
         recommendation = get_recommendation(st.session_state.answers, st.session_state.weights)
         st.session_state.recommendation = recommendation
         st.rerun()
         return
 
-    question = sorted_questions[st.session_state.step - 1]
-    st.subheader(f"Pergunta {st.session_state.step} - Camada {question['shermin_layer']}")
-    st.write(question['text'])
+    st.subheader(f"Pergunta - Camada {current_question['shermin_layer']}")
+    st.write(current_question['text'])
 
-    st.info(f"Camada Shermin: {question['shermin_layer']}")
-    st.write(f"Características consideradas: {', '.join(question['characteristics'])}")
+    st.info(f"Camada Shermin: {current_question['shermin_layer']}")
+    st.write(f"Características consideradas: {', '.join(current_question['characteristics'])}")
 
-    answer = st.radio("Selecione uma opção:", question['options'])
+    answer = st.radio("Selecione uma opção:", current_question['options'])
 
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Voltar") and st.session_state.step > 1:
-            st.session_state.step -= 1
-            st.rerun()
-    with col2:
-        if st.button("Próximo"):
-            st.session_state.answers[question['id']] = answer
-            if st.session_state.step < len(sorted_questions):
-                st.session_state.step += 1
-            else:
-                st.session_state.page = "recommendation"
-                recommendation = get_recommendation(st.session_state.answers, st.session_state.weights)
-                st.session_state.recommendation = recommendation
-            st.rerun()
+    if st.button("Próximo"):
+        st.session_state.answers[current_question['id']] = answer
+        st.session_state.current_layer = current_question['next_layer'][answer]
+        
+        # Check if we've answered all questions
+        if len(st.session_state.answers) == len(scenario_questions):
+            st.session_state.page = "recommendation"
+            recommendation = get_recommendation(st.session_state.answers, st.session_state.weights)
+            st.session_state.recommendation = recommendation
+        st.rerun()
 
-    # Show progress through Shermin layers
-    st.progress(st.session_state.step / len(sorted_questions))
-    st.write(f"Progresso: Camada {question['shermin_layer']} - Pergunta {st.session_state.step} de {len(sorted_questions)}")
+    # Show progress
+    progress = len(st.session_state.answers) / len(scenario_questions)
+    st.progress(progress)
+    st.write(f"Progresso: {len(st.session_state.answers)} de {len(scenario_questions)} perguntas respondidas")
 
 def show_scenario_selection():
     st.header("Escolha um Cenário de Saúde")
@@ -200,7 +216,6 @@ def show_scenario_selection():
 
     if st.button("Iniciar"):
         st.session_state.scenario = scenario
-        st.session_state.step = 1
         st.session_state.answers = {}
         st.session_state.page = "weight_definition"
         st.rerun()
