@@ -123,6 +123,16 @@ def show_scenario_selection(dlt, consensus_algorithm):
         save_recommendation(st.session_state.username, scenario, st.session_state.recommendation)
         st.success("Recomendação salva com sucesso!")
 
+def show_correlation_table():
+    st.subheader("Correlação entre DLT, Grupos de Algoritmos e Algoritmos Específicos")
+    data = {
+        'DLT': ['Public Blockchain', 'Permissioned Blockchain', 'Private Blockchain', 'Hybrid Blockchain', 'Distributed Ledger'],
+        'Grupo de Algoritmos': ['Públicos', 'Permissionados', 'Permissionados', 'Híbridos', 'Distribuídos'],
+        'Algoritmos Específicos': ['PoW, PoS, DPoS', 'PBFT, PoA, Raft', 'PBFT, PoA, Raft', 'PoS, PBFT', 'DAG, Tangle']
+    }
+    df = pd.DataFrame(data)
+    st.table(df)
+
 def show_recommendation():
     if 'scenario' not in st.session_state or st.session_state.scenario is None:
         st.session_state.scenario = "Registros Médicos Eletrônicos (EMR)"
@@ -158,26 +168,16 @@ def show_recommendation():
     df = pd.DataFrame(comparison_data)
     st.table(df)
 
-    st.subheader("Defina as Porcentagens para cada Característica")
+    st.subheader("Priorize as Características")
     characteristics = ["Segurança", "Escalabilidade", "Eficiência Energética", "Governança"]
-    percentages = {}
-    remaining = 100
-    for i, char in enumerate(characteristics):
-        if i == len(characteristics) - 1:
-            percentages[char] = remaining
-            st.write(f"Porcentagem para {char}: {remaining}%")
-        else:
-            max_value = min(remaining, 100)
-            percentages[char] = st.slider(f"Porcentagem para {char}", 0, max_value, min(25, max_value), 1)
-            remaining -= percentages[char]
+    priorities = {}
+    for char in characteristics:
+        priorities[char] = st.slider(f"Prioridade para {char}", 1, 10, 5)
 
-    st.write(f"Porcentagem restante: {remaining}%")
+    final_algorithm = select_final_algorithm(recommendation['consensus_group'], priorities)
+    st.success(f"O algoritmo final recomendado é: {final_algorithm}")
 
-    if remaining == 0:
-        final_algorithm = select_final_algorithm(recommendation['consensus_group'], percentages)
-        st.success(f"O algoritmo final recomendado é: {final_algorithm}")
-
-        show_scenario_selection(recommendation['dlt'], final_algorithm)
+    show_scenario_selection(recommendation['dlt'], final_algorithm)
 
     st.subheader("Influência das Características na Decisão")
     fig = px.bar(df, x=df.index, y=df.columns, title="Comparação de Características")
@@ -195,7 +195,7 @@ def show_questionnaire():
         }
 
     st.header("Questionário")
-    scenario = "Registros Médicos Eletrônicos (EMR)"  # Default scenario
+    scenario = "Registros Médicos Eletrônicos (EMR)"
     scenario_questions = questions[scenario]
     question_order = ['privacy', 'integration', 'data_volume', 'energy_efficiency', 'network_security', 'scalability', 'governance_flexibility', 'interoperability']
 
@@ -239,7 +239,7 @@ def show_home_page():
     da área de saúde a escolher a melhor solução de Tecnologia de Ledger Distribuído (DLT) e o algoritmo 
     de consenso mais adequado para seus projetos.
     """)
-
+    show_correlation_table()
     if st.button("Iniciar Questionário"):
         st.session_state.page = "questionnaire"
         st.rerun()

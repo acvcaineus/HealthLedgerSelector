@@ -10,7 +10,6 @@ def get_recommendation(answers, weights):
         "Consortium Blockchain": 0
     }
 
-    # Calculate scores based on answers and weights
     for question_id, answer in answers.items():
         if question_id == "privacy" and answer == "Sim":
             score["Permissioned Blockchain"] += 2 * weights["security"]
@@ -39,10 +38,8 @@ def get_recommendation(answers, weights):
             score["Hybrid Blockchain"] += 2 * weights["scalability"]
             score["Public Blockchain"] += 1 * weights["scalability"]
 
-    # Recommend the DLT with the highest score
     recommended_dlt = max(score, key=score.get)
 
-    # Select the appropriate consensus algorithm group
     if recommended_dlt in ["Public Blockchain", "Hybrid Blockchain"]:
         consensus_group = "Public"
     elif recommended_dlt in ["Permissioned Blockchain", "Private Blockchain", "Consortium Blockchain"]:
@@ -78,17 +75,17 @@ def compare_algorithms(consensus_group):
 
     return comparison_data
 
-def select_final_algorithm(consensus_group, percentages):
+def select_final_algorithm(consensus_group, priorities):
     comparison_data = compare_algorithms(consensus_group)
     algorithms = list(comparison_data["Security"].keys())
     
     scores = {alg: 0 for alg in algorithms}
     
     for alg in algorithms:
-        scores[alg] += comparison_data["Security"][alg] * percentages["Segurança"] / 100
-        scores[alg] += comparison_data["Scalability"][alg] * percentages["Escalabilidade"] / 100
-        scores[alg] += comparison_data["Energy Efficiency"][alg] * percentages["Eficiência Energética"] / 100
-        scores[alg] += comparison_data["Governance"][alg] * percentages["Governança"] / 100
+        scores[alg] += comparison_data["Security"][alg] * priorities["Segurança"]
+        scores[alg] += comparison_data["Scalability"][alg] * priorities["Escalabilidade"]
+        scores[alg] += comparison_data["Energy Efficiency"][alg] * priorities["Eficiência Energética"]
+        scores[alg] += comparison_data["Governance"][alg] * priorities["Governança"]
 
     return max(scores, key=scores.get)
 
@@ -253,5 +250,3 @@ def get_scenario_pros_cons(scenario, dlt, consensus_algorithm):
     }
 
     return pros_cons[scenario][dlt]["pros"], pros_cons[scenario][dlt]["cons"], pros_cons[scenario][dlt]["algorithm_applicability"].get(consensus_algorithm, "Informação não disponível para este algoritmo específico.")
-
-# Keep the existing functions (get_comparison_data and get_sunburst_data) unchanged

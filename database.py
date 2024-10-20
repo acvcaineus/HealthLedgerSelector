@@ -94,18 +94,18 @@ def save_feedback(username, scenario, dlt, consensus_group, feedback_data):
     conn.commit()
     conn.close()
 
-def add_comment_column():
+def add_specific_aspects_column():
     conn = get_db_connection()
     c = conn.cursor()
     try:
-        c.execute("ALTER TABLE feedback ADD COLUMN comment TEXT")
+        c.execute("ALTER TABLE feedback ADD COLUMN specific_aspects TEXT")
         conn.commit()
-        print("Added 'comment' column to feedback table")
+        print("Added 'specific_aspects' column to feedback table")
     except sqlite3.OperationalError as e:
         if "duplicate column name" not in str(e):
-            print(f"Error adding 'comment' column: {e}")
+            print(f"Error adding 'specific_aspects' column: {e}")
     finally:
         conn.close()
 
 init_db()
-add_comment_column()
+add_specific_aspects_column()
