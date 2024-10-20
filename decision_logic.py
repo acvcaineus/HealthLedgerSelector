@@ -34,59 +34,59 @@ pros_cons = {
 
 def get_recommendation(answers, weights):
     score = {
-        "Public Blockchain": 0,
-        "Permissioned Blockchain": 0,
-        "Private Blockchain": 0,
-        "Hybrid Blockchain": 0,
-        "Distributed Ledger": 0,
-        "Consortium Blockchain": 0
+        "DLT Permissionada Privada": 0,
+        "DLT Permissionada Simples": 0,
+        "DLT Híbrida": 0,
+        "DLT com Consenso Delegado": 0,
+        "DLT Pública": 0,
+        "DLT Pública Permissionless": 0
     }
 
     for question_id, answer in answers.items():
         if question_id == "privacy" and answer == "Sim":
-            score["Permissioned Blockchain"] += 2 * weights["segurança"]
-            score["Private Blockchain"] += 2 * weights["segurança"]
-            score["Consortium Blockchain"] += 2 * weights["segurança"]
+            score["DLT Permissionada Privada"] += 2 * weights["segurança"]
+            score["DLT Permissionada Simples"] += 2 * weights["segurança"]
         elif question_id == "integration" and answer == "Sim":
-            score["Hybrid Blockchain"] += 2 * weights["escalabilidade"]
-            score["Distributed Ledger"] += 1 * weights["escalabilidade"]
+            score["DLT Híbrida"] += 2 * weights["escalabilidade"]
+            score["DLT com Consenso Delegado"] += 1 * weights["escalabilidade"]
         elif question_id == "data_volume" and answer == "Sim":
-            score["Distributed Ledger"] += 2 * weights["escalabilidade"]
-            score["Public Blockchain"] += 1 * weights["escalabilidade"]
+            score["DLT com Consenso Delegado"] += 2 * weights["escalabilidade"]
+            score["DLT Pública Permissionless"] += 1 * weights["escalabilidade"]
         elif question_id == "energy_efficiency" and answer == "Sim":
-            score["Permissioned Blockchain"] += 1 * weights["eficiência energética"]
-            score["Private Blockchain"] += 1 * weights["eficiência energética"]
-            score["Distributed Ledger"] += 2 * weights["eficiência energética"]
+            score["DLT Permissionada Privada"] += 1 * weights["eficiência energética"]
+            score["DLT Permissionada Simples"] += 1 * weights["eficiência energética"]
+            score["DLT com Consenso Delegado"] += 2 * weights["eficiência energética"]
         elif question_id == "network_security" and answer == "Sim":
-            score["Public Blockchain"] += 2 * weights["segurança"]
-            score["Consortium Blockchain"] += 1 * weights["segurança"]
+            score["DLT Pública"] += 2 * weights["segurança"]
+            score["DLT Pública Permissionless"] += 1 * weights["segurança"]
         elif question_id == "scalability" and answer == "Sim":
-            score["Public Blockchain"] += 1 * weights["escalabilidade"]
-            score["Distributed Ledger"] += 2 * weights["escalabilidade"]
+            score["DLT Pública Permissionless"] += 2 * weights["escalabilidade"]
+            score["DLT com Consenso Delegado"] += 2 * weights["escalabilidade"]
         elif question_id == "governance_flexibility" and answer == "Sim":
-            score["Consortium Blockchain"] += 2 * weights["governança"]
-            score["Hybrid Blockchain"] += 1 * weights["governança"]
+            score["DLT Híbrida"] += 2 * weights["governança"]
+            score["DLT Pública Permissionless"] += 1 * weights["governança"]
         elif question_id == "interoperability" and answer == "Sim":
-            score["Hybrid Blockchain"] += 2 * weights["escalabilidade"]
-            score["Public Blockchain"] += 1 * weights["escalabilidade"]
+            score["DLT Híbrida"] += 2 * weights["escalabilidade"]
+            score["DLT Pública Permissionless"] += 1 * weights["escalabilidade"]
 
     recommended_dlt = max(score, key=score.get)
 
-    # Update consensus group selection based on prioritized characteristics
+    consensus_groups = {
+        "Alta Segurança e Controle dos dados sensíveis": ["RAFT/IBFT", "RAFT"],
+        "Escalabilidade e Governança Flexível": ["RAFT/IBFT", "PoS", "Liquid PoS", "Pure PoS", "NPoS"],
+        "Alta Eficiência Operacional em redes locais": ["PoA", "Ripple Consensus Algorithm", "SCP"],
+        "Alta Escalabilidade em Redes IoT": ["Tangle"],
+        "Alta Segurança e Descentralização de dados críticos": ["PoW"]
+    }
+
     if weights["segurança"] > weights["escalabilidade"] and weights["segurança"] > weights["eficiência energética"]:
-        if recommended_dlt in ["Public Blockchain", "Hybrid Blockchain"]:
-            consensus_group = "Public_Security"
-        else:
-            consensus_group = "Permissioned_Security"
+        consensus_group = "Alta Segurança e Controle dos dados sensíveis"
     elif weights["escalabilidade"] > weights["segurança"] and weights["escalabilidade"] > weights["eficiência energética"]:
-        if recommended_dlt in ["Public Blockchain", "Hybrid Blockchain"]:
-            consensus_group = "Public_Scalability"
-        else:
-            consensus_group = "Permissioned_Scalability"
+        consensus_group = "Escalabilidade e Governança Flexível"
     elif weights["eficiência energética"] > weights["segurança"] and weights["eficiência energética"] > weights["escalabilidade"]:
-        consensus_group = "Energy_Efficient"
+        consensus_group = "Alta Eficiência Operacional em redes locais"
     else:
-        consensus_group = "Balanced"
+        consensus_group = "Alta Escalabilidade em Redes IoT"
 
     return {
         "dlt": recommended_dlt,
@@ -94,19 +94,7 @@ def get_recommendation(answers, weights):
     }
 
 def compare_algorithms(consensus_group):
-    if consensus_group == "Public_Security":
-        algorithms = ["Proof of Work (PoW)", "Delegated Proof of Stake (DPoS)"]
-    elif consensus_group == "Public_Scalability":
-        algorithms = ["Proof of Stake (PoS)", "Delegated Proof of Stake (DPoS)"]
-    elif consensus_group == "Permissioned_Security":
-        algorithms = ["Practical Byzantine Fault Tolerance (PBFT)", "Proof of Authority (PoA)"]
-    elif consensus_group == "Permissioned_Scalability":
-        algorithms = ["Proof of Authority (PoA)", "Raft Consensus"]
-    elif consensus_group == "Energy_Efficient":
-        algorithms = ["Proof of Stake (PoS)", "Directed Acyclic Graph (DAG)", "Tangle"]
-    else:  # Balanced
-        algorithms = ["Proof of Stake (PoS)", "Practical Byzantine Fault Tolerance (PBFT)", "Directed Acyclic Graph (DAG)"]
-
+    algorithms = consensus_groups[consensus_group]
     comparison_data = {
         "Segurança": {},
         "Escalabilidade": {},
