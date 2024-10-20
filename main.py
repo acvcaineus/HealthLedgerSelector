@@ -49,6 +49,8 @@ def show_home_page():
     show_correlation_table()
     if st.button("Iniciar Questionário"):
         st.session_state.page = "questionnaire"
+        st.session_state.step = 0
+        st.session_state.answers = {}
         st.rerun()
 
 def show_questionnaire():
@@ -58,18 +60,23 @@ def show_questionnaire():
     if 'answers' not in st.session_state:
         st.session_state.answers = {}
 
-    current_question = questions["Registros Médicos Eletrônicos (EMR)"][st.session_state.step]
-    st.subheader(current_question['text'])
-    answer = st.radio("Escolha uma opção:", current_question['options'])
+    scenario = "Registros Médicos Eletrônicos (EMR)"
+    if st.session_state.step < len(questions[scenario]):
+        current_question = questions[scenario][st.session_state.step]
+        st.subheader(current_question['text'])
+        st.write(f"Camada: {current_question['shermin_layer']}")
+        st.write(f"Característica principal: {current_question['main_characteristic']}")
+        answer = st.radio("Escolha uma opção:", current_question['options'])
 
-    if st.button("Próxima Pergunta"):
-        st.session_state.answers[current_question['id']] = answer
-        st.session_state.step += 1
-        if st.session_state.step >= len(questions["Registros Médicos Eletrônicos (EMR)"]):
-            st.session_state.page = "weights"
+        if st.button("Próxima Pergunta"):
+            st.session_state.answers[current_question['id']] = answer
+            st.session_state.step += 1
+            if st.session_state.step >= len(questions[scenario]):
+                st.session_state.page = "weights"
             st.rerun()
-        else:
-            st.rerun()
+    else:
+        st.session_state.page = "weights"
+        st.rerun()
 
 def show_weights():
     st.header("Definir Pesos das Características")
@@ -156,7 +163,7 @@ def main():
 
         if menu_option == "Início":
             show_home_page()
-        elif menu_option == "Questionário" or st.session_state.page == "questionnaire":
+        elif menu_option == "Questionário" or st.session_state.get('page') == "questionnaire":
             show_questionnaire()
         elif menu_option == "Recomendações" or st.session_state.page == "weights":
             show_weights()
