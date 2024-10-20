@@ -53,6 +53,34 @@ def show_home_page():
         st.session_state.page = "questionnaire"
         st.rerun()
 
+def show_questionnaire():
+    st.header("Questionário de Seleção de DLT")
+    if 'step' not in st.session_state:
+        st.session_state.step = 0
+    if 'answers' not in st.session_state:
+        st.session_state.answers = {}
+
+    current_question = questions["Registros Médicos Eletrônicos (EMR)"][st.session_state.step]
+    st.subheader(current_question['text'])
+    answer = st.radio("Escolha uma opção:", current_question['options'])
+
+    if st.button("Próxima Pergunta"):
+        st.session_state.answers[current_question['id']] = answer
+        st.session_state.step += 1
+        if st.session_state.step >= len(questions["Registros Médicos Eletrônicos (EMR)"]):
+            st.session_state.page = "recommendation"
+            st.rerun()
+        else:
+            st.rerun()
+
+def show_decision_tree():
+    st.header("Árvore de Decisão")
+    # We'll implement this later
+
+def show_framework_comparison():
+    st.header("Comparação de Frameworks")
+    # We'll implement this later
+
 def main():
     init_session_state()
     st.set_page_config(page_title="SeletorDLTSaude", page_icon="🏥", layout="wide")
@@ -66,14 +94,19 @@ def main():
             register()
     else:
         st.sidebar.title("Menu")
-        menu_option = st.sidebar.selectbox("Escolha uma opção", ["Início", "Questionário", "Recomendações", "Logout"])
+        menu_option = st.sidebar.selectbox("Escolha uma opção", ["Início", "Questionário", "Recomendações", "Árvore de Decisão", "Comparação de Frameworks", "Logout"])
 
         if menu_option == "Início":
             show_home_page()
         elif menu_option == "Questionário":
+            st.session_state.page = "questionnaire"
             show_questionnaire()
         elif menu_option == "Recomendações":
             show_recommendation()
+        elif menu_option == "Árvore de Decisão":
+            show_decision_tree()
+        elif menu_option == "Comparação de Frameworks":
+            show_framework_comparison()
         elif menu_option == "Logout":
             logout()
 
