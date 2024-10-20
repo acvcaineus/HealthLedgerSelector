@@ -152,9 +152,9 @@ def show_recommendation():
             percentages[char] = remaining
             st.write(f"Porcentagem para {char}: {remaining}%")
         else:
-            max_value = min(remaining, 100)
-            percentages[char] = st.slider(f"Porcentagem para {char}", 0, max_value, min(25, max_value), 5)
-            remaining -= percentages[char]
+            max_value = max(remaining, 1)  # Ensure max_value is at least 1
+            percentages[char] = st.slider(f"Porcentagem para {char}", 0, max_value, min(25, max_value), 1)
+            remaining = max(remaining - percentages[char], 0)  # Ensure remaining doesn't go below 0
 
     st.write(f"Porcentagem restante: {remaining}%")
 
