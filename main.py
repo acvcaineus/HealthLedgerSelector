@@ -195,7 +195,12 @@ def show_prioritize_characteristics():
 
     if remaining_points == 0:
         if st.button('Finalizar e Obter Recomendação'):
-            st.session_state.weights = weights
+            st.session_state.weights = {
+                'segurança': weights['segurança'],
+                'escalabilidade': weights['escalabilidade'],
+                'eficiência energética': weights['eficiência energética'],
+                'governança': weights['governança']
+            }
             recommendation = get_recommendation(st.session_state.answers, st.session_state.weights)
             st.session_state.recommendation = recommendation
             st.session_state.page = 'recommendation'
