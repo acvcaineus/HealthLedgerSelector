@@ -104,5 +104,21 @@ def save_feedback(username, scenario, recommendation, feedback_data):
     conn.commit()
     conn.close()
 
+def add_usefulness_column():
+    conn = get_db_connection()
+    c = conn.cursor()
+    try:
+        c.execute("ALTER TABLE feedback ADD COLUMN usefulness TEXT")
+        conn.commit()
+        print("Added 'usefulness' column to feedback table")
+    except sqlite3.OperationalError as e:
+        if "duplicate column name" not in str(e):
+            print(f"Error adding 'usefulness' column: {e}")
+    finally:
+        conn.close()
+
 # Inicializa o banco de dados ao iniciar a aplicação
 init_db()
+
+# Call the function to add the new column
+add_usefulness_column()
