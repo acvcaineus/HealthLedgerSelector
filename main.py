@@ -85,54 +85,55 @@ def show_weights():
     weights["governança"] = st.slider("Governança", 1, 5, 3)
     weights["descentralização"] = st.slider("Descentralização", 1, 5, 3)
 
-    if st.button("Gerar Recomendação"):
-        st.session_state.weights = weights
-        st.session_state.page = "Recomendações"
-        st.rerun()
+    st.session_state.weights = weights
+    st.session_state.page = "recommendation"
+    st.rerun()
 
 def show_recommendation():
     st.header("Recomendação de DLT e Algoritmo de Consenso")
 
     if 'recommendation' not in st.session_state:
-        recommendation = get_recommendation(st.session_state.answers, st.session_state.weights)
-        st.session_state.recommendation = recommendation
+        if st.button('Gerar Recomendação'):
+            recommendation = get_recommendation(st.session_state.answers, st.session_state.weights)
+            st.session_state.recommendation = recommendation
+            st.rerun()
     else:
         recommendation = st.session_state.recommendation
 
-    st.subheader("DLT Recomendada:")
-    st.write(recommendation["dlt"])
-    st.subheader("Grupo de Algoritmo de Consenso Recomendado:")
-    st.write(recommendation["consensus_group"])
+        st.subheader("DLT Recomendada:")
+        st.write(recommendation["dlt"])
+        st.subheader("Grupo de Algoritmo de Consenso Recomendado:")
+        st.write(recommendation["consensus_group"])
 
-    st.subheader("Comparação de Algoritmos de Consenso:")
-    comparison_data = compare_algorithms(recommendation["consensus_group"])
-    df = pd.DataFrame(comparison_data)
-    st.table(df)
+        st.subheader("Comparação de Algoritmos de Consenso:")
+        comparison_data = compare_algorithms(recommendation["consensus_group"])
+        df = pd.DataFrame(comparison_data)
+        st.table(df)
 
-    st.subheader("Selecione as Prioridades para o Algoritmo Final:")
-    priorities = {}
-    priorities["Segurança"] = st.slider("Segurança", 1, 5, 3)
-    priorities["Escalabilidade"] = st.slider("Escalabilidade", 1, 5, 3)
-    priorities["Eficiência Energética"] = st.slider("Eficiência Energética", 1, 5, 3)
-    priorities["Governança"] = st.slider("Governança", 1, 5, 3)
+        st.subheader("Selecione as Prioridades para o Algoritmo Final:")
+        priorities = {}
+        priorities["Segurança"] = st.slider("Segurança", 1, 5, 3)
+        priorities["Escalabilidade"] = st.slider("Escalabilidade", 1, 5, 3)
+        priorities["Eficiência Energética"] = st.slider("Eficiência Energética", 1, 5, 3)
+        priorities["Governança"] = st.slider("Governança", 1, 5, 3)
 
-    if st.button("Selecionar Algoritmo Final"):
-        final_algorithm = select_final_algorithm(recommendation["consensus_group"], priorities)
-        st.subheader("Algoritmo de Consenso Final Recomendado:")
-        st.write(final_algorithm)
+        if st.button("Selecionar Algoritmo Final"):
+            final_algorithm = select_final_algorithm(recommendation["consensus_group"], priorities)
+            st.subheader("Algoritmo de Consenso Final Recomendado:")
+            st.write(final_algorithm)
 
-        pros_cons = get_scenario_pros_cons(recommendation["dlt"], final_algorithm)
-        if pros_cons:
-            st.subheader("Cenários Aplicáveis:")
-            for scenario, details in pros_cons.items():
-                st.write(f"**{scenario}**")
-                st.write("Pros:")
-                for pro in details["pros"]:
-                    st.write(f"- {pro}")
-                st.write("Cons:")
-                for con in details["cons"]:
-                    st.write(f"- {con}")
-                st.write(f"Aplicabilidade do Algoritmo: {details['algorithm_applicability']}")
+            pros_cons = get_scenario_pros_cons(recommendation["dlt"], final_algorithm)
+            if pros_cons:
+                st.subheader("Cenários Aplicáveis:")
+                for scenario, details in pros_cons.items():
+                    st.write(f"**{scenario}**")
+                    st.write("Pros:")
+                    for pro in details["pros"]:
+                        st.write(f"- {pro}")
+                    st.write("Cons:")
+                    for con in details["cons"]:
+                        st.write(f"- {con}")
+                    st.write(f"Aplicabilidade do Algoritmo: {details['algorithm_applicability']}")
 
 def main():
     init_session_state()
@@ -148,11 +149,11 @@ def main():
     else:
         st.sidebar.title("Menu")
 
-        menu_options = ['Início', 'Questionário', 'Recomendações', 'Árvore de Decisão', 'Comparação de Frameworks', 'Logout', 'recommendation']
+        menu_options = ['Início', 'Questionário', 'Recomendações', 'Árvore de Decisão', 'Comparação de Frameworks', 'Logout']
         menu_option = st.sidebar.selectbox(
             "Escolha uma opção",
             menu_options,
-            index=menu_options.index(st.session_state.page)
+            index=menu_options.index(st.session_state.page) if st.session_state.page in menu_options else 0
         )
 
         st.session_state.page = menu_option
@@ -161,9 +162,7 @@ def main():
             show_home_page()
         elif menu_option == 'Questionário':
             show_questionnaire()
-        elif menu_option == 'Recomendações':
-            show_weights()
-        elif menu_option == 'recommendation' or (st.session_state.page == 'recommendation' and menu_option == 'Recomendações'):
+        elif menu_option == 'Recomendações' or st.session_state.page == 'recommendation':
             show_recommendation()
         elif menu_option == 'Árvore de Decisão':
             run_decision_tree()
