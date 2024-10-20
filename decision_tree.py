@@ -8,24 +8,56 @@ from decision_logic import get_recommendation, compare_algorithms, select_final_
 def get_questions():
     return [
         {
-            "text": "A aplicação exige alta segurança e controle dos dados sensíveis?",
-            "options": ["Sim", "Não"]
+            "phase": "Fase 1: Aplicação",
+            "questions": [
+                {
+                    "text": "A aplicação exige alta privacidade e controle centralizado?",
+                    "options": ["Sim", "Não"]
+                },
+                {
+                    "text": "A aplicação precisa de alta escalabilidade e eficiência energética?",
+                    "options": ["Sim", "Não"]
+                }
+            ]
         },
         {
-            "text": "A aplicação precisa de alta eficiência operacional em redes locais?",
-            "options": ["Sim", "Não"]
+            "phase": "Fase 2: Consenso",
+            "questions": [
+                {
+                    "text": "A rede exige alta resiliência contra ataques e falhas bizantinas?",
+                    "options": ["Sim", "Não"]
+                },
+                {
+                    "text": "A eficiência energética é um fator crucial para a rede?",
+                    "options": ["Sim", "Não"]
+                }
+            ]
         },
         {
-            "text": "A rede exige escalabilidade e governança flexível?",
-            "options": ["Sim", "Não"]
+            "phase": "Fase 3: Infraestrutura",
+            "questions": [
+                {
+                    "text": "A rede precisa integrar-se a sistemas legados de saúde (ex: EHRs, bancos de dados hospitalares)?",
+                    "options": ["Sim", "Não"]
+                },
+                {
+                    "text": "A infraestrutura precisa lidar com grandes volumes de dados ou dispositivos IoT?",
+                    "options": ["Sim", "Não"]
+                }
+            ]
         },
         {
-            "text": "A infraestrutura precisa lidar com alta escalabilidade em redes IoT?",
-            "options": ["Sim", "Não"]
-        },
-        {
-            "text": "A rede precisa de alta segurança e descentralização de dados críticos?",
-            "options": ["Sim", "Não"]
+            "phase": "Fase 4: Governança",
+            "questions": [
+                {
+                    "text": "A rede precisa de governança centralizada?",
+                    "options": ["Sim", "Não"]
+                },
+                {
+                    "text": "A validação de consenso deve ser delegada a um subconjunto de validadores (DPoS)?",
+                    "options": ["Sim", "Não"]
+                }
+            ]
         }
     ]
 
@@ -34,42 +66,69 @@ def show_interactive_decision_tree():
 
     questions = get_questions()
     
+    if 'current_phase' not in st.session_state:
+        st.session_state.current_phase = 0
+    
     if 'current_question' not in st.session_state:
         st.session_state.current_question = 0
     
     if 'answers' not in st.session_state:
-        st.session_state.answers = []
+        st.session_state.answers = {}
 
-    if st.session_state.current_question < len(questions):
-        question = questions[st.session_state.current_question]
-        answer = st.radio(question["text"], question["options"])
-        
-        if st.button("Próxima Pergunta" if st.session_state.current_question < len(questions) - 1 else "Finalizar"):
-            st.session_state.answers.append(answer)
-            st.session_state.current_question += 1
-            st.experimental_rerun()
+    current_phase = questions[st.session_state.current_phase]
+    current_question = current_phase["questions"][st.session_state.current_question]
+
+    st.subheader(current_phase["phase"])
+    answer = st.radio(current_question["text"], current_question["options"])
     
-    else:
-        show_recommendation(st.session_state.answers)
+    if st.button("Próxima Pergunta" if st.session_state.current_question < len(current_phase["questions"]) - 1 or st.session_state.current_phase < len(questions) - 1 else "Finalizar"):
+        st.session_state.answers[f"{current_phase['phase']}_{st.session_state.current_question}"] = answer
+        
+        if st.session_state.current_question < len(current_phase["questions"]) - 1:
+            st.session_state.current_question += 1
+        elif st.session_state.current_phase < len(questions) - 1:
+            st.session_state.current_phase += 1
+            st.session_state.current_question = 0
+        else:
+            show_recommendation(st.session_state.answers)
+        
+        st.rerun()
 
 def show_recommendation(answers):
     st.subheader("Recomendação:")
     
-    if answers[0] == "Sim":
-        st.write("DLT Recomendada: DLT Permissionada Privada")
-        st.write("Algoritmos de Consenso: PBFT")
-        st.write("DLTs Aplicáveis: Hyperledger Fabric, Corda")
-        st.write("Agrupamento: Alta Segurança e Controle")
-    elif answers[2] == "Sim":
-        st.write("DLT Recomendada: DLT Pública ou Híbrida")
-        st.write("Algoritmos de Consenso: PoS, DPoS")
-        st.write("DLTs Aplicáveis: Ethereum, Algorand")
-        st.write("Agrupamento: Escalabilidade e Governança Flexível")
-    # Add more conditions based on the answers
+    # Logic for DLT recommendation based on answers
+    if answers.get("Fase 1: Aplicação_0") == "Sim":
+        dlt = "DLT Permissionada Privada"
+        consensus = "PBFT"
+        applicable_dlts = ["Hyperledger Fabric", "Corda"]
+        grouping = "Alta Segurança e Controle"
+    elif answers.get("Fase 1: Aplicação_1") == "Sim":
+        dlt = "DLT Pública ou Híbrida"
+        consensus = "PoS, Tangle (IOTA)"
+        applicable_dlts = ["Ethereum 2.0", "IOTA"]
+        grouping = "Alta Escalabilidade em Redes IoT"
+    elif answers.get("Fase 2: Consenso_0") == "Sim":
+        dlt = "DLT Pública ou Permissionada"
+        consensus = "PBFT, PoW, HoneyBadger BFT"
+        applicable_dlts = ["Hyperledger Fabric", "Bitcoin", "Ethereum"]
+        grouping = "Alta Segurança e Controle"
+    else:
+        dlt = "DLT Pública ou com Consenso Delegado"
+        consensus = "DPoS"
+        applicable_dlts = ["EOS", "Tron"]
+        grouping = "Escalabilidade e Governança Flexível"
+
+    st.write(f"DLT Recomendada: {dlt}")
+    st.write(f"Algoritmos de Consenso: {consensus}")
+    st.write(f"DLTs Aplicáveis: {', '.join(applicable_dlts)}")
+    st.write(f"Agrupamento: {grouping}")
 
     st.write("Respostas:", answers)
 
 def run_decision_tree():
+    if 'current_phase' in st.session_state:
+        del st.session_state.current_phase
     if 'current_question' in st.session_state:
         del st.session_state.current_question
     if 'answers' in st.session_state:

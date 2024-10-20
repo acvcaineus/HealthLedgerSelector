@@ -11,7 +11,7 @@ def show_home_page():
     
     if st.button("Iniciar Questionário"):
         st.session_state.page = "Árvore de Decisão"
-        st.experimental_rerun()
+        st.rerun()
 
 def main():
     init_session_state()
