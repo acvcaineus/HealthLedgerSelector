@@ -169,35 +169,39 @@ def show_questionnaire():
         st.rerun()
 
 def show_prioritize_characteristics():
-    st.header("Priorize as Características")
-    st.write("Distribua 100 pontos entre as seguintes características de acordo com sua importância para o seu projeto:")
+    st.header('Priorize as Características')
+    st.write('Distribua 100 pontos entre as seguintes características de acordo com sua importância para o seu projeto:')
 
     total_points = 100
     remaining_points = total_points
 
-    characteristics = ["Segurança", "Escalabilidade", "Eficiência Energética", "Governança"]
+    characteristics = ['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança']
     weights = {}
 
     col1, col2 = st.columns(2)
 
     for i, char in enumerate(characteristics):
         with col1 if i % 2 == 0 else col2:
-            weights[char.lower()] = st.slider(f"{char} ({remaining_points} pontos restantes)", 
-                                              min_value=0, 
-                                              max_value=remaining_points, 
-                                              value=min(25, remaining_points),
-                                              key=f"weight_{char.lower()}")
-            remaining_points -= weights[char.lower()]
+            if remaining_points > 0:
+                weights[char.lower()] = st.slider(f'{char} ({remaining_points} pontos restantes)', 
+                                                  min_value=0, 
+                                                  max_value=remaining_points, 
+                                                  value=min(25, remaining_points),
+                                                  key=f'weight_{char.lower()}')
+                remaining_points -= weights[char.lower()]
+            else:
+                st.write(f'{char}: 0 pontos')
+                weights[char.lower()] = 0
 
     if remaining_points == 0:
-        if st.button("Finalizar e Obter Recomendação"):
+        if st.button('Finalizar e Obter Recomendação'):
             st.session_state.weights = weights
             recommendation = get_recommendation(st.session_state.answers, st.session_state.weights)
             st.session_state.recommendation = recommendation
-            st.session_state.page = "recommendation"
+            st.session_state.page = 'recommendation'
             st.rerun()
     else:
-        st.warning(f"Por favor, distribua todos os {remaining_points} pontos restantes antes de prosseguir.")
+        st.warning(f'Por favor, distribua todos os {remaining_points} pontos restantes antes de prosseguir.')
 
 def show_recommendation():
     if 'recommendation' not in st.session_state:
