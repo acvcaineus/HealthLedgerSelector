@@ -12,6 +12,9 @@ from dlt_data import scenarios, questions, dlt_classes, consensus_algorithms
 from utils import init_session_state
 
 def generate_decision_tree():
+    if 'answers' not in st.session_state or not st.session_state.answers:
+        return nx.DiGraph()  # Return an empty graph if there are no answers
+
     G = nx.DiGraph()
     
     shermin_layers = ['Aplicação', 'Consenso', 'Infraestrutura', 'Internet']
@@ -209,6 +212,9 @@ def show_prioritize_characteristics():
         st.warning(f'Por favor, distribua todos os {remaining_points} pontos restantes antes de prosseguir.')
 
 def show_recommendation():
+    if 'scenario' not in st.session_state or st.session_state.scenario is None:
+        st.session_state.scenario = 'Registros Médicos Eletrônicos (EMR)'
+
     if 'recommendation' not in st.session_state:
         st.error("Por favor, complete o questionário primeiro para receber uma recomendação.")
         return
