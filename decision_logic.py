@@ -42,91 +42,54 @@ def get_recommendation(answers, weights):
     # Recommend the DLT with the highest score
     recommended_dlt = max(score, key=score.get)
 
-    # Calculate scores for consensus algorithms
-    consensus_score = {
-        "Proof of Stake (PoS)": 0,
-        "Proof of Work (PoW)": 0,
-        "Practical Byzantine Fault Tolerance (PBFT)": 0,
-        "Delegated Proof of Stake (DPoS)": 0,
-        "Proof of Authority (PoA)": 0,
-        "Raft Consensus": 0,
-        "Directed Acyclic Graph (DAG)": 0,
-        "Nominated Proof of Stake (NPoS)": 0,
-        "Tangle": 0
-    }
-
+    # Select the appropriate consensus algorithm group
     if recommended_dlt in ["Public Blockchain", "Hybrid Blockchain"]:
-        consensus_score["Proof of Stake (PoS)"] += 2 * weights["energy_efficiency"]
-        consensus_score["Proof of Work (PoW)"] += 1 * weights["security"]
-        consensus_score["Delegated Proof of Stake (DPoS)"] += 2 * weights["scalability"]
+        consensus_group = "Public"
     elif recommended_dlt in ["Permissioned Blockchain", "Private Blockchain", "Consortium Blockchain"]:
-        consensus_score["Practical Byzantine Fault Tolerance (PBFT)"] += 2 * weights["security"]
-        consensus_score["Proof of Authority (PoA)"] += 2 * weights["governance"]
-        consensus_score["Raft Consensus"] += 1 * weights["scalability"]
-    elif recommended_dlt == "Distributed Ledger":
-        consensus_score["Directed Acyclic Graph (DAG)"] += 2 * weights["scalability"]
-        consensus_score["Tangle"] += 2 * weights["scalability"]
-
-    # Adjust scores based on energy efficiency and scalability
-    if answers.get("energy_efficiency") == "Sim":
-        consensus_score["Proof of Stake (PoS)"] += 1 * weights["energy_efficiency"]
-        consensus_score["Practical Byzantine Fault Tolerance (PBFT)"] += 1 * weights["energy_efficiency"]
-        consensus_score["Proof of Authority (PoA)"] += 1 * weights["energy_efficiency"]
-
-    if answers.get("scalability") == "Sim":
-        consensus_score["Delegated Proof of Stake (DPoS)"] += 1 * weights["scalability"]
-        consensus_score["Directed Acyclic Graph (DAG)"] += 2 * weights["scalability"]
-        consensus_score["Tangle"] += 2 * weights["scalability"]
-
-    # Recommend the consensus algorithm with the highest score
-    recommended_consensus = max(consensus_score, key=consensus_score.get)
+        consensus_group = "Permissioned"
+    else:
+        consensus_group = "Distributed"
 
     return {
         "dlt": recommended_dlt,
-        "consensus": recommended_consensus
+        "consensus_group": consensus_group
     }
 
-def get_comparison_data(recommended_dlt, recommended_consensus):
-    # This is a simplified comparison. In a real-world scenario, you would have more detailed data.
+def compare_algorithms(consensus_group):
+    if consensus_group == "Public":
+        algorithms = ["Proof of Stake (PoS)", "Proof of Work (PoW)", "Delegated Proof of Stake (DPoS)"]
+    elif consensus_group == "Permissioned":
+        algorithms = ["Practical Byzantine Fault Tolerance (PBFT)", "Proof of Authority (PoA)", "Raft Consensus"]
+    else:
+        algorithms = ["Directed Acyclic Graph (DAG)", "Tangle"]
+
     comparison_data = {
-        "Security": {
-            recommended_consensus: 5,
-            "Proof of Stake (PoS)": 4,
-            "Proof of Work (PoW)": 5,
-            "Practical Byzantine Fault Tolerance (PBFT)": 4
-        },
-        "Scalability": {
-            recommended_consensus: 4,
-            "Proof of Stake (PoS)": 4,
-            "Proof of Work (PoW)": 2,
-            "Practical Byzantine Fault Tolerance (PBFT)": 3
-        },
-        "Energy Efficiency": {
-            recommended_consensus: 4,
-            "Proof of Stake (PoS)": 5,
-            "Proof of Work (PoW)": 1,
-            "Practical Byzantine Fault Tolerance (PBFT)": 4
-        },
-        "Governance": {
-            recommended_consensus: 3,
-            "Proof of Stake (PoS)": 4,
-            "Proof of Work (PoW)": 2,
-            "Practical Byzantine Fault Tolerance (PBFT)": 3
-        }
+        "Security": {},
+        "Scalability": {},
+        "Energy Efficiency": {},
+        "Governance": {}
     }
+
+    for alg in algorithms:
+        comparison_data["Security"][alg] = consensus_algorithms[alg].get("security", 3)
+        comparison_data["Scalability"][alg] = consensus_algorithms[alg].get("scalability", 3)
+        comparison_data["Energy Efficiency"][alg] = consensus_algorithms[alg].get("energy_efficiency", 3)
+        comparison_data["Governance"][alg] = consensus_algorithms[alg].get("governance", 3)
+
     return comparison_data
 
-def get_sunburst_data():
-    return [
-        {"id": "DLT", "parent": "", "name": "Tecnologias DLT"},
-        {"id": "Public", "parent": "DLT", "name": "Blockchain Público"},
-        {"id": "Private", "parent": "DLT", "name": "Blockchain Privado"},
-        {"id": "Permissioned", "parent": "DLT", "name": "Blockchain Permissionado"},
-        {"id": "Hybrid", "parent": "DLT", "name": "Blockchain Híbrido"},
-        {"id": "PoW", "parent": "Public", "name": "Proof of Work", "consensus": "PoW"},
-        {"id": "PoS", "parent": "Public", "name": "Proof of Stake", "consensus": "PoS"},
-        {"id": "PBFT", "parent": "Private", "name": "PBFT", "consensus": "PBFT"},
-        {"id": "PoA", "parent": "Permissioned", "name": "Proof of Authority", "consensus": "PoA"},
-        {"id": "Raft", "parent": "Private", "name": "Raft", "consensus": "Raft"},
-        {"id": "DPoS", "parent": "Hybrid", "name": "Delegated Proof of Stake", "consensus": "DPoS"}
-    ]
+def select_final_algorithm(consensus_group, percentages):
+    comparison_data = compare_algorithms(consensus_group)
+    algorithms = list(comparison_data["Security"].keys())
+    
+    scores = {alg: 0 for alg in algorithms}
+    
+    for alg in algorithms:
+        scores[alg] += comparison_data["Security"][alg] * percentages["Segurança"] / 100
+        scores[alg] += comparison_data["Scalability"][alg] * percentages["Escalabilidade"] / 100
+        scores[alg] += comparison_data["Energy Efficiency"][alg] * percentages["Eficiência Energética"] / 100
+        scores[alg] += comparison_data["Governance"][alg] * percentages["Governança"] / 100
+
+    return max(scores, key=scores.get)
+
+# Keep the existing functions (get_comparison_data and get_sunburst_data) unchanged

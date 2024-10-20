@@ -7,7 +7,7 @@ from pyvis.network import Network
 import streamlit.components.v1 as components
 from user_management import login, register, is_authenticated, logout
 from database import get_user_recommendations, save_recommendation, save_feedback
-from decision_logic import get_recommendation, get_comparison_data, get_sunburst_data
+from decision_logic import get_recommendation, get_comparison_data, get_sunburst_data, compare_algorithms, select_final_algorithm
 from dlt_data import scenarios, questions, dlt_classes, consensus_algorithms
 from utils import init_session_state
 
@@ -124,25 +124,38 @@ def show_recommendation():
         st.subheader("Framework DLT")
         st.info(recommendation['dlt'])
     with col2:
-        st.subheader("Algoritmo de Consenso")
-        st.info(recommendation['consensus'])
+        st.subheader("Grupo de Algoritmos de Consenso")
+        st.info(recommendation['consensus_group'])
 
     with st.expander("Explicação Detalhada"):
         st.markdown(f'''
         **DLT Recomendada:** {recommendation['dlt']}
         {dlt_classes[recommendation['dlt']]}
 
-        **Algoritmo de Consenso Recomendado:** {recommendation['consensus']}
-        {consensus_algorithms[recommendation['consensus']]}
+        **Grupo de Algoritmos de Consenso Recomendado:** {recommendation['consensus_group']}
         ''')
 
     show_decision_tree()
 
-    st.subheader("Comparação de Algoritmos de Consenso")
-    comparison_data = get_comparison_data(recommendation['dlt'], recommendation['consensus'])
+    st.subheader("Comparação de Algoritmos de Consenso no Grupo")
+    comparison_data = compare_algorithms(recommendation['consensus_group'])
     
     df = pd.DataFrame(comparison_data)
     st.table(df)
+
+    st.subheader("Defina as Porcentagens para cada Característica")
+    characteristics = ["Segurança", "Escalabilidade", "Eficiência Energética", "Governança"]
+    percentages = {}
+    total = 0
+    for char in characteristics:
+        percentages[char] = st.slider(f"Porcentagem para {char}", 0, 100, 25, 5)
+        total += percentages[char]
+    
+    if total != 100:
+        st.warning(f"A soma das porcentagens deve ser 100%. Atualmente é {total}%.")
+    else:
+        final_algorithm = select_final_algorithm(recommendation['consensus_group'], percentages)
+        st.success(f"O algoritmo final recomendado é: {final_algorithm}")
 
     st.subheader("Influência das Características na Decisão")
     fig = px.bar(df, x=df.index, y=df.columns, title="Comparação de Características")
