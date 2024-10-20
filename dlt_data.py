@@ -14,6 +14,7 @@ questions = {
             "options": ["Sim", "Não"],
             "shermin_layer": "Aplicação",
             "characteristics": ["Segurança", "Privacidade"],
+            "main_characteristic": "Privacidade",
             "next_layer": {"Sim": "Consenso", "Não": "Aplicação"}
         },
         {
@@ -22,6 +23,7 @@ questions = {
             "options": ["Sim", "Não"],
             "shermin_layer": "Aplicação",
             "characteristics": ["Interoperabilidade", "Escalabilidade"],
+            "main_characteristic": "Interoperabilidade",
             "next_layer": {"Sim": "Consenso", "Não": "Consenso"}
         },
         {
@@ -30,6 +32,7 @@ questions = {
             "options": ["Sim", "Não"],
             "shermin_layer": "Consenso",
             "characteristics": ["Escalabilidade", "Desempenho"],
+            "main_characteristic": "Escalabilidade",
             "next_layer": {"Sim": "Infraestrutura", "Não": "Consenso"}
         },
         {
@@ -38,6 +41,7 @@ questions = {
             "options": ["Sim", "Não"],
             "shermin_layer": "Consenso",
             "characteristics": ["Eficiência Energética", "Sustentabilidade"],
+            "main_characteristic": "Eficiência Energética",
             "next_layer": {"Sim": "Infraestrutura", "Não": "Infraestrutura"}
         },
         {
@@ -46,6 +50,7 @@ questions = {
             "options": ["Sim", "Não"],
             "shermin_layer": "Infraestrutura",
             "characteristics": ["Segurança", "Confiabilidade"],
+            "main_characteristic": "Segurança",
             "next_layer": {"Sim": "Internet", "Não": "Infraestrutura"}
         },
         {
@@ -54,6 +59,7 @@ questions = {
             "options": ["Sim", "Não"],
             "shermin_layer": "Infraestrutura",
             "characteristics": ["Escalabilidade", "Desempenho"],
+            "main_characteristic": "Escalabilidade",
             "next_layer": {"Sim": "Internet", "Não": "Internet"}
         },
         {
@@ -62,6 +68,7 @@ questions = {
             "options": ["Sim", "Não"],
             "shermin_layer": "Internet",
             "characteristics": ["Governança", "Flexibilidade"],
+            "main_characteristic": "Governança",
             "next_layer": {"Sim": "Aplicação", "Não": "Internet"}
         },
         {
@@ -70,6 +77,7 @@ questions = {
             "options": ["Sim", "Não"],
             "shermin_layer": "Internet",
             "characteristics": ["Interoperabilidade", "Conectividade"],
+            "main_characteristic": "Interoperabilidade",
             "next_layer": {"Sim": "Aplicação", "Não": "Aplicação"}
         }
     ]

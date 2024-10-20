@@ -37,7 +37,7 @@ def generate_decision_tree():
         G.add_node(question, label=question_data['text'], color='lightblue', 
                    pos=(layer_positions[question_data['shermin_layer']], 0),
                    shermin_layer=question_data['shermin_layer'], 
-                   characteristics=', '.join(question_data['characteristics']))
+                   main_characteristic=question_data['main_characteristic'])
         
         answer_node = f"{question}_{answer}"
         G.add_node(answer_node, label=answer, color='green' if answer == 'Sim' else 'red',
@@ -68,13 +68,13 @@ def show_decision_tree():
         if 'pos' in node:
             node['x'], node['y'] = node['pos']
         if 'shermin_layer' in node:
-            node['title'] = f"Camada Shermin: {node['shermin_layer']}<br>Características: {node['characteristics']}"
+            node['title'] = f"Camada Shermin: {node['shermin_layer']}<br>Característica Principal: {node['main_characteristic']}"
     
     html = net.generate_html()
     components.html(html, height=600)
     
     st.write("**Legenda:**")
-    st.write("- Círculos azuis: Perguntas (Passe o mouse para ver a camada Shermin e características)")
+    st.write("- Círculos azuis: Perguntas (Passe o mouse para ver a camada Shermin e característica principal)")
     st.write("- Quadrados verdes: Respostas 'Sim'")
     st.write("- Quadrados vermelhos: Respostas 'Não'")
     st.write("- Setas pontilhadas: Fluxo para a próxima pergunta")
@@ -134,6 +134,9 @@ def show_scenario_selection(dlt, consensus_algorithm):
         st.success("Recomendação salva com sucesso!")
 
 def show_recommendation():
+    if 'scenario' not in st.session_state or st.session_state.scenario is None:
+        st.session_state.scenario = "Registros Médicos Eletrônicos (EMR)"
+
     if 'recommendation' not in st.session_state:
         st.error("Por favor, complete o questionário primeiro para receber uma recomendação.")
         return
