@@ -115,53 +115,36 @@ def show_interactive_decision_tree():
 
     st.session_state.answers[f"{current_phase}_{current_question_index}"] = answer
 
-    # Check for immediate recommendation
-    if current_phase == "Fase 1: Aplicação" and current_question_index == 0 and answer == "Sim":
-        st.session_state.recommendation = {
-            "dlt": "Permissionada Privada",
-            "consensus_group": "Alta Segurança e Controle",
-            "algorithms": ["PBFT"]
-        }
-        st.success("Recomendação imediata encontrada!")
-        st.write("Com base na sua resposta, recomendamos:")
-        st.write(f"DLT: {st.session_state.recommendation['dlt']}")
-        st.write(f"Grupo de Algoritmos: {st.session_state.recommendation['consensus_group']}")
-        st.write(f"Algoritmo: {', '.join(st.session_state.recommendation['algorithms'])}")
-        st.write("Explicação: Esta recomendação foi feita porque a aplicação exige alta privacidade e controle centralizado, que são características principais de uma DLT Permissionada Privada com algoritmos de consenso focados em alta segurança e controle.")
+    if current_question_index < len(questions_in_phase) - 1:
+        if st.button("Próxima Pergunta"):
+            st.session_state.current_question_index += 1
     else:
-        if current_question_index < len(questions_in_phase) - 1:
-            if st.button("Próxima Pergunta"):
-                st.session_state.current_question_index += 1
-        else:
-            next_phase_index = list(questions.keys()).index(current_phase) + 1
-            if next_phase_index < len(questions):
-                st.session_state.current_phase = list(questions.keys())[next_phase_index]
-                st.session_state.current_question_index = 0
+        next_phase_index = list(questions.keys()).index(current_phase) + 1
+        if next_phase_index < len(questions):
+            st.session_state.current_phase = list(questions.keys())[next_phase_index]
+            st.session_state.current_question_index = 0
 
     decision_tree = generate_decision_tree(st.session_state.answers)
     st.graphviz_chart(decision_tree)
 
-    all_answers = list(st.session_state.answers.values())
-    if len(all_answers) == len([q for qs in questions.values() for q in qs]) or st.session_state.recommendation:
-        st.subheader("Métricas da Árvore de Decisão")
-        metrics = calculate_metrics(all_answers)
-        for metric, value in metrics.items():
-            st.write(f"{metric}: {value}")
+    all_questions_answered = len(st.session_state.answers) == sum(len(qs) for qs in questions.values())
 
-        st.subheader("Recomendação de DLT e Algoritmo de Consenso")
-
-        if not st.session_state.recommendation:
+    if all_questions_answered:
+        st.subheader("Todas as perguntas foram respondidas")
+        
+        if 'weights' not in st.session_state:
             st.write("Defina os pesos para as características:")
             weights = {}
             weights["security"] = st.slider("Segurança", 1, 5, 3, key="security_weight")
             weights["scalability"] = st.slider("Escalabilidade", 1, 5, 3, key="scalability_weight")
             weights["energy_efficiency"] = st.slider("Eficiência Energética", 1, 5, 3, key="energy_efficiency_weight")
             weights["governance"] = st.slider("Governança", 1, 5, 3, key="governance_weight")
+            st.session_state.weights = weights
 
-            if st.button("Gerar Recomendação"):
-                st.session_state.recommendation = get_recommendation(st.session_state.answers, weights)
+        if st.button("Gerar Recomendação"):
+            st.session_state.recommendation = get_recommendation(st.session_state.answers, st.session_state.weights)
         
-        if st.session_state.recommendation:
+        if 'recommendation' in st.session_state and st.session_state.recommendation:
             st.write(f"DLT Recomendada: {st.session_state.recommendation['dlt']}")
             st.write(f"Grupo de Algoritmo de Consenso: {st.session_state.recommendation['consensus_group']}")
             st.write(f"Algoritmos Recomendados: {', '.join(st.session_state.recommendation['algorithms'])}")
@@ -180,6 +163,12 @@ def show_interactive_decision_tree():
                 final_algorithm = select_final_algorithm(st.session_state.recommendation['consensus_group'], user_ratings)
                 st.subheader("Algoritmo de Consenso Final Recomendado:")
                 st.write(final_algorithm)
+
+    all_answers = list(st.session_state.answers.values())
+    st.subheader("Métricas da Árvore de Decisão")
+    metrics = calculate_metrics(all_answers)
+    for metric, value in metrics.items():
+        st.write(f"{metric}: {value}")
 
 def run_decision_tree():
     init_session_state()

@@ -1,6 +1,7 @@
 from dlt_data import questions, dlt_classes, consensus_algorithms
 
 consensus_groups = {
+    'Alta Segurança e Controle': ['PBFT', 'RAFT'],
     'Alta Segurança e Controle dos dados sensíveis': ['RAFT/IBFT', 'RAFT'],
     'Escalabilidade e Governança Flexível': ['RAFT/IBFT', 'PoS', 'Liquid PoS', 'Pure PoS', 'NPoS'],
     'Alta Eficiência Operacional em redes locais': ['PoA', 'Ripple Consensus Algorithm', 'SCP'],
@@ -80,6 +81,7 @@ def get_recommendation(answers, weights):
     recommended_dlt = max(score, key=score.get)
 
     group_scores = {
+        "Alta Segurança e Controle": weights["security"] * 2,
         "Alta Segurança e Controle dos dados sensíveis": weights["security"] * 2,
         "Escalabilidade e Governança Flexível": weights["scalability"] + weights["governance"],
         "Alta Eficiência Operacional em redes locais": weights["energy_efficiency"] * 2,
