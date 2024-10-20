@@ -79,18 +79,19 @@ def get_recommendation(answers, weights):
         "Alta Segurança e Descentralização de dados críticos": ["PoW"]
     }
 
-    if weights["segurança"] > weights["escalabilidade"] and weights["segurança"] > weights["eficiência energética"]:
-        consensus_group = "Alta Segurança e Controle dos dados sensíveis"
-    elif weights["escalabilidade"] > weights["segurança"] and weights["escalabilidade"] > weights["eficiência energética"]:
-        consensus_group = "Escalabilidade e Governança Flexível"
-    elif weights["eficiência energética"] > weights["segurança"] and weights["eficiência energética"] > weights["escalabilidade"]:
-        consensus_group = "Alta Eficiência Operacional em redes locais"
-    else:
-        consensus_group = "Alta Escalabilidade em Redes IoT"
+    group_scores = {
+        "Alta Segurança e Controle dos dados sensíveis": weights["segurança"] * 2,
+        "Escalabilidade e Governança Flexível": weights["escalabilidade"] + weights["governança"],
+        "Alta Eficiência Operacional em redes locais": weights["eficiência energética"] * 2,
+        "Alta Escalabilidade em Redes IoT": weights["escalabilidade"] * 2,
+        "Alta Segurança e Descentralização de dados críticos": weights["segurança"] + weights["descentralização"]
+    }
+
+    recommended_group = max(group_scores, key=group_scores.get)
 
     return {
         "dlt": recommended_dlt,
-        "consensus_group": consensus_group
+        "consensus_group": recommended_group
     }
 
 def compare_algorithms(consensus_group):
@@ -103,10 +104,11 @@ def compare_algorithms(consensus_group):
     }
 
     for alg in algorithms:
-        comparison_data["Segurança"][alg] = consensus_algorithms[alg].get("security", 3)
-        comparison_data["Escalabilidade"][alg] = consensus_algorithms[alg].get("scalability", 3)
-        comparison_data["Eficiência Energética"][alg] = consensus_algorithms[alg].get("energy_efficiency", 3)
-        comparison_data["Governança"][alg] = consensus_algorithms[alg].get("governance", 3)
+        if alg in consensus_algorithms:
+            comparison_data["Segurança"][alg] = consensus_algorithms[alg].get("security", 3)
+            comparison_data["Escalabilidade"][alg] = consensus_algorithms[alg].get("scalability", 3)
+            comparison_data["Eficiência Energética"][alg] = consensus_algorithms[alg].get("energy_efficiency", 3)
+            comparison_data["Governança"][alg] = consensus_algorithms[alg].get("governance", 3)
 
     return comparison_data
 

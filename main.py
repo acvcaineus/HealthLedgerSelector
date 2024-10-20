@@ -11,8 +11,6 @@ from decision_logic import get_recommendation, compare_algorithms, select_final_
 from dlt_data import scenarios, questions, dlt_classes, consensus_algorithms
 from utils import init_session_state
 
-# ... [Keep all existing functions] ...
-
 def show_correlation_table():
     st.subheader("Tabela de Correlação DLT, Grupo de Algoritmo e Algoritmo de Consenso")
     data = {
@@ -68,18 +66,78 @@ def show_questionnaire():
         st.session_state.answers[current_question['id']] = answer
         st.session_state.step += 1
         if st.session_state.step >= len(questions["Registros Médicos Eletrônicos (EMR)"]):
-            st.session_state.page = "recommendation"
+            st.session_state.page = "weights"
             st.rerun()
         else:
             st.rerun()
 
+def show_weights():
+    st.header("Definir Pesos das Características")
+    st.write("Atribua um peso de 1 a 5 para cada característica, onde 1 é menos importante e 5 é mais importante.")
+    
+    weights = {}
+    weights["segurança"] = st.slider("Segurança", 1, 5, 3)
+    weights["escalabilidade"] = st.slider("Escalabilidade", 1, 5, 3)
+    weights["eficiência energética"] = st.slider("Eficiência Energética", 1, 5, 3)
+    weights["governança"] = st.slider("Governança", 1, 5, 3)
+    weights["descentralização"] = st.slider("Descentralização", 1, 5, 3)
+
+    if st.button("Gerar Recomendação"):
+        st.session_state.weights = weights
+        st.session_state.page = "recommendation"
+        st.rerun()
+
+def show_recommendation():
+    st.header("Recomendação de DLT e Algoritmo de Consenso")
+    
+    if 'recommendation' not in st.session_state:
+        recommendation = get_recommendation(st.session_state.answers, st.session_state.weights)
+        st.session_state.recommendation = recommendation
+    else:
+        recommendation = st.session_state.recommendation
+
+    st.subheader("DLT Recomendada:")
+    st.write(recommendation["dlt"])
+    st.subheader("Grupo de Algoritmo de Consenso Recomendado:")
+    st.write(recommendation["consensus_group"])
+
+    st.subheader("Comparação de Algoritmos de Consenso:")
+    comparison_data = compare_algorithms(recommendation["consensus_group"])
+    df = pd.DataFrame(comparison_data)
+    st.table(df)
+
+    st.subheader("Selecione as Prioridades para o Algoritmo Final:")
+    priorities = {}
+    priorities["Segurança"] = st.slider("Segurança", 1, 5, 3)
+    priorities["Escalabilidade"] = st.slider("Escalabilidade", 1, 5, 3)
+    priorities["Eficiência Energética"] = st.slider("Eficiência Energética", 1, 5, 3)
+    priorities["Governança"] = st.slider("Governança", 1, 5, 3)
+
+    if st.button("Selecionar Algoritmo Final"):
+        final_algorithm = select_final_algorithm(recommendation["consensus_group"], priorities)
+        st.subheader("Algoritmo de Consenso Final Recomendado:")
+        st.write(final_algorithm)
+
+        pros_cons = get_scenario_pros_cons(recommendation["dlt"], final_algorithm)
+        if pros_cons:
+            st.subheader("Cenários Aplicáveis:")
+            for scenario, details in pros_cons.items():
+                st.write(f"**{scenario}**")
+                st.write("Pros:")
+                for pro in details["pros"]:
+                    st.write(f"- {pro}")
+                st.write("Cons:")
+                for con in details["cons"]:
+                    st.write(f"- {con}")
+                st.write(f"Aplicabilidade do Algoritmo: {details['algorithm_applicability']}")
+
 def show_decision_tree():
     st.header("Árvore de Decisão")
-    # We'll implement this later
+    # Implementação futura da árvore de decisão
 
 def show_framework_comparison():
     st.header("Comparação de Frameworks")
-    # We'll implement this later
+    # Implementação futura da comparação de frameworks
 
 def main():
     init_session_state()
@@ -98,10 +156,11 @@ def main():
 
         if menu_option == "Início":
             show_home_page()
-        elif menu_option == "Questionário":
-            st.session_state.page = "questionnaire"
+        elif menu_option == "Questionário" or st.session_state.page == "questionnaire":
             show_questionnaire()
-        elif menu_option == "Recomendações":
+        elif menu_option == "Recomendações" or st.session_state.page == "weights":
+            show_weights()
+        elif st.session_state.page == "recommendation":
             show_recommendation()
         elif menu_option == "Árvore de Decisão":
             show_decision_tree()
