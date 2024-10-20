@@ -109,6 +109,8 @@ def show_recommendation():
         st.write(recommendation["dlt"])
         st.subheader("Grupo de Algoritmo de Consenso Recomendado:")
         st.write(recommendation["consensus_group"])
+        st.subheader("Algoritmos Recomendados:")
+        st.write(", ".join(recommendation["algorithms"]))
 
         st.subheader("Comparação de Algoritmos de Consenso:")
         comparison_data = compare_algorithms(recommendation["consensus_group"])

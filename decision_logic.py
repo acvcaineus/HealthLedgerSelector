@@ -91,7 +91,8 @@ def get_recommendation(answers, weights):
 
     return {
         "dlt": recommended_dlt,
-        "consensus_group": recommended_group
+        "consensus_group": recommended_group,
+        "algorithms": consensus_groups[recommended_group]
     }
 
 def compare_algorithms(consensus_group):
@@ -104,11 +105,8 @@ def compare_algorithms(consensus_group):
     }
 
     for alg in algorithms:
-        if alg in consensus_algorithms:
-            comparison_data["Segurança"][alg] = consensus_algorithms[alg].get("security", 3)
-            comparison_data["Escalabilidade"][alg] = consensus_algorithms[alg].get("scalability", 3)
-            comparison_data["Eficiência Energética"][alg] = consensus_algorithms[alg].get("energy_efficiency", 3)
-            comparison_data["Governança"][alg] = consensus_algorithms[alg].get("governance", 3)
+        for metric in comparison_data.keys():
+            comparison_data[metric][alg] = consensus_algorithms.get(alg, {}).get(metric.lower().replace(" ", "_"), 3)
 
     return comparison_data
 
@@ -119,10 +117,11 @@ def select_final_algorithm(consensus_group, priorities):
     scores = {alg: 0 for alg in algorithms}
     
     for alg in algorithms:
-        scores[alg] += comparison_data["Segurança"][alg] * priorities["Segurança"]
-        scores[alg] += comparison_data["Escalabilidade"][alg] * priorities["Escalabilidade"]
-        scores[alg] += comparison_data["Eficiência Energética"][alg] * priorities["Eficiência Energética"]
-        scores[alg] += comparison_data["Governança"][alg] * priorities["Governança"]
+        for metric, priority in priorities.items():
+            scores[alg] += comparison_data[metric][alg] * priority
+
+    if not scores:
+        return "No suitable algorithm found"
 
     return max(scores, key=scores.get)
 
