@@ -92,4 +92,124 @@ def select_final_algorithm(consensus_group, percentages):
 
     return max(scores, key=scores.get)
 
+def get_scenario_pros_cons(scenario, dlt, consensus_algorithm):
+    pros_cons = {
+        "Registros Médicos Eletrônicos (EMR)": {
+            "Public Blockchain": {
+                "pros": [
+                    "Alta transparência e auditabilidade",
+                    "Descentralização total dos dados",
+                    "Resistência à censura"
+                ],
+                "cons": [
+                    "Preocupações com privacidade dos dados sensíveis",
+                    "Escalabilidade limitada para grande volume de registros",
+                    "Alto custo de transação em algumas redes públicas"
+                ]
+            },
+            "Permissioned Blockchain": {
+                "pros": [
+                    "Maior controle sobre acesso aos dados",
+                    "Melhor desempenho e escalabilidade",
+                    "Conformidade com regulamentações de saúde"
+                ],
+                "cons": [
+                    "Menor descentralização comparado a blockchains públicas",
+                    "Potencial para centralização de controle",
+                    "Complexidade na gestão de permissões"
+                ]
+            },
+            "Distributed Ledger": {
+                "pros": [
+                    "Alta escalabilidade para grande volume de registros",
+                    "Flexibilidade na estrutura de dados",
+                    "Eficiência energética"
+                ],
+                "cons": [
+                    "Menor maturidade tecnológica em comparação com blockchains",
+                    "Potencial complexidade na implementação",
+                    "Ecossistema menos desenvolvido"
+                ]
+            }
+        },
+        "Cadeia de Suprimentos Farmacêutica": {
+            "Public Blockchain": {
+                "pros": [
+                    "Rastreabilidade completa e transparente",
+                    "Confiança entre múltiplos stakeholders",
+                    "Imutabilidade dos registros"
+                ],
+                "cons": [
+                    "Desafios de privacidade para informações sensíveis",
+                    "Possível lentidão em transações de alto volume",
+                    "Custo potencialmente alto para pequenas transações"
+                ]
+            },
+            "Permissioned Blockchain": {
+                "pros": [
+                    "Controle de acesso para participantes autorizados",
+                    "Maior velocidade de transação",
+                    "Conformidade com regulamentações farmacêuticas"
+                ],
+                "cons": [
+                    "Menor resistência à manipulação comparado a redes públicas",
+                    "Potencial para centralização",
+                    "Complexidade na gestão de permissões entre múltiplas organizações"
+                ]
+            },
+            "Distributed Ledger": {
+                "pros": [
+                    "Alta escalabilidade para rastreamento de grandes volumes",
+                    "Flexibilidade para diferentes tipos de dados na cadeia de suprimentos",
+                    "Potencial para microtransações eficientes"
+                ],
+                "cons": [
+                    "Possível complexidade na integração com sistemas legados",
+                    "Menor estabelecimento no setor farmacêutico",
+                    "Desafios na interoperabilidade com outras redes"
+                ]
+            }
+        },
+        "Consentimento de Pacientes": {
+            "Public Blockchain": {
+                "pros": [
+                    "Transparência total no histórico de consentimentos",
+                    "Controle do paciente sobre seus dados",
+                    "Auditabilidade pública"
+                ],
+                "cons": [
+                    "Preocupações com a privacidade dos dados pessoais",
+                    "Possível complexidade para usuários não técnicos",
+                    "Desafios regulatórios em algumas jurisdições"
+                ]
+            },
+            "Permissioned Blockchain": {
+                "pros": [
+                    "Melhor controle de privacidade",
+                    "Conformidade com regulamentações de proteção de dados",
+                    "Maior velocidade de processamento"
+                ],
+                "cons": [
+                    "Menor transparência comparado a redes públicas",
+                    "Potencial para controle centralizado das permissões",
+                    "Complexidade na gestão de acessos para múltiplas instituições de saúde"
+                ]
+            },
+            "Distributed Ledger": {
+                "pros": [
+                    "Alta escalabilidade para gerenciar múltiplos consentimentos",
+                    "Flexibilidade para diferentes tipos de consentimento",
+                    "Potencial para processamento mais rápido"
+                ],
+                "cons": [
+                    "Possível complexidade na implementação de smart contracts",
+                    "Menor familiaridade dos usuários com a tecnologia",
+                    "Desafios na integração com sistemas de saúde existentes"
+                ]
+            }
+        }
+    }
+
+    return pros_cons[scenario][dlt]["pros"], pros_cons[scenario][dlt]["cons"]
+
 # Keep the existing functions (get_comparison_data and get_sunburst_data) unchanged

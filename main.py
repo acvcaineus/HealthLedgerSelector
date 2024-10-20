@@ -7,7 +7,7 @@ from pyvis.network import Network
 import streamlit.components.v1 as components
 from user_management import login, register, is_authenticated, logout
 from database import get_user_recommendations, save_recommendation, save_feedback
-from decision_logic import get_recommendation, compare_algorithms, select_final_algorithm
+from decision_logic import get_recommendation, compare_algorithms, select_final_algorithm, get_scenario_pros_cons
 from dlt_data import scenarios, questions, dlt_classes, consensus_algorithms
 from utils import init_session_state
 
@@ -111,6 +111,28 @@ def show_feedback_form():
             st.success("Obrigado pelo seu feedback! Sua opinião é muito importante para nós.")
             st.balloons()
 
+def show_scenario_selection(dlt, consensus_algorithm):
+    st.header("Escolha um Cenário de Aplicação")
+    scenario = st.selectbox("Selecione um cenário", list(scenarios.keys()))
+
+    st.write(f"**Descrição do cenário:** {scenarios[scenario]}")
+
+    st.subheader("Vantagens e Desvantagens da Implementação")
+    advantages, disadvantages = get_scenario_pros_cons(scenario, dlt, consensus_algorithm)
+    
+    st.write("**Vantagens:**")
+    for adv in advantages:
+        st.write(f"- {adv}")
+    
+    st.write("**Desvantagens:**")
+    for disadv in disadvantages:
+        st.write(f"- {disadv}")
+
+    if st.button("Finalizar"):
+        st.session_state.scenario = scenario
+        save_recommendation(st.session_state.username, scenario, st.session_state.recommendation)
+        st.success("Recomendação salva com sucesso!")
+
 def show_recommendation():
     if 'recommendation' not in st.session_state:
         st.error("Por favor, complete o questionário primeiro para receber uma recomendação.")
@@ -162,6 +184,9 @@ def show_recommendation():
         final_algorithm = select_final_algorithm(recommendation['consensus_group'], percentages)
         st.success(f"O algoritmo final recomendado é: {final_algorithm}")
 
+        # Call the new scenario selection function
+        show_scenario_selection(recommendation['dlt'], final_algorithm)
+
     st.subheader("Influência das Características na Decisão")
     fig = px.bar(df, x=df.index, y=df.columns, title="Comparação de Características")
     st.plotly_chart(fig)
@@ -170,11 +195,8 @@ def show_recommendation():
 
 def show_questionnaire():
     st.header("Questionário")
-    if st.session_state.scenario not in questions:
-        st.error(f"Cenário '{st.session_state.scenario}' não encontrado.")
-        return
-
-    scenario_questions = questions[st.session_state.scenario]
+    scenario = "Registros Médicos Eletrônicos (EMR)"  # Default scenario
+    scenario_questions = questions[scenario]
     question_order = ['privacy', 'integration', 'data_volume', 'energy_efficiency', 'network_security', 'scalability', 'governance_flexibility', 'interoperability']
 
     if 'question_index' not in st.session_state:
@@ -210,18 +232,6 @@ def show_questionnaire():
         st.session_state.recommendation = recommendation
         st.rerun()
 
-def show_scenario_selection():
-    st.header("Escolha um Cenário de Saúde")
-    scenario = st.selectbox("Selecione um cenário", list(scenarios.keys()))
-
-    st.write(f"**Descrição do cenário:** {scenarios[scenario]}")
-
-    if st.button("Iniciar"):
-        st.session_state.scenario = scenario
-        st.session_state.answers = {}
-        st.session_state.page = "weight_definition"
-        st.rerun()
-
 def show_home_page():
     st.header("Bem-vindo ao SeletorDLTSaude")
     st.write("""
@@ -231,7 +241,7 @@ def show_home_page():
     """)
 
     if st.button("Iniciar Questionário"):
-        st.session_state.page = "scenario_selection"
+        st.session_state.page = "weight_definition"
         st.rerun()
 
 def main():
@@ -256,8 +266,6 @@ def main():
 
         if st.session_state.page == "home":
             show_home_page()
-        elif st.session_state.page == "scenario_selection":
-            show_scenario_selection()
         elif st.session_state.page == "weight_definition":
             st.session_state.weights = define_consensus_weights()
             if st.button("Iniciar Questionário"):

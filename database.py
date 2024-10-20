@@ -2,23 +2,19 @@ import sqlite3
 import datetime
 import json
 
-# Conexão com o banco de dados
 def get_db_connection():
     conn = sqlite3.connect('seletordltsaude.db')
-    conn.row_factory = sqlite3.Row  # Para retorno de resultados no formato de dicionário
+    conn.row_factory = sqlite3.Row
     return conn
 
-# Inicialização do banco de dados
 def init_db():
     conn = get_db_connection()
     c = conn.cursor()
 
-    # Tabela de usuários
     c.execute('''CREATE TABLE IF NOT EXISTS users
                  (username TEXT PRIMARY KEY, 
                   password TEXT)''')
 
-    # Tabela de recomendações
     c.execute('''CREATE TABLE IF NOT EXISTS recommendations
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   username TEXT,
@@ -27,7 +23,6 @@ def init_db():
                   consensus TEXT,
                   timestamp DATETIME)''')
 
-    # Update the feedback table
     c.execute('''CREATE TABLE IF NOT EXISTS feedback
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   username TEXT,
@@ -43,7 +38,6 @@ def init_db():
     conn.commit()
     conn.close()
 
-# Função para criar novo usuário
 def create_user(username, hashed_password):
     conn = get_db_connection()
     c = conn.cursor()
@@ -52,12 +46,11 @@ def create_user(username, hashed_password):
                   (username, hashed_password))
         conn.commit()
         return True
-    except sqlite3.IntegrityError:  # Caso o usuário já exista
+    except sqlite3.IntegrityError:
         return False
     finally:
         conn.close()
 
-# Função para buscar um usuário
 def get_user(username):
     conn = get_db_connection()
     c = conn.cursor()
@@ -66,7 +59,6 @@ def get_user(username):
     conn.close()
     return user
 
-# Função para salvar uma recomendação
 def save_recommendation(username, scenario, recommendation):
     conn = get_db_connection()
     c = conn.cursor()
@@ -79,7 +71,6 @@ def save_recommendation(username, scenario, recommendation):
     conn.commit()
     conn.close()
 
-# Função para buscar recomendações de um usuário
 def get_user_recommendations(username):
     conn = get_db_connection()
     c = conn.cursor()
@@ -90,7 +81,6 @@ def get_user_recommendations(username):
     conn.close()
     return recommendations
 
-# Função atualizada para salvar feedback do usuário
 def save_feedback(username, scenario, dlt, consensus_group, feedback_data):
     conn = get_db_connection()
     c = conn.cursor()
@@ -104,21 +94,18 @@ def save_feedback(username, scenario, dlt, consensus_group, feedback_data):
     conn.commit()
     conn.close()
 
-def add_usefulness_column():
+def add_comment_column():
     conn = get_db_connection()
     c = conn.cursor()
     try:
-        c.execute("ALTER TABLE feedback ADD COLUMN usefulness TEXT")
+        c.execute("ALTER TABLE feedback ADD COLUMN comment TEXT")
         conn.commit()
-        print("Added 'usefulness' column to feedback table")
+        print("Added 'comment' column to feedback table")
     except sqlite3.OperationalError as e:
         if "duplicate column name" not in str(e):
-            print(f"Error adding 'usefulness' column: {e}")
+            print(f"Error adding 'comment' column: {e}")
     finally:
         conn.close()
 
-# Inicializa o banco de dados ao iniciar a aplicação
 init_db()
-
-# Call the function to add the new column
-add_usefulness_column()
+add_comment_column()
