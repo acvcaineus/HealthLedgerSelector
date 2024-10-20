@@ -157,40 +157,40 @@ def show_questionnaire():
         return
 
     scenario_questions = questions[st.session_state.scenario]
-    
-    if 'current_layer' not in st.session_state:
-        st.session_state.current_layer = 'Aplicação'
-    
-    current_question = next((q for q in scenario_questions if q['shermin_layer'] == st.session_state.current_layer), None)
-    
-    if current_question is None:
+    question_order = ['privacy', 'integration', 'data_volume', 'energy_efficiency', 'network_security', 'scalability', 'governance_flexibility', 'interoperability']
+
+    if 'question_index' not in st.session_state:
+        st.session_state.question_index = 0
+
+    if st.session_state.question_index < len(question_order):
+        current_question = next(q for q in scenario_questions if q['id'] == question_order[st.session_state.question_index])
+
+        st.subheader(f"Pergunta {st.session_state.question_index + 1} - Camada {current_question['shermin_layer']}")
+        st.write(current_question['text'])
+
+        st.info(f"Camada Shermin: {current_question['shermin_layer']}")
+        st.write(f"Características consideradas: {', '.join(current_question['characteristics'])}")
+
+        answer = st.radio("Selecione uma opção:", current_question['options'])
+
+        if st.button("Próximo"):
+            st.session_state.answers[current_question['id']] = answer
+            st.session_state.question_index += 1
+
+            if st.session_state.question_index == len(question_order):
+                st.session_state.page = "recommendation"
+                recommendation = get_recommendation(st.session_state.answers, st.session_state.weights)
+                st.session_state.recommendation = recommendation
+            st.rerun()
+
+        progress = (st.session_state.question_index + 1) / len(question_order)
+        st.progress(progress)
+        st.write(f"Progresso: Pergunta {st.session_state.question_index + 1} de {len(question_order)}")
+    else:
         st.session_state.page = "recommendation"
         recommendation = get_recommendation(st.session_state.answers, st.session_state.weights)
         st.session_state.recommendation = recommendation
         st.rerun()
-        return
-
-    st.subheader(f"Pergunta - Camada {current_question['shermin_layer']}")
-    st.write(current_question['text'])
-
-    st.info(f"Camada Shermin: {current_question['shermin_layer']}")
-    st.write(f"Características consideradas: {', '.join(current_question['characteristics'])}")
-
-    answer = st.radio("Selecione uma opção:", current_question['options'])
-
-    if st.button("Próximo"):
-        st.session_state.answers[current_question['id']] = answer
-        st.session_state.current_layer = current_question['next_layer'][answer]
-        
-        if len(st.session_state.answers) == len(scenario_questions):
-            st.session_state.page = "recommendation"
-            recommendation = get_recommendation(st.session_state.answers, st.session_state.weights)
-            st.session_state.recommendation = recommendation
-        st.rerun()
-
-    progress = len(st.session_state.answers) / len(scenario_questions)
-    st.progress(progress)
-    st.write(f"Progresso: {len(st.session_state.answers)} de {len(scenario_questions)} perguntas respondidas")
 
 def show_scenario_selection():
     st.header("Escolha um Cenário de Saúde")
