@@ -21,6 +21,24 @@ def define_weights():
     
     return weights
 
+def show_decision_flow():
+    st.subheader("Fluxo de Decisão")
+    
+    # Create a DataFrame with the user's answers
+    df = pd.DataFrame(list(st.session_state.answers.items()), columns=['Pergunta', 'Resposta'])
+    
+    # Create a horizontal bar chart
+    fig = px.bar(df, y='Pergunta', x=[1]*len(df), color='Resposta', orientation='h',
+                 color_discrete_map={'Sim': 'green', 'Não': 'red'})
+    fig.update_layout(showlegend=False, height=400, width=600)
+    fig.update_traces(width=0.6)
+    
+    # Add text annotations
+    for i, row in enumerate(df.itertuples()):
+        fig.add_annotation(x=0.5, y=i, text=row.Resposta, showarrow=False, font=dict(color='white'))
+    
+    st.plotly_chart(fig)
+
 def show_recommendation():
     if 'recommendation' not in st.session_state:
         st.error("Por favor, complete o questionário primeiro para receber uma recomendação.")
@@ -45,6 +63,31 @@ def show_recommendation():
         **Algoritmo de Consenso Recomendado:** {recommendation['consensus']}
         {recommendation['consensus_explanation']}
         ''')
+
+    show_decision_flow()
+
+    # Add radar chart for DLT comparison
+    st.subheader("Comparação de DLTs")
+    comparison_data = get_comparison_data(recommendation['dlt'], recommendation['consensus'])
+    
+    # Create radar chart
+    categories = list(comparison_data.keys())
+    fig = go.Figure()
+
+    for dlt, values in comparison_data[categories[0]].items():
+        fig.add_trace(go.Scatterpolar(
+            r=[comparison_data[cat][dlt] for cat in categories],
+            theta=categories,
+            fill='toself',
+            name=dlt
+        ))
+
+    fig.update_layout(
+        polar=dict(radialaxis=dict(visible=True, range=[0, 10])),
+        showlegend=True
+    )
+
+    st.plotly_chart(fig)
 
     st.header("Feedback")
     st.write("Por favor, forneça seu feedback sobre a recomendação:")
@@ -90,7 +133,6 @@ def show_questionnaire():
     scenario_questions = questions[st.session_state.scenario]
     if st.session_state.step > len(scenario_questions):
         st.session_state.page = "recommendation"
-        st.session_state.weights = define_weights()
         recommendation = get_recommendation(st.session_state.answers, st.session_state.weights)
         st.session_state.recommendation = recommendation
         st.rerun()
@@ -114,7 +156,6 @@ def show_questionnaire():
                 st.session_state.step += 1
             else:
                 st.session_state.page = "recommendation"
-                st.session_state.weights = define_weights()
                 recommendation = get_recommendation(st.session_state.answers, st.session_state.weights)
                 st.session_state.recommendation = recommendation
             st.rerun()
@@ -129,7 +170,7 @@ def show_scenario_selection():
         st.session_state.scenario = scenario
         st.session_state.step = 1
         st.session_state.answers = {}
-        st.session_state.page = "questionnaire"
+        st.session_state.page = "weight_definition"
         st.rerun()
 
 def show_home_page():
@@ -168,6 +209,11 @@ def main():
             show_home_page()
         elif st.session_state.page == "scenario_selection":
             show_scenario_selection()
+        elif st.session_state.page == "weight_definition":
+            st.session_state.weights = define_weights()
+            if st.button("Iniciar Questionário"):
+                st.session_state.page = "questionnaire"
+                st.rerun()
         elif st.session_state.page == "questionnaire":
             show_questionnaire()
         elif st.session_state.page == "recommendation":

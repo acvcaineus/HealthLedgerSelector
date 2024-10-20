@@ -27,7 +27,7 @@ def init_db():
                   consensus TEXT,
                   timestamp DATETIME)''')
 
-    # Tabela de feedbacks (atualizada)
+    # Update the feedback table
     c.execute('''CREATE TABLE IF NOT EXISTS feedback
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   username TEXT,
