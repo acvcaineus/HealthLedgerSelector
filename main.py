@@ -133,10 +133,73 @@ def show_correlation_table():
     df = pd.DataFrame(data)
     st.table(df)
 
-def show_recommendation():
-    if 'scenario' not in st.session_state or st.session_state.scenario is None:
-        st.session_state.scenario = "Registros Médicos Eletrônicos (EMR)"
+def show_questionnaire():
+    st.header("Questionário")
+    scenario = "Registros Médicos Eletrônicos (EMR)"
+    scenario_questions = questions[scenario]
+    question_order = ['privacy', 'integration', 'data_volume', 'energy_efficiency', 'network_security', 'scalability', 'governance_flexibility', 'interoperability']
 
+    if 'question_index' not in st.session_state:
+        st.session_state.question_index = 0
+
+    if st.session_state.question_index < len(question_order):
+        current_question = next(q for q in scenario_questions if q['id'] == question_order[st.session_state.question_index])
+
+        st.subheader(f"Pergunta {st.session_state.question_index + 1} - Camada {current_question['shermin_layer']}")
+        st.write(current_question['text'])
+
+        st.info(f"Camada Shermin: {current_question['shermin_layer']}")
+        st.write(f"Características consideradas: {', '.join(current_question['characteristics'])}")
+
+        answer = st.radio("Selecione uma opção:", current_question['options'])
+
+        if st.button("Próximo"):
+            st.session_state.answers[current_question['id']] = answer
+            st.session_state.question_index += 1
+
+            if st.session_state.question_index == len(question_order):
+                st.session_state.page = "prioritize_characteristics"
+            st.rerun()
+
+        progress = (st.session_state.question_index + 1) / len(question_order)
+        st.progress(progress)
+        st.write(f"Progresso: Pergunta {st.session_state.question_index + 1} de {len(question_order)}")
+    else:
+        st.session_state.page = "prioritize_characteristics"
+        st.rerun()
+
+def show_prioritize_characteristics():
+    st.header("Priorize as Características")
+    st.write("Distribua 100 pontos entre as seguintes características de acordo com sua importância para o seu projeto:")
+
+    total_points = 100
+    remaining_points = total_points
+
+    characteristics = ["Segurança", "Escalabilidade", "Eficiência Energética", "Governança"]
+    weights = {}
+
+    col1, col2 = st.columns(2)
+
+    for i, char in enumerate(characteristics):
+        with col1 if i % 2 == 0 else col2:
+            weights[char.lower()] = st.slider(f"{char} ({remaining_points} pontos restantes)", 
+                                              min_value=0, 
+                                              max_value=remaining_points, 
+                                              value=min(25, remaining_points),
+                                              key=f"weight_{char.lower()}")
+            remaining_points -= weights[char.lower()]
+
+    if remaining_points == 0:
+        if st.button("Finalizar e Obter Recomendação"):
+            st.session_state.weights = weights
+            recommendation = get_recommendation(st.session_state.answers, st.session_state.weights)
+            st.session_state.recommendation = recommendation
+            st.session_state.page = "recommendation"
+            st.rerun()
+    else:
+        st.warning(f"Por favor, distribua todos os {remaining_points} pontos restantes antes de prosseguir.")
+
+def show_recommendation():
     if 'recommendation' not in st.session_state:
         st.error("Por favor, complete o questionário primeiro para receber uma recomendação.")
         return
@@ -168,7 +231,7 @@ def show_recommendation():
     df = pd.DataFrame(comparison_data)
     st.table(df)
 
-    st.subheader("Priorize as Características")
+    st.subheader("Ajuste Fino das Prioridades")
     characteristics = ["Segurança", "Escalabilidade", "Eficiência Energética", "Governança"]
     priorities = {}
     for char in characteristics:
@@ -184,53 +247,6 @@ def show_recommendation():
     st.plotly_chart(fig)
 
     show_feedback_form()
-
-def show_questionnaire():
-    if 'weights' not in st.session_state or not st.session_state.weights:
-        st.session_state.weights = {
-            "security": 25,
-            "scalability": 25,
-            "energy_efficiency": 25,
-            "governance": 25
-        }
-
-    st.header("Questionário")
-    scenario = "Registros Médicos Eletrônicos (EMR)"
-    scenario_questions = questions[scenario]
-    question_order = ['privacy', 'integration', 'data_volume', 'energy_efficiency', 'network_security', 'scalability', 'governance_flexibility', 'interoperability']
-
-    if 'question_index' not in st.session_state:
-        st.session_state.question_index = 0
-
-    if st.session_state.question_index < len(question_order):
-        current_question = next(q for q in scenario_questions if q['id'] == question_order[st.session_state.question_index])
-
-        st.subheader(f"Pergunta {st.session_state.question_index + 1} - Camada {current_question['shermin_layer']}")
-        st.write(current_question['text'])
-
-        st.info(f"Camada Shermin: {current_question['shermin_layer']}")
-        st.write(f"Características consideradas: {', '.join(current_question['characteristics'])}")
-
-        answer = st.radio("Selecione uma opção:", current_question['options'])
-
-        if st.button("Próximo"):
-            st.session_state.answers[current_question['id']] = answer
-            st.session_state.question_index += 1
-
-            if st.session_state.question_index == len(question_order):
-                st.session_state.page = "recommendation"
-                recommendation = get_recommendation(st.session_state.answers, st.session_state.weights)
-                st.session_state.recommendation = recommendation
-            st.rerun()
-
-        progress = (st.session_state.question_index + 1) / len(question_order)
-        st.progress(progress)
-        st.write(f"Progresso: Pergunta {st.session_state.question_index + 1} de {len(question_order)}")
-    else:
-        st.session_state.page = "recommendation"
-        recommendation = get_recommendation(st.session_state.answers, st.session_state.weights)
-        st.session_state.recommendation = recommendation
-        st.rerun()
 
 def show_home_page():
     st.header("Bem-vindo ao SeletorDLTSaude")
@@ -268,6 +284,8 @@ def main():
             show_home_page()
         elif st.session_state.page == "questionnaire":
             show_questionnaire()
+        elif st.session_state.page == "prioritize_characteristics":
+            show_prioritize_characteristics()
         elif st.session_state.page == "recommendation":
             show_recommendation()
 
