@@ -49,7 +49,7 @@ def show_home_page():
         st.session_state.page = "questionnaire"
         st.session_state.step = 0
         st.session_state.answers = {}
-        st.rerun()
+        st.experimental_rerun()
 
 # Função para exibir o questionário
 def show_questionnaire():
@@ -72,12 +72,10 @@ def show_questionnaire():
             st.session_state.step += 1
             if st.session_state.step >= len(questions[scenario]):
                 st.session_state.page = "weights"
-                st.rerun()
-            else:
-                st.rerun()
+            st.experimental_rerun()
     else:
         st.session_state.page = "weights"
-        st.rerun()
+        st.experimental_rerun()
 
 # Função para exibir a página de pesos das características
 def show_weights():
@@ -94,7 +92,7 @@ def show_weights():
     if st.button("Gerar Recomendação"):
         st.session_state.weights = weights
         st.session_state.page = "recommendation"
-        st.rerun()
+        st.experimental_rerun()
 
 # Função para exibir a recomendação final
 def show_recommendation():
@@ -157,28 +155,55 @@ def main():
     else:
         # Menu de navegação na barra lateral
         st.sidebar.title("Menu")
+
+        # Verifica se o estado da página está definido, caso contrário, define como "Início"
+        if 'page' not in st.session_state:
+            st.session_state.page = "Início"
+
+        # Menu de opções
         menu_option = st.sidebar.selectbox(
             "Escolha uma opção",
-            ["Início", "Questionário", "Recomendações", "Árvore de Decisão", "Comparação de Frameworks", "Logout"]
+            ["Início", "Questionário", "Recomendações", "Árvore de Decisão", "Comparação de Frameworks", "Logout"],
+            index=["Início", "Questionário", "Recomendações", "Árvore de Decisão", "Comparação de Frameworks", "Logout"].index(st.session_state.page)
         )
 
-        if menu_option == "Início":
-            show_home_page()
+        # Atualiza o estado da página de acordo com a opção selecionada no menu
+        st.session_state.page = menu_option
 
-        elif menu_option == "Questionário" or st.session_state.get('page') == "questionnaire":
-            show_questionnaire()
+        # Navegação entre as páginas
+        if st.session_state.page == "Início":
+            show_home_page()  # Mostra a página inicial com a tabela de correlação
 
-        elif menu_option == "Recomendações" or st.session_state.page == "weights":
-            show_weights()
+        elif st.session_state.page == "Questionário":
+            show_questionnaire()  # Mostra o questionário
+
+        elif st.session_state.page == "Recomendações":
+            show_weights()  # Mostra a página para definir os pesos das características
 
         elif st.session_state.page == "recommendation":
-            show_recommendation()
+            show_recommendation()  # Mostra a recomendação final de DLT e algoritmos
 
-        elif menu_option == "Árvore de Decisão":
+        elif st.session_state.page == "Árvore de Decisão":
             run_decision_tree()  # Chama a função para rodar a árvore de decisão
 
-        elif menu_option == "Logout":
-            logout()
+        elif st.session_state.page == "Logout":
+            logout()  # Faz logout e redireciona o usuário para a página de login
+
+# Função para iniciar o questionário na página inicial
+def show_home_page():
+    st.header("Bem-vindo ao SeletorDLTSaude")
+    st.write("""
+        O SeletorDLTSaude é uma ferramenta interativa projetada para ajudar profissionais e pesquisadores 
+        da área de saúde a escolher a melhor solução de Tecnologia de Ledger Distribuído (DLT) e o algoritmo 
+        de consenso mais adequado para seus projetos.
+    """)
+    show_correlation_table()  # Mostra a tabela de correlação de DLTs
+
+    if st.button("Iniciar Questionário"):
+        st.session_state.page = "Questionário"  # Atualiza o estado da página para iniciar o questionário
+        st.session_state.step = 0  # Reseta o passo do questionário
+        st.session_state.answers = {}  # Reseta as respostas
+        st.experimental_rerun()  # Redireciona para a página do questionário
 
 if __name__ == "__main__":
     main()
