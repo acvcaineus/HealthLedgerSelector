@@ -36,29 +36,24 @@ def show_decision_flow():
         question_data = next(q for q in questions[st.session_state.scenario] if q['id'] == question)
         answer = st.session_state.answers[question]
         
-        # Add question node
         G.add_node(question, label=question_data['text'], color='lightblue', 
                    pos=(layer_positions[question_data['shermin_layer']], 0),
                    shermin_layer=question_data['shermin_layer'], 
                    characteristics=', '.join(question_data['characteristics']))
         
-        # Add answer node
         answer_node = f"{question}_{answer}"
         G.add_node(answer_node, label=answer, color='green' if answer == 'Sim' else 'red',
                    pos=(layer_positions[question_data['shermin_layer']], 1),
                    shape='box')
         
-        # Add edge from question to answer
         G.add_edge(question, answer_node)
         
-        # Add edge to next question based on the answer
         next_layer = question_data['next_layer'][answer]
         next_questions = [q for q in questions[st.session_state.scenario] if q['shermin_layer'] == next_layer]
         if next_questions:
             next_question = next_questions[0]['id']
             G.add_edge(answer_node, next_question, color='gray', style='dashed')
     
-    # Use Graphviz layout for better organization
     pos = nx.spring_layout(G)
     
     net = Network(height="500px", width="100%", directed=True)
@@ -196,14 +191,12 @@ def show_questionnaire():
         st.session_state.answers[current_question['id']] = answer
         st.session_state.current_layer = current_question['next_layer'][answer]
         
-        # Check if we've answered all questions
         if len(st.session_state.answers) == len(scenario_questions):
             st.session_state.page = "recommendation"
             recommendation = get_recommendation(st.session_state.answers, st.session_state.weights)
             st.session_state.recommendation = recommendation
         st.rerun()
 
-    # Show progress
     progress = len(st.session_state.answers) / len(scenario_questions)
     st.progress(progress)
     st.write(f"Progresso: {len(st.session_state.answers)} de {len(scenario_questions)} perguntas respondidas")

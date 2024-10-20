@@ -69,4 +69,14 @@ questions = {
     # ... other scenarios ...
 }
 
+# Classes de DLT (Distributed Ledger Technology) que podem ser recomendadas pelo sistema.
+dlt_classes = {
+    "Public Blockchain": "DLT pública com alta descentralização e segurança, como o Bitcoin ou Ethereum.",
+    "Permissioned Blockchain": "DLT permissionada onde o controle sobre os participantes da rede é centralizado, como o Hyperledger Fabric.",
+    "Private Blockchain": "DLT privada onde uma entidade tem controle completo sobre a rede.",
+    "Hybrid Blockchain": "Combinação de blockchain pública e privada, aproveitando os benefícios de ambas.",
+    "Distributed Ledger": "Sistemas de ledger distribuído que não utilizam necessariamente a tecnologia de blockchain.",
+    "Consortium Blockchain": "Blockchain gerido por um grupo de instituições (consórcio), ideal para setores regulamentados."
+}
+
 # The rest of the file remains unchanged
