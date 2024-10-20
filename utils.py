@@ -6,7 +6,7 @@ def init_session_state():
     if 'username' not in st.session_state:
         st.session_state.username = None
     if 'page' not in st.session_state:
-        st.session_state.page = "home"
+        st.session_state.page = 'Início'
     if 'scenario' not in st.session_state:
         st.session_state.scenario = None
     if 'step' not in st.session_state:

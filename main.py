@@ -6,7 +6,6 @@ from decision_logic import get_recommendation, compare_algorithms, select_final_
 from dlt_data import questions, scenarios
 from utils import init_session_state
 
-# Função para mostrar a tabela de correlação
 def show_correlation_table():
     st.subheader("Tabela de Correlação DLT, Grupo de Algoritmo e Algoritmo de Consenso")
     data = {
@@ -35,7 +34,6 @@ def show_correlation_table():
     df = pd.DataFrame(data)
     st.table(df)
 
-# Função para exibir a página inicial
 def show_home_page():
     st.header("Bem-vindo ao SeletorDLTSaude")
     st.write("""
@@ -46,12 +44,11 @@ def show_home_page():
     show_correlation_table()
 
     if st.button("Iniciar Questionário"):
-        st.session_state.page = "questionnaire"
+        st.session_state.page = "Questionário"
         st.session_state.step = 0
         st.session_state.answers = {}
         st.experimental_rerun()
 
-# Função para exibir o questionário
 def show_questionnaire():
     st.header("Questionário de Seleção de DLT")
     if 'step' not in st.session_state:
@@ -71,13 +68,12 @@ def show_questionnaire():
             st.session_state.answers[current_question['id']] = answer
             st.session_state.step += 1
             if st.session_state.step >= len(questions[scenario]):
-                st.session_state.page = "weights"
+                st.session_state.page = "Recomendações"
             st.experimental_rerun()
     else:
-        st.session_state.page = "weights"
+        st.session_state.page = "Recomendações"
         st.experimental_rerun()
 
-# Função para exibir a página de pesos das características
 def show_weights():
     st.header("Definir Pesos das Características")
     st.write("Atribua um peso de 1 a 5 para cada característica, onde 1 é menos importante e 5 é mais importante.")
@@ -94,7 +90,6 @@ def show_weights():
         st.session_state.page = "recommendation"
         st.experimental_rerun()
 
-# Função para exibir a recomendação final
 def show_recommendation():
     st.header("Recomendação de DLT e Algoritmo de Consenso")
 
@@ -139,12 +134,10 @@ def show_recommendation():
                     st.write(f"- {con}")
                 st.write(f"Aplicabilidade do Algoritmo: {details['algorithm_applicability']}")
 
-# Função principal do app
 def main():
-    init_session_state()  # Inicializa o estado de sessão
+    init_session_state()
     st.set_page_config(page_title="SeletorDLTSaude", page_icon="🏥", layout="wide")
 
-    # Autenticação do usuário
     if not is_authenticated():
         st.title("SeletorDLTSaude - Login")
         tab1, tab2 = st.tabs(["Login", "Registrar"])
@@ -153,57 +146,31 @@ def main():
         with tab2:
             register()
     else:
-        # Menu de navegação na barra lateral
         st.sidebar.title("Menu")
 
-        # Verifica se o estado da página está definido, caso contrário, define como "Início"
-        if 'page' not in st.session_state:
-            st.session_state.page = "Início"
-
-        # Menu de opções
+        menu_options = ['Início', 'Questionário', 'Recomendações', 'Árvore de Decisão', 'Comparação de Frameworks', 'Logout']
         menu_option = st.sidebar.selectbox(
             "Escolha uma opção",
-            ["Início", "Questionário", "Recomendações", "Árvore de Decisão", "Comparação de Frameworks", "Logout"],
-            index=["Início", "Questionário", "Recomendações", "Árvore de Decisão", "Comparação de Frameworks", "Logout"].index(st.session_state.page)
+            menu_options,
+            index=menu_options.index(st.session_state.page)
         )
 
-        # Atualiza o estado da página de acordo com a opção selecionada no menu
         st.session_state.page = menu_option
 
-        # Navegação entre as páginas
-        if st.session_state.page == "Início":
-            show_home_page()  # Mostra a página inicial com a tabela de correlação
-
-        elif st.session_state.page == "Questionário":
-            show_questionnaire()  # Mostra o questionário
-
-        elif st.session_state.page == "Recomendações":
-            show_weights()  # Mostra a página para definir os pesos das características
-
-        elif st.session_state.page == "recommendation":
-            show_recommendation()  # Mostra a recomendação final de DLT e algoritmos
-
-        elif st.session_state.page == "Árvore de Decisão":
-            run_decision_tree()  # Chama a função para rodar a árvore de decisão
-
-        elif st.session_state.page == "Logout":
-            logout()  # Faz logout e redireciona o usuário para a página de login
-
-# Função para iniciar o questionário na página inicial
-def show_home_page():
-    st.header("Bem-vindo ao SeletorDLTSaude")
-    st.write("""
-        O SeletorDLTSaude é uma ferramenta interativa projetada para ajudar profissionais e pesquisadores 
-        da área de saúde a escolher a melhor solução de Tecnologia de Ledger Distribuído (DLT) e o algoritmo 
-        de consenso mais adequado para seus projetos.
-    """)
-    show_correlation_table()  # Mostra a tabela de correlação de DLTs
-
-    if st.button("Iniciar Questionário"):
-        st.session_state.page = "Questionário"  # Atualiza o estado da página para iniciar o questionário
-        st.session_state.step = 0  # Reseta o passo do questionário
-        st.session_state.answers = {}  # Reseta as respostas
-        st.experimental_rerun()  # Redireciona para a página do questionário
+        if menu_option == 'Início':
+            show_home_page()
+        elif menu_option == 'Questionário':
+            show_questionnaire()
+        elif menu_option == 'Recomendações':
+            show_weights()
+        elif menu_option == 'recommendation':
+            show_recommendation()
+        elif menu_option == 'Árvore de Decisão':
+            run_decision_tree()
+        elif menu_option == 'Comparação de Frameworks':
+            st.write("Página de Comparação de Frameworks em desenvolvimento.")
+        elif menu_option == 'Logout':
+            logout()
 
 if __name__ == "__main__":
     main()
