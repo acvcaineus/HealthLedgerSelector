@@ -1,4 +1,11 @@
-# Perguntas que o sistema faz para determinar o tipo de DLT e o algoritmo de consenso.
+# Scenarios for DLT application in healthcare
+scenarios = {
+    "Registros Médicos Eletrônicos (EMR)": "Implementação de DLT para gerenciar registros médicos eletrônicos de forma segura e interoperável.",
+    "Cadeia de Suprimentos Farmacêutica": "Uso de DLT para rastrear e autenticar medicamentos ao longo da cadeia de suprimentos.",
+    "Consentimento de Pacientes": "Aplicação de DLT para gerenciar consentimentos de pacientes de forma transparente e auditável."
+}
+
+# Questions based on the Shermin stack layers
 questions = {
     "Registros Médicos Eletrônicos (EMR)": [
         {
@@ -6,70 +13,69 @@ questions = {
             "text": "A privacidade dos dados do paciente é crítica?",
             "options": ["Sim", "Não"],
             "shermin_layer": "Aplicação",
-            "characteristics": ["Segurança", "Governança"],
+            "characteristics": ["Segurança", "Privacidade"],
             "next_layer": {"Sim": "Consenso", "Não": "Aplicação"}
         },
         {
-            "id": "access_control",
-            "text": "É necessário um controle de acesso granular aos registros?",
+            "id": "integration",
+            "text": "É necessária integração com outros sistemas de saúde?",
             "options": ["Sim", "Não"],
             "shermin_layer": "Aplicação",
-            "characteristics": ["Segurança", "Privacidade"],
+            "characteristics": ["Interoperabilidade", "Escalabilidade"],
             "next_layer": {"Sim": "Consenso", "Não": "Consenso"}
         },
         {
-            "id": "scalability",
-            "text": "O sistema precisa lidar com um grande volume de registros médicos?",
+            "id": "data_volume",
+            "text": "O sistema precisa lidar com grandes volumes de registros médicos?",
             "options": ["Sim", "Não"],
             "shermin_layer": "Consenso",
             "characteristics": ["Escalabilidade", "Desempenho"],
             "next_layer": {"Sim": "Infraestrutura", "Não": "Consenso"}
         },
         {
-            "id": "data_integrity",
-            "text": "A integridade dos dados é uma preocupação crítica?",
+            "id": "energy_efficiency",
+            "text": "A eficiência energética é uma preocupação importante?",
             "options": ["Sim", "Não"],
             "shermin_layer": "Consenso",
-            "characteristics": ["Segurança", "Confiabilidade"],
+            "characteristics": ["Eficiência Energética", "Sustentabilidade"],
             "next_layer": {"Sim": "Infraestrutura", "Não": "Infraestrutura"}
         },
         {
-            "id": "interoperability",
-            "text": "A interoperabilidade com outros sistemas de saúde é necessária?",
+            "id": "network_security",
+            "text": "A segurança da rede é uma prioridade crítica?",
             "options": ["Sim", "Não"],
             "shermin_layer": "Infraestrutura",
-            "characteristics": ["Interoperabilidade", "Escalabilidade"],
+            "characteristics": ["Segurança", "Confiabilidade"],
             "next_layer": {"Sim": "Internet", "Não": "Infraestrutura"}
         },
         {
-            "id": "storage_capacity",
-            "text": "É necessária uma grande capacidade de armazenamento?",
+            "id": "scalability",
+            "text": "A escalabilidade é uma característica chave para o sucesso do sistema?",
             "options": ["Sim", "Não"],
             "shermin_layer": "Infraestrutura",
-            "characteristics": ["Escalabilidade", "Armazenamento"],
+            "characteristics": ["Escalabilidade", "Desempenho"],
             "next_layer": {"Sim": "Internet", "Não": "Internet"}
         },
         {
-            "id": "real_time_access",
-            "text": "O acesso em tempo real aos dados é necessário?",
+            "id": "governance_flexibility",
+            "text": "É necessária flexibilidade na governança da rede?",
             "options": ["Sim", "Não"],
             "shermin_layer": "Internet",
-            "characteristics": ["Desempenho", "Acessibilidade"],
+            "characteristics": ["Governança", "Flexibilidade"],
             "next_layer": {"Sim": "Aplicação", "Não": "Internet"}
         },
         {
-            "id": "global_access",
-            "text": "É necessário acesso global aos registros médicos?",
+            "id": "interoperability",
+            "text": "A interoperabilidade com outras redes é importante?",
             "options": ["Sim", "Não"],
             "shermin_layer": "Internet",
-            "characteristics": ["Acessibilidade", "Escalabilidade"],
+            "characteristics": ["Interoperabilidade", "Conectividade"],
             "next_layer": {"Sim": "Aplicação", "Não": "Aplicação"}
         }
-    ],
-    # ... other scenarios ...
+    ]
 }
 
-# Classes de DLT (Distributed Ledger Technology) que podem ser recomendadas pelo sistema.
+# DLT classes that can be recommended by the system
 dlt_classes = {
     "Public Blockchain": "DLT pública com alta descentralização e segurança, como o Bitcoin ou Ethereum.",
     "Permissioned Blockchain": "DLT permissionada onde o controle sobre os participantes da rede é centralizado, como o Hyperledger Fabric.",
@@ -79,7 +85,7 @@ dlt_classes = {
     "Consortium Blockchain": "Blockchain gerido por um grupo de instituições (consórcio), ideal para setores regulamentados."
 }
 
-# Algoritmos de consenso que podem ser recomendados.
+# Consensus algorithms that can be recommended
 consensus_algorithms = {
     "Proof of Stake (PoS)": "Algoritmo de consenso eficiente energeticamente usado por blockchains públicos como Ethereum 2.0.",
     "Proof of Work (PoW)": "Algoritmo de consenso intensivo em energia usado por blockchains como Bitcoin.",
@@ -91,5 +97,3 @@ consensus_algorithms = {
     "Nominated Proof of Stake (NPoS)": "Variante de PoS usada em blockchains como o Polkadot, onde validadores são indicados por seus nominadores.",
     "Tangle": "Estrutura de consenso usada pela IOTA, especialmente para redes de IoT, oferecendo alta escalabilidade."
 }
-
-# The rest of the file remains unchanged

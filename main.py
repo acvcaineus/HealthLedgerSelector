@@ -8,12 +8,12 @@ import streamlit.components.v1 as components
 from user_management import login, register, is_authenticated, logout
 from database import get_user_recommendations, save_recommendation, save_feedback
 from decision_logic import get_recommendation, get_comparison_data, get_sunburst_data
-from dlt_data import scenarios, questions, dlt_options, consensus_options, metrics
+from dlt_data import scenarios, questions, dlt_classes, consensus_algorithms
 from utils import init_session_state
 
-def define_weights():
-    st.subheader("Defina os Pesos para os Critérios")
-    st.write("Atribua um valor de 0 a 10 para cada critério com base na sua importância.")
+def define_consensus_weights():
+    st.subheader("Defina os Pesos para as Características do Algoritmo de Consenso")
+    st.write("Atribua um valor de 0 a 10 para cada característica com base na sua importância.")
     
     weights = {
         "security": st.slider("Peso de Segurança", 0, 10, 5),
@@ -24,9 +24,7 @@ def define_weights():
     
     return weights
 
-def show_decision_flow():
-    st.subheader("Fluxo de Decisão")
-    
+def generate_decision_tree():
     G = nx.DiGraph()
     
     shermin_layers = ['Aplicação', 'Consenso', 'Infraestrutura', 'Internet']
@@ -54,7 +52,12 @@ def show_decision_flow():
             next_question = next_questions[0]['id']
             G.add_edge(answer_node, next_question, color='gray', style='dashed')
     
-    pos = nx.spring_layout(G)
+    return G
+
+def show_decision_tree():
+    st.subheader("Árvore de Decisão")
+    
+    G = generate_decision_tree()
     
     net = Network(height="500px", width="100%", directed=True)
     net.from_nx(G)
@@ -76,54 +79,7 @@ def show_decision_flow():
     st.write("- Quadrados vermelhos: Respostas 'Não'")
     st.write("- Setas pontilhadas: Fluxo para a próxima pergunta")
 
-def show_recommendation():
-    if 'recommendation' not in st.session_state:
-        st.error("Por favor, complete o questionário primeiro para receber uma recomendação.")
-        return
-
-    recommendation = st.session_state.recommendation
-    st.header("Recomendação")
-
-    col1, col2 = st.columns(2)
-    with col1:
-        st.subheader("Framework DLT")
-        st.info(recommendation['dlt'])
-    with col2:
-        st.subheader("Algoritmo de Consenso")
-        st.info(recommendation['consensus'])
-
-    with st.expander("Explicação Detalhada"):
-        st.markdown(f'''
-        **DLT Recomendada:** {recommendation['dlt']}
-        {recommendation['dlt_explanation']}
-
-        **Algoritmo de Consenso Recomendado:** {recommendation['consensus']}
-        {recommendation['consensus_explanation']}
-        ''')
-
-    show_decision_flow()
-
-    st.subheader("Comparação de DLTs")
-    comparison_data = get_comparison_data(recommendation['dlt'], recommendation['consensus'])
-    
-    categories = list(comparison_data.keys())
-    fig = go.Figure()
-
-    for dlt, values in comparison_data[categories[0]].items():
-        fig.add_trace(go.Scatterpolar(
-            r=[comparison_data[cat][dlt] for cat in categories],
-            theta=categories,
-            fill='toself',
-            name=dlt
-        ))
-
-    fig.update_layout(
-        polar=dict(radialaxis=dict(visible=True, range=[0, 10])),
-        showlegend=True
-    )
-
-    st.plotly_chart(fig)
-
+def show_feedback_form():
     st.header("Feedback")
     st.write("Por favor, forneça seu feedback sobre a recomendação:")
 
@@ -151,13 +107,48 @@ def show_recommendation():
                 "comment": feedback_text,
                 "specific_aspects": specific_feedback
             }
-            save_feedback(st.session_state.username, st.session_state.scenario, recommendation, feedback_data)
+            save_feedback(st.session_state.username, st.session_state.scenario, st.session_state.recommendation, feedback_data)
             st.success("Obrigado pelo seu feedback! Sua opinião é muito importante para nós.")
             st.balloons()
 
-    if st.button("Voltar para a Página Inicial"):
-        st.session_state.page = "home"
-        st.rerun()
+def show_recommendation():
+    if 'recommendation' not in st.session_state:
+        st.error("Por favor, complete o questionário primeiro para receber uma recomendação.")
+        return
+
+    recommendation = st.session_state.recommendation
+    st.header("Recomendação")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("Framework DLT")
+        st.info(recommendation['dlt'])
+    with col2:
+        st.subheader("Algoritmo de Consenso")
+        st.info(recommendation['consensus'])
+
+    with st.expander("Explicação Detalhada"):
+        st.markdown(f'''
+        **DLT Recomendada:** {recommendation['dlt']}
+        {dlt_classes[recommendation['dlt']]}
+
+        **Algoritmo de Consenso Recomendado:** {recommendation['consensus']}
+        {consensus_algorithms[recommendation['consensus']]}
+        ''')
+
+    show_decision_tree()
+
+    st.subheader("Comparação de Algoritmos de Consenso")
+    comparison_data = get_comparison_data(recommendation['dlt'], recommendation['consensus'])
+    
+    df = pd.DataFrame(comparison_data)
+    st.table(df)
+
+    st.subheader("Influência das Características na Decisão")
+    fig = px.bar(df, x=df.index, y=df.columns, title="Comparação de Características")
+    st.plotly_chart(fig)
+
+    show_feedback_form()
 
 def show_questionnaire():
     st.header("Questionário")
@@ -250,7 +241,7 @@ def main():
         elif st.session_state.page == "scenario_selection":
             show_scenario_selection()
         elif st.session_state.page == "weight_definition":
-            st.session_state.weights = define_weights()
+            st.session_state.weights = define_consensus_weights()
             if st.button("Iniciar Questionário"):
                 st.session_state.page = "questionnaire"
                 st.rerun()
