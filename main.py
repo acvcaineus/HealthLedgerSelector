@@ -30,8 +30,12 @@ def show_decision_flow():
     G = nx.DiGraph()
     
     previous_question = None
-    for question, answer in st.session_state.answers.items():
-        G.add_node(question, label=questions[st.session_state.scenario][question]['text'], color='lightblue')
+    for question in st.session_state.answers:
+        question_data = next(q for q in questions[st.session_state.scenario] if q['id'] == question)
+        G.add_node(question, label=question_data['text'], color='lightblue', 
+                   shermin_layer=question_data['shermin_layer'], 
+                   characteristics=', '.join(question_data['characteristics']))
+        answer = st.session_state.answers[question]
         G.add_node(answer, label=answer, color='green' if answer == 'Sim' else 'red')
         G.add_edge(question, answer)
         if previous_question:
@@ -46,12 +50,13 @@ def show_decision_flow():
             node['shape'] = 'box'
         else:
             node['shape'] = 'ellipse'
+            node['title'] = f"Camada Shermin: {node['shermin_layer']}<br>Características: {node['characteristics']}"
     
     html = net.generate_html()
     components.html(html, height=600)
     
     st.write("**Legenda:**")
-    st.write("- Círculos azuis: Perguntas")
+    st.write("- Círculos azuis: Perguntas (Passe o mouse para ver a camada Shermin e características)")
     st.write("- Quadrados verdes: Respostas 'Sim'")
     st.write("- Quadrados vermelhos: Respostas 'Não'")
     st.write("- Setas: Fluxo de decisão")
@@ -156,6 +161,9 @@ def show_questionnaire():
     question = scenario_questions[st.session_state.step - 1]
     st.subheader(f"Pergunta {st.session_state.step}")
     st.write(question['text'])
+
+    st.info(f"Camada Shermin: {question['shermin_layer']}")
+    st.write(f"Características consideradas: {', '.join(question['characteristics'])}")
 
     answer = st.radio("Selecione uma opção:", question['options'])
 
