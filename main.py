@@ -177,7 +177,6 @@ def show_recommendation():
         final_algorithm = select_final_algorithm(recommendation['consensus_group'], percentages)
         st.success(f"O algoritmo final recomendado é: {final_algorithm}")
 
-        # Call the updated scenario selection function
         show_scenario_selection(recommendation['dlt'], final_algorithm)
 
     st.subheader("Influência das Características na Decisão")
@@ -187,6 +186,14 @@ def show_recommendation():
     show_feedback_form()
 
 def show_questionnaire():
+    if 'weights' not in st.session_state or not st.session_state.weights:
+        st.session_state.weights = {
+            "security": 25,
+            "scalability": 25,
+            "energy_efficiency": 25,
+            "governance": 25
+        }
+
     st.header("Questionário")
     scenario = "Registros Médicos Eletrônicos (EMR)"  # Default scenario
     scenario_questions = questions[scenario]
