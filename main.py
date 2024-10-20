@@ -107,7 +107,7 @@ def show_feedback_form():
                 "comment": feedback_text,
                 "specific_aspects": specific_feedback
             }
-            save_feedback(st.session_state.username, st.session_state.scenario, st.session_state.recommendation, feedback_data)
+            save_feedback(st.session_state.username, st.session_state.scenario, st.session_state.recommendation['dlt'], st.session_state.recommendation['consensus_group'], feedback_data)
             st.success("Obrigado pelo seu feedback! Sua opinião é muito importante para nós.")
             st.balloons()
 
@@ -146,14 +146,19 @@ def show_recommendation():
     st.subheader("Defina as Porcentagens para cada Característica")
     characteristics = ["Segurança", "Escalabilidade", "Eficiência Energética", "Governança"]
     percentages = {}
-    total = 0
-    for char in characteristics:
-        percentages[char] = st.slider(f"Porcentagem para {char}", 0, 100, 25, 5)
-        total += percentages[char]
-    
-    if total != 100:
-        st.warning(f"A soma das porcentagens deve ser 100%. Atualmente é {total}%.")
-    else:
+    remaining = 100
+    for i, char in enumerate(characteristics):
+        if i == len(characteristics) - 1:
+            percentages[char] = remaining
+            st.write(f"Porcentagem para {char}: {remaining}%")
+        else:
+            max_value = min(remaining, 100)
+            percentages[char] = st.slider(f"Porcentagem para {char}", 0, max_value, min(25, max_value), 5)
+            remaining -= percentages[char]
+
+    st.write(f"Porcentagem restante: {remaining}%")
+
+    if remaining == 0:
         final_algorithm = select_final_algorithm(recommendation['consensus_group'], percentages)
         st.success(f"O algoritmo final recomendado é: {final_algorithm}")
 

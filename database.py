@@ -75,7 +75,7 @@ def save_recommendation(username, scenario, recommendation):
                  (username, scenario, dlt, consensus, timestamp) 
                  VALUES (?, ?, ?, ?, ?)""",
               (username, scenario, recommendation['dlt'], 
-               recommendation['consensus'], timestamp))
+               recommendation['consensus_group'], timestamp))
     conn.commit()
     conn.close()
 
@@ -91,14 +91,14 @@ def get_user_recommendations(username):
     return recommendations
 
 # Função atualizada para salvar feedback do usuário
-def save_feedback(username, scenario, recommendation, feedback_data):
+def save_feedback(username, scenario, dlt, consensus_group, feedback_data):
     conn = get_db_connection()
     c = conn.cursor()
     timestamp = datetime.datetime.now().isoformat()
-    c.execute("""INSERT INTO feedback 
+    c.execute('''INSERT INTO feedback 
                  (username, scenario, dlt, consensus, rating, usefulness, comment, specific_aspects, timestamp) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-              (username, scenario, recommendation['dlt'], recommendation['consensus'],
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+              (username, scenario, dlt, consensus_group,
                feedback_data['rating'], feedback_data['usefulness'], feedback_data['comment'],
                json.dumps(feedback_data['specific_aspects']), timestamp))
     conn.commit()
