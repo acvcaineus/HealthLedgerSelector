@@ -47,7 +47,7 @@ def show_home_page():
         st.session_state.page = "Questionário"
         st.session_state.step = 0
         st.session_state.answers = {}
-        st.experimental_rerun()
+        st.rerun()
 
 def show_questionnaire():
     st.header("Questionário de Seleção de DLT")
@@ -69,10 +69,10 @@ def show_questionnaire():
             st.session_state.step += 1
             if st.session_state.step >= len(questions[scenario]):
                 st.session_state.page = "Recomendações"
-            st.experimental_rerun()
+            st.rerun()
     else:
         st.session_state.page = "Recomendações"
-        st.experimental_rerun()
+        st.rerun()
 
 def show_weights():
     st.header("Definir Pesos das Características")
@@ -88,7 +88,7 @@ def show_weights():
     if st.button("Gerar Recomendação"):
         st.session_state.weights = weights
         st.session_state.page = "recommendation"
-        st.experimental_rerun()
+        st.rerun()
 
 def show_recommendation():
     st.header("Recomendação de DLT e Algoritmo de Consenso")
