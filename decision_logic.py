@@ -44,30 +44,30 @@ def get_recommendation(answers, weights):
 
     for question_id, answer in answers.items():
         if question_id == "privacy" and answer == "Sim":
-            score["DLT Permissionada Privada"] += 2 * weights["segurança"]
-            score["DLT Permissionada Simples"] += 2 * weights["segurança"]
+            score["DLT Permissionada Privada"] += 2 * weights["security"]
+            score["DLT Permissionada Simples"] += 2 * weights["security"]
         elif question_id == "integration" and answer == "Sim":
-            score["DLT Híbrida"] += 2 * weights["escalabilidade"]
-            score["DLT com Consenso Delegado"] += 1 * weights["escalabilidade"]
+            score["DLT Híbrida"] += 2 * weights["scalability"]
+            score["DLT com Consenso Delegado"] += 1 * weights["scalability"]
         elif question_id == "data_volume" and answer == "Sim":
-            score["DLT com Consenso Delegado"] += 2 * weights["escalabilidade"]
-            score["DLT Pública Permissionless"] += 1 * weights["escalabilidade"]
+            score["DLT com Consenso Delegado"] += 2 * weights["scalability"]
+            score["DLT Pública Permissionless"] += 1 * weights["scalability"]
         elif question_id == "energy_efficiency" and answer == "Sim":
-            score["DLT Permissionada Privada"] += 1 * weights["eficiência energética"]
-            score["DLT Permissionada Simples"] += 1 * weights["eficiência energética"]
-            score["DLT com Consenso Delegado"] += 2 * weights["eficiência energética"]
+            score["DLT Permissionada Privada"] += 1 * weights["energy_efficiency"]
+            score["DLT Permissionada Simples"] += 1 * weights["energy_efficiency"]
+            score["DLT com Consenso Delegado"] += 2 * weights["energy_efficiency"]
         elif question_id == "network_security" and answer == "Sim":
-            score["DLT Pública"] += 2 * weights["segurança"]
-            score["DLT Pública Permissionless"] += 1 * weights["segurança"]
+            score["DLT Pública"] += 2 * weights["security"]
+            score["DLT Pública Permissionless"] += 1 * weights["security"]
         elif question_id == "scalability" and answer == "Sim":
-            score["DLT Pública Permissionless"] += 2 * weights["escalabilidade"]
-            score["DLT com Consenso Delegado"] += 2 * weights["escalabilidade"]
+            score["DLT Pública Permissionless"] += 2 * weights["scalability"]
+            score["DLT com Consenso Delegado"] += 2 * weights["scalability"]
         elif question_id == "governance_flexibility" and answer == "Sim":
-            score["DLT Híbrida"] += 2 * weights["governança"]
-            score["DLT Pública Permissionless"] += 1 * weights["governança"]
+            score["DLT Híbrida"] += 2 * weights["governance"]
+            score["DLT Pública Permissionless"] += 1 * weights["governance"]
         elif question_id == "interoperability" and answer == "Sim":
-            score["DLT Híbrida"] += 2 * weights["escalabilidade"]
-            score["DLT Pública Permissionless"] += 1 * weights["escalabilidade"]
+            score["DLT Híbrida"] += 2 * weights["scalability"]
+            score["DLT Pública Permissionless"] += 1 * weights["scalability"]
 
     recommended_dlt = max(score, key=score.get)
 
@@ -80,11 +80,11 @@ def get_recommendation(answers, weights):
     }
 
     group_scores = {
-        "Alta Segurança e Controle dos dados sensíveis": weights["segurança"] * 2,
-        "Escalabilidade e Governança Flexível": weights["escalabilidade"] + weights["governança"],
-        "Alta Eficiência Operacional em redes locais": weights["eficiência energética"] * 2,
-        "Alta Escalabilidade em Redes IoT": weights["escalabilidade"] * 2,
-        "Alta Segurança e Descentralização de dados críticos": weights["segurança"] + weights["descentralização"]
+        "Alta Segurança e Controle dos dados sensíveis": weights["security"] * 2,
+        "Escalabilidade e Governança Flexível": weights["scalability"] + weights["governance"],
+        "Alta Eficiência Operacional em redes locais": weights["energy_efficiency"] * 2,
+        "Alta Escalabilidade em Redes IoT": weights["scalability"] * 2,
+        "Alta Segurança e Descentralização de dados críticos": weights["security"] + weights["decentralization"]
     }
 
     recommended_group = max(group_scores, key=group_scores.get)
