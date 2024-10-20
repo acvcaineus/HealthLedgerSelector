@@ -87,7 +87,7 @@ def show_weights():
 
     if st.button("Gerar Recomendação"):
         st.session_state.weights = weights
-        st.session_state.page = "recommendation"
+        st.session_state.page = "Recomendações"
         st.rerun()
 
 def show_recommendation():
@@ -148,7 +148,7 @@ def main():
     else:
         st.sidebar.title("Menu")
 
-        menu_options = ['Início', 'Questionário', 'Recomendações', 'Árvore de Decisão', 'Comparação de Frameworks', 'Logout']
+        menu_options = ['Início', 'Questionário', 'Recomendações', 'Árvore de Decisão', 'Comparação de Frameworks', 'Logout', 'recommendation']
         menu_option = st.sidebar.selectbox(
             "Escolha uma opção",
             menu_options,
@@ -163,7 +163,7 @@ def main():
             show_questionnaire()
         elif menu_option == 'Recomendações':
             show_weights()
-        elif menu_option == 'recommendation':
+        elif menu_option == 'recommendation' or (st.session_state.page == 'recommendation' and menu_option == 'Recomendações'):
             show_recommendation()
         elif menu_option == 'Árvore de Decisão':
             run_decision_tree()
