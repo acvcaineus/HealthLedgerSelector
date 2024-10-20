@@ -1,5 +1,13 @@
 from dlt_data import questions, dlt_classes, consensus_algorithms
 
+consensus_groups = {
+    'Alta Segurança e Controle dos dados sensíveis': ['RAFT/IBFT', 'RAFT'],
+    'Escalabilidade e Governança Flexível': ['RAFT/IBFT', 'PoS', 'Liquid PoS', 'Pure PoS', 'NPoS'],
+    'Alta Eficiência Operacional em redes locais': ['PoA', 'Ripple Consensus Algorithm', 'SCP'],
+    'Alta Escalabilidade em Redes IoT': ['Tangle'],
+    'Alta Segurança e Descentralização de dados críticos': ['PoW']
+}
+
 pros_cons = {
     "Registros Médicos Eletrônicos (EMR)": {
         "Public Blockchain": {
@@ -70,14 +78,6 @@ def get_recommendation(answers, weights):
             score["DLT Pública Permissionless"] += 1 * weights["scalability"]
 
     recommended_dlt = max(score, key=score.get)
-
-    consensus_groups = {
-        "Alta Segurança e Controle dos dados sensíveis": ["RAFT/IBFT", "RAFT"],
-        "Escalabilidade e Governança Flexível": ["RAFT/IBFT", "PoS", "Liquid PoS", "Pure PoS", "NPoS"],
-        "Alta Eficiência Operacional em redes locais": ["PoA", "Ripple Consensus Algorithm", "SCP"],
-        "Alta Escalabilidade em Redes IoT": ["Tangle"],
-        "Alta Segurança e Descentralização de dados críticos": ["PoW"]
-    }
 
     group_scores = {
         "Alta Segurança e Controle dos dados sensíveis": weights["security"] * 2,
