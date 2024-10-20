@@ -11,19 +11,6 @@ from decision_logic import get_recommendation, compare_algorithms, select_final_
 from dlt_data import scenarios, questions, dlt_classes, consensus_algorithms
 from utils import init_session_state
 
-def define_consensus_weights():
-    st.subheader("Defina os Pesos para as Características do Algoritmo de Consenso")
-    st.write("Atribua um valor de 0 a 10 para cada característica com base na sua importância.")
-    
-    weights = {
-        "security": st.slider("Peso de Segurança", 0, 10, 5),
-        "scalability": st.slider("Peso de Escalabilidade", 0, 10, 5),
-        "energy_efficiency": st.slider("Peso de Eficiência Energética", 0, 10, 5),
-        "governance": st.slider("Peso de Governança", 0, 10, 5)
-    }
-    
-    return weights
-
 def generate_decision_tree():
     G = nx.DiGraph()
     
@@ -118,7 +105,7 @@ def show_scenario_selection(dlt, consensus_algorithm):
     st.write(f"**Descrição do cenário:** {scenarios[scenario]}")
 
     st.subheader("Vantagens e Desvantagens da Implementação")
-    advantages, disadvantages = get_scenario_pros_cons(scenario, dlt, consensus_algorithm)
+    advantages, disadvantages, algorithm_applicability = get_scenario_pros_cons(scenario, dlt, consensus_algorithm)
     
     st.write("**Vantagens:**")
     for adv in advantages:
@@ -127,6 +114,9 @@ def show_scenario_selection(dlt, consensus_algorithm):
     st.write("**Desvantagens:**")
     for disadv in disadvantages:
         st.write(f"- {disadv}")
+    
+    st.write("**Aplicabilidade do Algoritmo Recomendado:**")
+    st.write(algorithm_applicability)
 
     if st.button("Finalizar"):
         st.session_state.scenario = scenario
@@ -177,9 +167,9 @@ def show_recommendation():
             percentages[char] = remaining
             st.write(f"Porcentagem para {char}: {remaining}%")
         else:
-            max_value = max(remaining, 1)  # Ensure max_value is at least 1
+            max_value = min(remaining, 100)
             percentages[char] = st.slider(f"Porcentagem para {char}", 0, max_value, min(25, max_value), 1)
-            remaining = max(remaining - percentages[char], 0)  # Ensure remaining doesn't go below 0
+            remaining -= percentages[char]
 
     st.write(f"Porcentagem restante: {remaining}%")
 
@@ -187,7 +177,7 @@ def show_recommendation():
         final_algorithm = select_final_algorithm(recommendation['consensus_group'], percentages)
         st.success(f"O algoritmo final recomendado é: {final_algorithm}")
 
-        # Call the new scenario selection function
+        # Call the updated scenario selection function
         show_scenario_selection(recommendation['dlt'], final_algorithm)
 
     st.subheader("Influência das Características na Decisão")
@@ -244,7 +234,7 @@ def show_home_page():
     """)
 
     if st.button("Iniciar Questionário"):
-        st.session_state.page = "weight_definition"
+        st.session_state.page = "questionnaire"
         st.rerun()
 
 def main():
@@ -269,11 +259,6 @@ def main():
 
         if st.session_state.page == "home":
             show_home_page()
-        elif st.session_state.page == "weight_definition":
-            st.session_state.weights = define_consensus_weights()
-            if st.button("Iniciar Questionário"):
-                st.session_state.page = "questionnaire"
-                st.rerun()
         elif st.session_state.page == "questionnaire":
             show_questionnaire()
         elif st.session_state.page == "recommendation":

@@ -105,7 +105,12 @@ def get_scenario_pros_cons(scenario, dlt, consensus_algorithm):
                     "Preocupações com privacidade dos dados sensíveis",
                     "Escalabilidade limitada para grande volume de registros",
                     "Alto custo de transação em algumas redes públicas"
-                ]
+                ],
+                "algorithm_applicability": {
+                    "Proof of Stake (PoS)": "Adequado para EMR, oferecendo boa escalabilidade e eficiência energética.",
+                    "Proof of Work (PoW)": "Pode não ser ideal para EMR devido ao alto consumo de energia e baixa escalabilidade.",
+                    "Delegated Proof of Stake (DPoS)": "Bom equilíbrio entre segurança e escalabilidade para EMR."
+                }
             },
             "Permissioned Blockchain": {
                 "pros": [
@@ -117,7 +122,12 @@ def get_scenario_pros_cons(scenario, dlt, consensus_algorithm):
                     "Menor descentralização comparado a blockchains públicas",
                     "Potencial para centralização de controle",
                     "Complexidade na gestão de permissões"
-                ]
+                ],
+                "algorithm_applicability": {
+                    "Practical Byzantine Fault Tolerance (PBFT)": "Excelente para EMR em redes permissionadas, oferecendo alta segurança.",
+                    "Proof of Authority (PoA)": "Adequado para EMR com participantes conhecidos e confiáveis.",
+                    "Raft Consensus": "Bom para EMR em ambientes controlados com necessidade de alta performance."
+                }
             },
             "Distributed Ledger": {
                 "pros": [
@@ -129,7 +139,11 @@ def get_scenario_pros_cons(scenario, dlt, consensus_algorithm):
                     "Menor maturidade tecnológica em comparação com blockchains",
                     "Potencial complexidade na implementação",
                     "Ecossistema menos desenvolvido"
-                ]
+                ],
+                "algorithm_applicability": {
+                    "Directed Acyclic Graph (DAG)": "Excelente para EMR com necessidade de alta escalabilidade e eficiência.",
+                    "Tangle": "Adequado para EMR em ambientes com muitos dispositivos IoT e necessidade de microtransações."
+                }
             }
         },
         "Cadeia de Suprimentos Farmacêutica": {
@@ -143,7 +157,12 @@ def get_scenario_pros_cons(scenario, dlt, consensus_algorithm):
                     "Desafios de privacidade para informações sensíveis",
                     "Possível lentidão em transações de alto volume",
                     "Custo potencialmente alto para pequenas transações"
-                ]
+                ],
+                "algorithm_applicability": {
+                    "Proof of Stake (PoS)": "Bom para cadeias de suprimentos com necessidade de escalabilidade.",
+                    "Proof of Work (PoW)": "Pode ser excessivo para cadeias de suprimentos devido ao alto consumo de energia.",
+                    "Delegated Proof of Stake (DPoS)": "Adequado para cadeias de suprimentos com múltiplos participantes."
+                }
             },
             "Permissioned Blockchain": {
                 "pros": [
@@ -155,7 +174,12 @@ def get_scenario_pros_cons(scenario, dlt, consensus_algorithm):
                     "Menor resistência à manipulação comparado a redes públicas",
                     "Potencial para centralização",
                     "Complexidade na gestão de permissões entre múltiplas organizações"
-                ]
+                ],
+                "algorithm_applicability": {
+                    "Practical Byzantine Fault Tolerance (PBFT)": "Excelente para cadeias de suprimentos farmacêuticas com necessidade de alta segurança.",
+                    "Proof of Authority (PoA)": "Bom para cadeias de suprimentos com participantes conhecidos e regulados.",
+                    "Raft Consensus": "Adequado para cadeias de suprimentos que precisam de alta performance em ambientes controlados."
+                }
             },
             "Distributed Ledger": {
                 "pros": [
@@ -167,7 +191,11 @@ def get_scenario_pros_cons(scenario, dlt, consensus_algorithm):
                     "Possível complexidade na integração com sistemas legados",
                     "Menor estabelecimento no setor farmacêutico",
                     "Desafios na interoperabilidade com outras redes"
-                ]
+                ],
+                "algorithm_applicability": {
+                    "Directed Acyclic Graph (DAG)": "Excelente para cadeias de suprimentos com alto volume de transações.",
+                    "Tangle": "Bom para cadeias de suprimentos com muitos pontos de dados e dispositivos IoT."
+                }
             }
         },
         "Consentimento de Pacientes": {
@@ -181,7 +209,12 @@ def get_scenario_pros_cons(scenario, dlt, consensus_algorithm):
                     "Preocupações com a privacidade dos dados pessoais",
                     "Possível complexidade para usuários não técnicos",
                     "Desafios regulatórios em algumas jurisdições"
-                ]
+                ],
+                "algorithm_applicability": {
+                    "Proof of Stake (PoS)": "Bom para sistemas de consentimento com necessidade de eficiência e escalabilidade.",
+                    "Proof of Work (PoW)": "Pode ser excessivo para sistemas de consentimento devido ao alto consumo de energia.",
+                    "Delegated Proof of Stake (DPoS)": "Adequado para sistemas de consentimento com múltiplos stakeholders."
+                }
             },
             "Permissioned Blockchain": {
                 "pros": [
@@ -193,7 +226,12 @@ def get_scenario_pros_cons(scenario, dlt, consensus_algorithm):
                     "Menor transparência comparado a redes públicas",
                     "Potencial para controle centralizado das permissões",
                     "Complexidade na gestão de acessos para múltiplas instituições de saúde"
-                ]
+                ],
+                "algorithm_applicability": {
+                    "Practical Byzantine Fault Tolerance (PBFT)": "Excelente para sistemas de consentimento com alta necessidade de segurança e conformidade.",
+                    "Proof of Authority (PoA)": "Bom para sistemas de consentimento em ambientes regulados.",
+                    "Raft Consensus": "Adequado para sistemas de consentimento que precisam de alta performance em redes controladas."
+                }
             },
             "Distributed Ledger": {
                 "pros": [
@@ -205,11 +243,15 @@ def get_scenario_pros_cons(scenario, dlt, consensus_algorithm):
                     "Possível complexidade na implementação de smart contracts",
                     "Menor familiaridade dos usuários com a tecnologia",
                     "Desafios na integração com sistemas de saúde existentes"
-                ]
+                ],
+                "algorithm_applicability": {
+                    "Directed Acyclic Graph (DAG)": "Excelente para sistemas de consentimento com necessidade de alta escalabilidade e flexibilidade.",
+                    "Tangle": "Bom para sistemas de consentimento com muitas interações e atualizações frequentes."
+                }
             }
         }
     }
 
-    return pros_cons[scenario][dlt]["pros"], pros_cons[scenario][dlt]["cons"]
+    return pros_cons[scenario][dlt]["pros"], pros_cons[scenario][dlt]["cons"], pros_cons[scenario][dlt]["algorithm_applicability"].get(consensus_algorithm, "Informação não disponível para este algoritmo específico.")
 
 # Keep the existing functions (get_comparison_data and get_sunburst_data) unchanged
