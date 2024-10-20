@@ -49,7 +49,7 @@ def show_home_page():
     show_correlation_table()
     if st.button("Iniciar Questionário"):
         st.session_state.page = "questionnaire"
-        st.rerun()
+        st.experimental_rerun()
 
 def show_questionnaire():
     st.header("Questionário de Seleção de DLT")
@@ -67,9 +67,9 @@ def show_questionnaire():
         st.session_state.step += 1
         if st.session_state.step >= len(questions["Registros Médicos Eletrônicos (EMR)"]):
             st.session_state.page = "weights"
-            st.rerun()
+            st.experimental_rerun()
         else:
-            st.rerun()
+            st.experimental_rerun()
 
 def show_weights():
     st.header("Definir Pesos das Características")
@@ -85,7 +85,7 @@ def show_weights():
     if st.button("Gerar Recomendação"):
         st.session_state.weights = weights
         st.session_state.page = "recommendation"
-        st.rerun()
+        st.experimental_rerun()
 
 def show_recommendation():
     st.header("Recomendação de DLT e Algoritmo de Consenso")
