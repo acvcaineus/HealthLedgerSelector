@@ -5,7 +5,6 @@ import plotly.graph_objects as go
 import pandas as pd
 from decision_logic import get_recommendation, compare_algorithms, select_final_algorithm
 
-# Cache the questions to avoid reloading them every time
 @st.cache_data
 def get_questions():
     return {
@@ -58,13 +57,15 @@ def init_session_state():
         st.session_state.current_phase = list(get_questions().keys())[0]
     if 'current_question_index' not in st.session_state:
         st.session_state.current_question_index = 0
+    if 'recommendation' not in st.session_state:
+        st.session_state.recommendation = None
 
 @st.cache_data
 def calculate_metrics(answers):
     num_yes = answers.count("Sim")
     num_no = answers.count("Não")
     total = len(answers)
-    probs = [num_yes / total, num_no / total]
+    probs = np.array([num_yes / total, num_no / total])
 
     gini = 1 - np.sum(np.square(probs))
     entropy = -np.sum(probs * np.log2(probs + 1e-9))
@@ -114,20 +115,34 @@ def show_interactive_decision_tree():
 
     st.session_state.answers[f"{current_phase}_{current_question_index}"] = answer
 
+    # Check for immediate recommendation
+    if current_phase == "Fase 1: Aplicação" and current_question_index == 0 and answer == "Sim":
+        st.session_state.recommendation = {
+            "dlt": "Permissionada Privada",
+            "consensus_group": "Alta Segurança e Controle",
+            "algorithms": ["PBFT"]
+        }
+        st.success("Recomendação imediata encontrada!")
+        st.write("Com base na sua resposta, recomendamos:")
+        st.write(f"DLT: {st.session_state.recommendation['dlt']}")
+        st.write(f"Grupo de Algoritmos: {st.session_state.recommendation['consensus_group']}")
+        st.write(f"Algoritmo: {', '.join(st.session_state.recommendation['algorithms'])}")
+        st.write("Explicação: Esta recomendação foi feita porque a aplicação exige alta privacidade e controle centralizado, que são características principais de uma DLT Permissionada Privada com algoritmos de consenso focados em alta segurança e controle.")
+    else:
+        if current_question_index < len(questions_in_phase) - 1:
+            if st.button("Próxima Pergunta"):
+                st.session_state.current_question_index += 1
+        else:
+            next_phase_index = list(questions.keys()).index(current_phase) + 1
+            if next_phase_index < len(questions):
+                st.session_state.current_phase = list(questions.keys())[next_phase_index]
+                st.session_state.current_question_index = 0
+
     decision_tree = generate_decision_tree(st.session_state.answers)
     st.graphviz_chart(decision_tree)
 
-    if current_question_index < len(questions_in_phase) - 1:
-        if st.button("Próxima Pergunta"):
-            st.session_state.current_question_index += 1
-    else:
-        next_phase_index = list(questions.keys()).index(current_phase) + 1
-        if next_phase_index < len(questions):
-            st.session_state.current_phase = list(questions.keys())[next_phase_index]
-            st.session_state.current_question_index = 0
-
     all_answers = list(st.session_state.answers.values())
-    if len(all_answers) == len([q for qs in questions.values() for q in qs]):
+    if len(all_answers) == len([q for qs in questions.values() for q in qs]) or st.session_state.recommendation:
         st.subheader("Métricas da Árvore de Decisão")
         metrics = calculate_metrics(all_answers)
         for metric, value in metrics.items():
@@ -135,32 +150,34 @@ def show_interactive_decision_tree():
 
         st.subheader("Recomendação de DLT e Algoritmo de Consenso")
 
-        st.write("Defina os pesos para as características:")
-        weights = {}
-        weights["security"] = st.slider("Segurança", 1, 5, 3, key="security_weight")
-        weights["scalability"] = st.slider("Escalabilidade", 1, 5, 3, key="scalability_weight")
-        weights["energy_efficiency"] = st.slider("Eficiência Energética", 1, 5, 3, key="energy_efficiency_weight")
-        weights["governance"] = st.slider("Governança", 1, 5, 3, key="governance_weight")
+        if not st.session_state.recommendation:
+            st.write("Defina os pesos para as características:")
+            weights = {}
+            weights["security"] = st.slider("Segurança", 1, 5, 3, key="security_weight")
+            weights["scalability"] = st.slider("Escalabilidade", 1, 5, 3, key="scalability_weight")
+            weights["energy_efficiency"] = st.slider("Eficiência Energética", 1, 5, 3, key="energy_efficiency_weight")
+            weights["governance"] = st.slider("Governança", 1, 5, 3, key="governance_weight")
 
-        if st.button("Gerar Recomendação"):
-            recommendation = get_recommendation(st.session_state.answers, weights)
-            
-            st.write(f"DLT Recomendada: {recommendation['dlt']}")
-            st.write(f"Grupo de Algoritmo de Consenso: {recommendation['consensus_group']}")
-            st.write(f"Algoritmos Recomendados: {', '.join(recommendation['algorithms'])}")
+            if st.button("Gerar Recomendação"):
+                st.session_state.recommendation = get_recommendation(st.session_state.answers, weights)
+        
+        if st.session_state.recommendation:
+            st.write(f"DLT Recomendada: {st.session_state.recommendation['dlt']}")
+            st.write(f"Grupo de Algoritmo de Consenso: {st.session_state.recommendation['consensus_group']}")
+            st.write(f"Algoritmos Recomendados: {', '.join(st.session_state.recommendation['algorithms'])}")
 
             st.subheader("Comparação de Algoritmos de Consenso")
-            comparison_data = compare_algorithms(recommendation['consensus_group'])
+            comparison_data = compare_algorithms(st.session_state.recommendation['consensus_group'])
             df = pd.DataFrame(comparison_data)
             st.table(df)
 
             st.subheader("Avalie os Algoritmos")
             user_ratings = {}
-            for alg in recommendation['algorithms']:
+            for alg in st.session_state.recommendation['algorithms']:
                 user_ratings[alg] = st.slider(f"Avalie {alg}", 1, 5, 3, key=f"rating_{alg}")
 
             if st.button("Selecionar Algoritmo Final"):
-                final_algorithm = select_final_algorithm(recommendation['consensus_group'], user_ratings)
+                final_algorithm = select_final_algorithm(st.session_state.recommendation['consensus_group'], user_ratings)
                 st.subheader("Algoritmo de Consenso Final Recomendado:")
                 st.write(final_algorithm)
 
