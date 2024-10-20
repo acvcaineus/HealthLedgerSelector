@@ -100,7 +100,7 @@ def show_interactive_decision_tree():
             else:
                 show_recommendation(st.session_state.answers)
             
-            st.experimental_rerun()
+            st.rerun()
         except Exception as e:
             st.error(f"Ocorreu um erro ao processar a resposta: {str(e)}")
             st.write("Por favor, tente novamente ou entre em contato com o suporte.")
