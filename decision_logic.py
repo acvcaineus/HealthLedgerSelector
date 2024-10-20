@@ -1,5 +1,37 @@
 from dlt_data import questions, dlt_classes, consensus_algorithms
 
+pros_cons = {
+    "Registros Médicos Eletrônicos (EMR)": {
+        "Public Blockchain": {
+            "pros": ["Alta transparência", "Imutabilidade dos registros"],
+            "cons": ["Problemas de privacidade", "Escalabilidade limitada"],
+            "algorithm_applicability": {
+                "Proof of Stake (PoS)": "Adequado para EMR com menor consumo de energia",
+                "Proof of Work (PoW)": "Não recomendado devido ao alto consumo de energia",
+                "Practical Byzantine Fault Tolerance (PBFT)": "Bom para EMR em redes permissionadas"
+            }
+        },
+        "Permissioned Blockchain": {
+            "pros": ["Controle de acesso", "Maior privacidade"],
+            "cons": ["Menor descentralização", "Potencial centralização de controle"],
+            "algorithm_applicability": {
+                "Proof of Authority (PoA)": "Excelente para EMR em ambientes controlados",
+                "Practical Byzantine Fault Tolerance (PBFT)": "Ótimo para EMR com alta segurança"
+            }
+        }
+    },
+    "Cadeia de Suprimentos Farmacêutica": {
+        "Hybrid Blockchain": {
+            "pros": ["Flexibilidade", "Interoperabilidade"],
+            "cons": ["Complexidade de implementação", "Potenciais vulnerabilidades de segurança"],
+            "algorithm_applicability": {
+                "Delegated Proof of Stake (DPoS)": "Bom para cadeias de suprimentos com múltiplos stakeholders",
+                "Proof of Stake (PoS)": "Adequado para rastreamento eficiente de medicamentos"
+            }
+        }
+    }
+}
+
 def get_recommendation(answers, weights):
     score = {
         "Public Blockchain": 0,
@@ -83,10 +115,10 @@ def compare_algorithms(consensus_group):
     }
 
     for alg in algorithms:
-        comparison_data["Segurança"][alg] = consensus_algorithms[alg].get("segurança", 3)
-        comparison_data["Escalabilidade"][alg] = consensus_algorithms[alg].get("escalabilidade", 3)
-        comparison_data["Eficiência Energética"][alg] = consensus_algorithms[alg].get("eficiência energética", 3)
-        comparison_data["Governança"][alg] = consensus_algorithms[alg].get("governança", 3)
+        comparison_data["Segurança"][alg] = consensus_algorithms[alg].get("security", 3)
+        comparison_data["Escalabilidade"][alg] = consensus_algorithms[alg].get("scalability", 3)
+        comparison_data["Eficiência Energética"][alg] = consensus_algorithms[alg].get("energy_efficiency", 3)
+        comparison_data["Governança"][alg] = consensus_algorithms[alg].get("governance", 3)
 
     return comparison_data
 
@@ -104,8 +136,13 @@ def select_final_algorithm(consensus_group, priorities):
 
     return max(scores, key=scores.get)
 
-def get_scenario_pros_cons(scenario, dlt, consensus_algorithm):
-    # The content of this function remains the same as before
-    # ...
-
-    return pros_cons[scenario][dlt]["pros"], pros_cons[scenario][dlt]["cons"], pros_cons[scenario][dlt]["algorithm_applicability"].get(consensus_algorithm, "Informação não disponível para este algoritmo específico.")
+def get_scenario_pros_cons(dlt, consensus_algorithm):
+    applicable_scenarios = {}
+    for scenario, dlt_data in pros_cons.items():
+        if dlt in dlt_data:
+            applicable_scenarios[scenario] = {
+                "pros": dlt_data[dlt]["pros"],
+                "cons": dlt_data[dlt]["cons"],
+                "algorithm_applicability": dlt_data[dlt]["algorithm_applicability"].get(consensus_algorithm, "Informação não disponível para este algoritmo específico.")
+            }
+    return applicable_scenarios
