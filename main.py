@@ -92,7 +92,12 @@ def show_weights():
 def show_recommendation():
     st.header("Recomendação de DLT e Algoritmo de Consenso")
 
-    if 'recommendation' not in st.session_state:
+    if 'weights' not in st.session_state or not st.session_state.weights:
+        st.warning('Por favor, defina os pesos das características primeiro.')
+        show_weights()
+        return
+
+    if 'recommendation' not in st.session_state and 'weights' in st.session_state and st.session_state.weights:
         if st.button('Gerar Recomendação'):
             recommendation = get_recommendation(st.session_state.answers, st.session_state.weights)
             st.session_state.recommendation = recommendation
