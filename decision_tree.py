@@ -1,6 +1,7 @@
 import streamlit as st
 import graphviz
 import numpy as np
+import plotly.graph_objects as go
 
 # Perguntas de acordo com a sequência nas fases da árvore de decisão
 questions = {
@@ -60,6 +61,7 @@ def gini_index(probs):
     return 1 - np.sum(np.square(probs))
 
 def entropy(probs):
+    probs = np.array(probs)
     return -np.sum(probs * np.log2(probs + 1e-9))  # Evita log(0)
 
 def calculate_depth(questions_dict):
