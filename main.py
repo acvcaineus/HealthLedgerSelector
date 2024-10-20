@@ -7,7 +7,7 @@ from pyvis.network import Network
 import streamlit.components.v1 as components
 from user_management import login, register, is_authenticated, logout
 from database import get_user_recommendations, save_recommendation, save_feedback
-from decision_logic import get_recommendation, get_comparison_data, get_sunburst_data, compare_algorithms, select_final_algorithm
+from decision_logic import get_recommendation, compare_algorithms, select_final_algorithm
 from dlt_data import scenarios, questions, dlt_classes, consensus_algorithms
 from utils import init_session_state
 
