@@ -75,13 +75,20 @@ def show_interactive_decision_tree():
     if 'answers' not in st.session_state:
         st.session_state.answers = {}
 
+    total_questions = sum(len(phase['questions']) for phase in questions)
+    current_question_overall = sum(len(questions[i]['questions']) for i in range(st.session_state.current_phase)) + st.session_state.current_question
+    st.progress(current_question_overall / total_questions)
+
     current_phase = questions[st.session_state.current_phase]
     current_question = current_phase["questions"][st.session_state.current_question]
 
     st.subheader(current_phase["phase"])
     answer = st.radio(current_question["text"], current_question["options"])
     
-    if st.button("Próxima Pergunta" if st.session_state.current_question < len(current_phase["questions"]) - 1 or st.session_state.current_phase < len(questions) - 1 else "Finalizar"):
+    is_last_question = (st.session_state.current_phase == len(questions) - 1) and (st.session_state.current_question == len(current_phase["questions"]) - 1)
+    button_text = "Finalizar" if is_last_question else "Próxima Pergunta"
+    
+    if st.button(button_text):
         st.session_state.answers[f"{current_phase['phase']}_{st.session_state.current_question}"] = answer
         
         if st.session_state.current_question < len(current_phase["questions"]) - 1:
@@ -93,6 +100,9 @@ def show_interactive_decision_tree():
             show_recommendation(st.session_state.answers)
         
         st.rerun()
+
+    st.write(f"Fase atual: {st.session_state.current_phase + 1}/{len(questions)}")
+    st.write(f"Pergunta atual: {st.session_state.current_question + 1}/{len(current_phase['questions'])}")
 
 def show_recommendation(answers):
     st.subheader("Recomendação:")
