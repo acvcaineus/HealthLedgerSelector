@@ -80,30 +80,29 @@ def show_interactive_decision_tree():
     st.progress(current_question_overall / total_questions)
 
     current_phase = questions[st.session_state.current_phase]
-    current_question = current_phase["questions"][st.session_state.current_question]
+    current_question = current_phase['questions'][st.session_state.current_question]
 
-    st.subheader(current_phase["phase"])
-    answer = st.radio(current_question["text"], current_question["options"], key=f"question_{st.session_state.current_phase}_{st.session_state.current_question}")
-    
-    is_last_question = (st.session_state.current_phase == len(questions) - 1) and (st.session_state.current_question == len(current_phase["questions"]) - 1)
-    button_text = "Finalizar" if is_last_question else "Próxima Pergunta"
-    
-    if st.button(button_text, key=f"button_{st.session_state.current_phase}_{st.session_state.current_question}"):
-        try:
-            st.session_state.answers[f"{current_phase['phase']}_{st.session_state.current_question}"] = answer
-            
-            if st.session_state.current_question < len(current_phase["questions"]) - 1:
+    st.subheader(current_phase['phase'])
+    answer = st.radio(current_question['text'], current_question['options'], key=f'question_{st.session_state.current_phase}_{st.session_state.current_question}')
+
+    # Store the answer immediately when selected
+    st.session_state.answers[f"{current_phase['phase']}_{st.session_state.current_question}"] = answer
+
+    is_last_question = (st.session_state.current_phase == len(questions) - 1) and (st.session_state.current_question == len(current_phase['questions']) - 1)
+    button_text = 'Finalizar' if is_last_question else 'Próxima Pergunta'
+
+    if st.button(button_text, key=f'button_{st.session_state.current_phase}_{st.session_state.current_question}'):
+        if answer:  # Only proceed if an answer has been selected
+            if st.session_state.current_question < len(current_phase['questions']) - 1:
                 st.session_state.current_question += 1
             elif st.session_state.current_phase < len(questions) - 1:
                 st.session_state.current_phase += 1
                 st.session_state.current_question = 0
             else:
                 show_recommendation(st.session_state.answers)
-            
             st.rerun()
-        except Exception as e:
-            st.error(f"Ocorreu um erro ao processar a resposta: {str(e)}")
-            st.write("Por favor, tente novamente ou entre em contato com o suporte.")
+        else:
+            st.warning('Por favor, selecione uma resposta antes de prosseguir.')
 
     st.write(f"Fase atual: {st.session_state.current_phase + 1}/{len(questions)}")
     st.write(f"Pergunta atual: {st.session_state.current_question + 1}/{len(current_phase['questions'])}")
