@@ -2,6 +2,9 @@ import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
+import networkx as nx
+from pyvis.network import Network
+import streamlit.components.v1 as components
 from user_management import login, register, is_authenticated, logout
 from database import get_user_recommendations, save_recommendation, save_feedback
 from decision_logic import get_recommendation, get_comparison_data, get_sunburst_data
@@ -24,20 +27,34 @@ def define_weights():
 def show_decision_flow():
     st.subheader("Fluxo de Decisão")
     
-    # Create a DataFrame with the user's answers
-    df = pd.DataFrame(list(st.session_state.answers.items()), columns=['Pergunta', 'Resposta'])
+    G = nx.DiGraph()
     
-    # Create a horizontal bar chart
-    fig = px.bar(df, y='Pergunta', x=[1]*len(df), color='Resposta', orientation='h',
-                 color_discrete_map={'Sim': 'green', 'Não': 'red'})
-    fig.update_layout(showlegend=False, height=400, width=600)
-    fig.update_traces(width=0.6)
+    previous_question = None
+    for question, answer in st.session_state.answers.items():
+        G.add_node(question, label=questions[st.session_state.scenario][question]['text'], color='lightblue')
+        G.add_node(answer, label=answer, color='green' if answer == 'Sim' else 'red')
+        G.add_edge(question, answer)
+        if previous_question:
+            G.add_edge(previous_question, question)
+        previous_question = question
     
-    # Add text annotations
-    for i, row in enumerate(df.itertuples()):
-        fig.add_annotation(x=0.5, y=i, text=row.Resposta, showarrow=False, font=dict(color='white'))
+    net = Network(height="500px", width="100%", directed=True)
+    net.from_nx(G)
     
-    st.plotly_chart(fig)
+    for node in net.nodes:
+        if node['label'] in ['Sim', 'Não']:
+            node['shape'] = 'box'
+        else:
+            node['shape'] = 'ellipse'
+    
+    html = net.generate_html()
+    components.html(html, height=600)
+    
+    st.write("**Legenda:**")
+    st.write("- Círculos azuis: Perguntas")
+    st.write("- Quadrados verdes: Respostas 'Sim'")
+    st.write("- Quadrados vermelhos: Respostas 'Não'")
+    st.write("- Setas: Fluxo de decisão")
 
 def show_recommendation():
     if 'recommendation' not in st.session_state:
@@ -66,11 +83,9 @@ def show_recommendation():
 
     show_decision_flow()
 
-    # Add radar chart for DLT comparison
     st.subheader("Comparação de DLTs")
     comparison_data = get_comparison_data(recommendation['dlt'], recommendation['consensus'])
     
-    # Create radar chart
     categories = list(comparison_data.keys())
     fig = go.Figure()
 
