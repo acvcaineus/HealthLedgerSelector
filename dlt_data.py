@@ -87,13 +87,67 @@ dlt_classes = {
 
 # Consensus algorithms that can be recommended
 consensus_algorithms = {
-    "Proof of Stake (PoS)": "Algoritmo de consenso eficiente energeticamente usado por blockchains públicos como Ethereum 2.0.",
-    "Proof of Work (PoW)": "Algoritmo de consenso intensivo em energia usado por blockchains como Bitcoin.",
-    "Practical Byzantine Fault Tolerance (PBFT)": "Algoritmo usado por blockchains permissionados como Hyperledger Fabric, garantindo resiliência a falhas bizantinas.",
-    "Delegated Proof of Stake (DPoS)": "Um algoritmo onde validadores são eleitos pela comunidade, como em EOS ou TRON.",
-    "Proof of Authority (PoA)": "Algoritmo onde validadores confiáveis são selecionados com base em sua identidade, usado por redes permissionadas.",
-    "Raft Consensus": "Algoritmo de consenso simples, geralmente usado em sistemas distribuídos para alcançar consistência sem grandes requisitos de processamento.",
-    "Directed Acyclic Graph (DAG)": "Uma alternativa ao blockchain, usada em redes como a IOTA para IoT e alta escalabilidade.",
-    "Nominated Proof of Stake (NPoS)": "Variante de PoS usada em blockchains como o Polkadot, onde validadores são indicados por seus nominadores.",
-    "Tangle": "Estrutura de consenso usada pela IOTA, especialmente para redes de IoT, oferecendo alta escalabilidade."
+    "Proof of Stake (PoS)": {
+        "security": 4,
+        "scalability": 5,
+        "energy_efficiency": 5,
+        "governance": 4,
+        "description": "Algoritmo de consenso eficiente energeticamente usado por blockchains públicos como Ethereum 2.0."
+    },
+    "Proof of Work (PoW)": {
+        "security": 5,
+        "scalability": 2,
+        "energy_efficiency": 1,
+        "governance": 3,
+        "description": "Algoritmo de consenso intensivo em energia usado por blockchains como Bitcoin."
+    },
+    "Practical Byzantine Fault Tolerance (PBFT)": {
+        "security": 5,
+        "scalability": 3,
+        "energy_efficiency": 4,
+        "governance": 4,
+        "description": "Algoritmo usado por blockchains permissionados como Hyperledger Fabric, garantindo resiliência a falhas bizantinas."
+    },
+    "Delegated Proof of Stake (DPoS)": {
+        "security": 4,
+        "scalability": 5,
+        "energy_efficiency": 4,
+        "governance": 3,
+        "description": "Um algoritmo onde validadores são eleitos pela comunidade, como em EOS ou TRON."
+    },
+    "Proof of Authority (PoA)": {
+        "security": 4,
+        "scalability": 4,
+        "energy_efficiency": 5,
+        "governance": 3,
+        "description": "Algoritmo onde validadores confiáveis são selecionados com base em sua identidade, usado por redes permissionadas."
+    },
+    "Raft Consensus": {
+        "security": 3,
+        "scalability": 4,
+        "energy_efficiency": 5,
+        "governance": 3,
+        "description": "Algoritmo de consenso simples, geralmente usado em sistemas distribuídos para alcançar consistência sem grandes requisitos de processamento."
+    },
+    "Directed Acyclic Graph (DAG)": {
+        "security": 4,
+        "scalability": 5,
+        "energy_efficiency": 4,
+        "governance": 3,
+        "description": "Uma alternativa ao blockchain, usada em redes como a IOTA para IoT e alta escalabilidade."
+    },
+    "Nominated Proof of Stake (NPoS)": {
+        "security": 4,
+        "scalability": 4,
+        "energy_efficiency": 5,
+        "governance": 4,
+        "description": "Variante de PoS usada em blockchains como o Polkadot, onde validadores são indicados por seus nominadores."
+    },
+    "Tangle": {
+        "security": 4,
+        "scalability": 5,
+        "energy_efficiency": 5,
+        "governance": 3,
+        "description": "Estrutura de consenso usada pela IOTA, especialmente para redes de IoT, oferecendo alta escalabilidade."
+    }
 }
