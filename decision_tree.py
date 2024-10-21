@@ -1,8 +1,8 @@
 import streamlit as st
 import graphviz as gv
 from database import save_recommendation
+from decision_logic import get_recommendation
 
-# Função para retornar as perguntas por fase
 def get_questions():
     return {
         'Aplicação': [
@@ -23,68 +23,53 @@ def get_questions():
         ]
     }
 
-# Função para inicializar o estado da sessão
 def init_session_state():
     if 'current_phase' not in st.session_state:
         st.session_state.current_phase = 0
         st.session_state.current_question = 0
         st.session_state.answers = {}
-        st.session_state.recommendation = None  # Armazena a recomendação final
+        st.session_state.recommendation = None
 
-# Função para exibir a árvore de decisão interativa
 def show_interactive_decision_tree():
     st.header('Framework Proposto para Contextos de Saúde')
 
-    # Inicializa o estado de sessão, se necessário
     init_session_state()
 
-    # Definir fases e perguntas
     phases = ['Aplicação', 'Consenso', 'Infraestrutura', 'Internet']
     questions = get_questions()
 
-    # Garante que o current_phase não ultrapasse o limite das fases
     if st.session_state.current_phase >= len(phases):
         st.write("Todas as fases foram completadas!")
-        show_recommendation(st.session_state.answers)  # Mostra a recomendação final
-        return  # Sai da função para não tentar acessar um índice fora da lista
+        show_recommendation(st.session_state.answers)
+        return
 
-    # Pega a fase e pergunta atuais
     current_phase = phases[st.session_state.current_phase]
     current_question = questions[current_phase][st.session_state.current_question]
 
-    # Exibe a pergunta atual
     st.subheader(f'Fase {st.session_state.current_phase + 1}: {current_phase}')
     answer = st.radio(current_question, ['Sim', 'Não'], key=f'question_{st.session_state.current_phase}_{st.session_state.current_question}')
 
-    # Botão para avançar para a próxima pergunta
     if st.button('Próxima Pergunta', key=f'button_{st.session_state.current_phase}_{st.session_state.current_question}'):
-        # Armazena a resposta
         st.session_state.answers[f'{current_phase}_{st.session_state.current_question}'] = answer
 
-        # Verifica se ainda há perguntas na fase atual
         if st.session_state.current_question < len(questions[current_phase]) - 1:
-            st.session_state.current_question += 1  # Avança para a próxima pergunta
+            st.session_state.current_question += 1
         else:
-            # Se todas as perguntas da fase atual foram respondidas, avança para a próxima fase
             st.session_state.current_question = 0
             st.session_state.current_phase += 1
 
-        # Verifica se todas as fases foram completadas
         if st.session_state.current_phase >= len(phases):
-            st.session_state.recommendation = show_recommendation(st.session_state.answers)  # Mostra a recomendação final
+            st.session_state.recommendation = show_recommendation(st.session_state.answers)
         else:
-            st.rerun()  # Recarrega a página para mostrar a próxima pergunta
+            st.rerun()
 
-    # Progresso geral
     total_questions = sum(len(q) for q in questions.values())
     current_question_overall = sum(len(questions[p]) for p in phases[:st.session_state.current_phase]) + st.session_state.current_question
     st.progress(current_question_overall / total_questions)
 
-    # Exibe progresso
     st.write(f'Fase atual: {st.session_state.current_phase + 1}/{len(phases)}')
     st.write(f'Pergunta atual: {st.session_state.current_question + 1}/{len(questions[current_phase])}')
 
-    # Visualização do fluxo de decisão
     st.subheader("Fluxo de Decisão")
     decision_flow = gv.Digraph(format="png")
     decision_flow.node("Início", "Início")
@@ -93,61 +78,40 @@ def show_interactive_decision_tree():
         decision_flow.edge("Início", f"{phase_key}")
     st.graphviz_chart(decision_flow)
 
-# Função para exibir a recomendação final baseada em todas as respostas
 def show_recommendation(answers):
     st.subheader('Recomendação Final:')
 
-    # Inicializando valores padrão
-    dlt = "DLT Pública"
-    consensus = "DPoS"
-    explanation = "Com base nas respostas, a DLT pública com Delegated Proof of Stake é a recomendação mais adequada."
+    weights = {
+        "security": 0.4,
+        "scalability": 0.3,
+        "energy_efficiency": 0.2,
+        "governance": 0.1
+    }
 
-    # Analisando respostas da fase "Aplicação"
-    if answers.get("Aplicação_0") == "Sim":
-        dlt = "DLT Permissionada Privada"
-        consensus = "PBFT"
-        explanation = "A aplicação exige alta privacidade e controle centralizado. A DLT Permissionada Privada com PBFT é adequada para garantir segurança e controle."
-    elif answers.get("Aplicação_1") == "Sim":
-        dlt = "DLT Pública ou Híbrida"
-        consensus = "PoS"
-        explanation = "A aplicação precisa de alta escalabilidade e eficiência energética. A DLT Pública ou Híbrida com PoS é adequada para esses requisitos."
-
-    # Outras fases seguem o mesmo padrão...
-
-    # Exibe a recomendação com base nas respostas
-    st.write(f"**DLT Recomendada**: {dlt}")
-    st.write(f"**Algoritmo de Consenso Recomendado**: {consensus}")
-    st.write(f"**Explicação**: {explanation}")
-
-    # Exibir todas as respostas acumuladas para transparência
+    recommendation = get_recommendation(answers, weights)
+    st.session_state.recommendation = recommendation
+    
+    st.write(f"**DLT Recomendada**: {recommendation['dlt']}")
+    st.write(f"**Grupo de Consenso**: {recommendation['consensus_group']}")
+    st.write(f"**Algoritmo de Consenso Recomendado**: {recommendation['consensus']}")
+    
     st.write("**Respostas acumuladas**:")
     st.json(answers)
 
-    # Salvar a recomendação no perfil do usuário
     if st.button("Salvar Recomendação"):
-        scenario = "Cenário Geral"  # Você pode personalizar isso com base nas respostas
-        recommendation = {
-            "dlt": dlt,
-            "consensus": consensus
-        }
+        scenario = "Cenário Geral"
         save_recommendation(st.session_state.username, scenario, recommendation)
         st.success("Recomendação salva com sucesso no seu perfil!")
 
-    return {
-        "dlt": dlt,
-        "consensus": consensus,
-        "explanation": explanation
-    }
+    return recommendation
 
-# Função para reiniciar a árvore de decisão
 def restart_decision_tree():
     if st.button("Reiniciar"):
         for key in st.session_state.keys():
             del st.session_state[key]
         st.rerun()
 
-# Função principal para rodar a árvore de decisão
 def run_decision_tree():
     show_interactive_decision_tree()
     st.markdown("---")
-    restart_decision_tree()  # Botão para reiniciar
+    restart_decision_tree()

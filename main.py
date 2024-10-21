@@ -7,7 +7,6 @@ from metrics import calcular_gini, calcular_entropia, calcular_profundidade_deci
 import plotly.graph_objects as go
 from decision_logic import compare_algorithms
 
-# Função para exibir a página inicial
 def show_home_page():
     st.title("Seleção de DLT e Consenso na Saúde")
     st.write("Bem-vindo ao SeletorDLTSaude, um sistema de recomendação de tecnologias de ledger distribuído (DLT) para aplicações em saúde.")
@@ -44,11 +43,9 @@ def show_home_page():
         st.session_state.page = "Framework Proposto"
         st.rerun()
 
-# Função para exibir as métricas calculadas
 def show_metrics():
     st.header("Métricas e Diferenciais do Framework Proposto")
 
-    # Calculate metrics (use actual data instead of examples)
     classes = {"Sim": 70, "Não": 30}
     decisoes = [3, 4, 2, 5]
     total_nos = 20
@@ -59,7 +56,6 @@ def show_metrics():
     profundidade = calcular_profundidade_decisoria(decisoes)
     pruning_ratio = calcular_pruning(total_nos, nos_podados)
 
-    # Display metrics
     col1, col2 = st.columns(2)
     with col1:
         st.metric("Impureza de Gini", f"{gini:.2f}")
@@ -68,14 +64,12 @@ def show_metrics():
         st.metric("Profundidade Decisória", f"{profundidade:.2f}")
         st.metric("Pruning Ratio", f"{pruning_ratio:.2f}")
 
-    # Graphical visualization
     fig = go.Figure(data=[
         go.Bar(name='Métricas', x=['Gini', 'Entropia', 'Profundidade', 'Pruning'],
                y=[gini, entropia, profundidade, pruning_ratio])
     ])
     st.plotly_chart(fig)
 
-    # Explanation of metrics
     st.subheader("Explicação das Métricas")
     st.write("""
     - **Impureza de Gini**: Mede a diversidade das classes em cada nó da árvore.
@@ -84,7 +78,6 @@ def show_metrics():
     - **Pruning Ratio**: Mostra a eficácia da poda na simplificação do modelo.
     """)
 
-    # Differentials of the proposed framework
     st.subheader("Diferenciais do Framework Proposto")
     st.write("""
     1. **Adaptabilidade ao Contexto de Saúde**: Nosso framework é especialmente projetado para atender às necessidades específicas do setor de saúde.
@@ -94,7 +87,6 @@ def show_metrics():
     5. **Atualização em Tempo Real**: Incorpora as últimas tendências e avanços em DLTs para o setor de saúde.
     """)
 
-# Função para exibir o perfil do usuário
 def show_user_profile():
     st.header("Perfil do Usuário")
     st.write(f"Bem-vindo, {st.session_state.username}!")
@@ -112,19 +104,20 @@ def show_user_profile():
     else:
         st.write("Você ainda não tem recomendações salvas.")
 
-# New function for comparing recommendations
 def show_recommendation_comparison():
     st.header("Comparação de Recomendações")
-    if 'recommendation' in st.session_state:
+    if 'recommendation' in st.session_state and st.session_state.recommendation:
         rec = st.session_state.recommendation
-        st.write(f"DLT Recomendada: {rec['dlt']}")
-        st.write(f"Algoritmo de Consenso Recomendado: {rec['consensus']}")
-        st.write(f"Grupo de Consenso: {rec['consensus_group']}")
-        st.write(f"Explicação: {rec['explanation']}")
+        st.write(f"DLT Recomendada: {rec.get('dlt', 'Não disponível')}")
+        st.write(f"Grupo de Consenso: {rec.get('consensus_group', 'Não disponível')}")
+        st.write(f"Algoritmo de Consenso Recomendado: {rec.get('consensus', 'Não disponível')}")
         
-        st.subheader("Comparação com Outras Opções")
-        comparison_data = compare_algorithms(rec['consensus_group'])
-        st.table(comparison_data)
+        if 'consensus_group' in rec:
+            st.subheader("Comparação com Outras Opções")
+            comparison_data = compare_algorithms(rec['consensus_group'])
+            st.table(comparison_data)
+        else:
+            st.write("Dados de comparação não disponíveis.")
         
         st.subheader("Pesos Atribuídos")
         st.write("Os seguintes pesos foram considerados na escolha do algoritmo:")
@@ -133,40 +126,33 @@ def show_recommendation_comparison():
         st.write("- Eficiência Energética: 20%")
         st.write("- Governança: 10%")
     else:
-        st.write("Nenhuma recomendação disponível para comparação.")
+        st.write("Nenhuma recomendação disponível para comparação. Por favor, complete o questionário primeiro.")
 
-# Função principal que controla a navegação e o estado da sessão
 def main():
-    # Inicializa o estado da sessão se necessário
     init_session_state()
 
     st.set_page_config(page_title="SeletorDLTSaude", page_icon="🏥", layout="wide")
 
-    if not is_authenticated():  # Verifica se o usuário está autenticado
+    if not is_authenticated():
         st.title("SeletorDLTSaude - Login")
 
-        # Exibe abas para login e registro
         tab1, tab2 = st.tabs(["Login", "Registrar"])
         with tab1:
             login()
         with tab2:
             register()
     else:
-        # Barra lateral com opções de menu
         st.sidebar.title("Menu")
         menu_options = ['Início', 'Framework Proposto', 'Comparação de Recomendações', 'Métricas', 'Perfil', 'Logout']
 
-        # Exibe o seletor de opções de menu e mantém a página corrente no estado de sessão
         menu_option = st.sidebar.selectbox(
             "Escolha uma opção",
             menu_options,
             index=menu_options.index(st.session_state.page) if st.session_state.page in menu_options else 0
         )
 
-        # Atualiza a página no estado da sessão com base na escolha
         st.session_state.page = menu_option
 
-        # Controle de navegação entre páginas
         if st.session_state.page == 'Início':
             show_home_page()
         elif st.session_state.page == 'Framework Proposto':
@@ -179,7 +165,7 @@ def main():
             show_user_profile()
         elif st.session_state.page == 'Logout':
             logout()
-            st.session_state.page = 'Início'  # Retorna à página de login após o logout
+            st.session_state.page = 'Início'
 
 if __name__ == "__main__":
     main()
