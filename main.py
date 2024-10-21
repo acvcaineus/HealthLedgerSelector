@@ -128,6 +128,45 @@ def show_recommendation_comparison():
     else:
         st.write("Nenhuma recomendação disponível para comparação. Por favor, complete o questionário primeiro.")
 
+def show_framework_info():
+    st.header("Sobre o Framework Proposto")
+    
+    st.subheader("Embasamento Teórico")
+    st.write("""
+    O framework proposto é baseado na Pilha Shermin, que divide a análise de DLTs em quatro camadas:
+    1. Aplicação
+    2. Consenso
+    3. Infraestrutura
+    4. Internet
+    
+    Esta abordagem permite uma avaliação holística das necessidades do projeto de saúde e das capacidades das diferentes DLTs.
+    """)
+    
+    st.subheader("Métricas e Ponderações")
+    st.write("""
+    O framework utiliza as seguintes métricas principais:
+    - Segurança (40%)
+    - Escalabilidade (30%)
+    - Eficiência Energética (20%)
+    - Governança (10%)
+    
+    Estas ponderações foram definidas com base na importância relativa de cada aspecto para projetos de saúde típicos.
+    """)
+    
+    st.subheader("Fundamentação da Aplicação")
+    st.write("""
+    A aplicação utiliza um sistema de pontuação ponderada para recomendar a DLT e o algoritmo de consenso mais adequados.
+    As respostas do usuário são mapeadas para características específicas, que por sua vez influenciam a pontuação final de cada opção.
+    """)
+    
+    st.subheader("Limitações")
+    st.write("""
+    1. Generalização: O framework pode não capturar todas as nuances de projetos de saúde altamente especializados.
+    2. Dependência de dados atualizados: A eficácia das recomendações depende da atualização constante das informações sobre DLTs e algoritmos.
+    3. Simplificação: Algumas complexidades técnicas são simplificadas para tornar o processo de decisão mais acessível.
+    4. Foco limitado: O framework se concentra principalmente em DLTs e pode não abordar todos os aspectos de implementação de blockchain em saúde.
+    """)
+
 def main():
     init_session_state()
 
@@ -143,7 +182,7 @@ def main():
             register()
     else:
         st.sidebar.title("Menu")
-        menu_options = ['Início', 'Framework Proposto', 'Comparação de Recomendações', 'Métricas', 'Perfil', 'Logout']
+        menu_options = ['Início', 'Framework Proposto', 'Comparação de Recomendações', 'Métricas', 'Sobre o Framework', 'Perfil', 'Logout']
 
         menu_option = st.sidebar.selectbox(
             "Escolha uma opção",
@@ -161,6 +200,8 @@ def main():
             show_recommendation_comparison()
         elif st.session_state.page == 'Métricas':
             show_metrics()
+        elif st.session_state.page == 'Sobre o Framework':
+            show_framework_info()
         elif st.session_state.page == 'Perfil':
             show_user_profile()
         elif st.session_state.page == 'Logout':

@@ -72,17 +72,19 @@ def compare_algorithms(consensus_group):
 
 def select_final_algorithm(consensus_group, priorities):
     comparison_data = compare_algorithms(consensus_group)
-    algorithms = list(comparison_data["Segurança"].keys())
+    algorithms = list(comparison_data.get("Segurança", {}).keys())
     
     scores = {alg: 0 for alg in algorithms}
     
     for alg in algorithms:
         for metric, priority in priorities.items():
-            scores[alg] += comparison_data[metric][alg] * priority
-
+            metric_name = metric.capitalize()
+            if metric_name in comparison_data and alg in comparison_data[metric_name]:
+                scores[alg] += comparison_data[metric_name][alg] * priority
+    
     if not scores:
         return "No suitable algorithm found"
-
+    
     return max(scores, key=scores.get)
 
 # The rest of the file remains unchanged
