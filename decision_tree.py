@@ -95,8 +95,8 @@ def show_recommendation(answers):
     st.write(f"**Grupo de Consenso**: {recommendation['consensus_group']}")
     st.write(f"**Algoritmo de Consenso Recomendado**: {recommendation['consensus']}")
     
-    st.write("**Respostas acumuladas**:")
-    st.json(answers)
+    with st.expander("Ver Respostas Acumuladas"):
+        st.json(answers)
 
     if st.button("Salvar Recomendação"):
         scenario = "Cenário Geral"
