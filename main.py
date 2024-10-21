@@ -1,38 +1,10 @@
+
 import streamlit as st
-from user_management import login, register, is_authenticated, logout
-from utils import init_session_state
+from user_management import login, register, logout, is_authenticated
 from decision_tree import run_decision_tree
-from decision_logic import get_recommendation, compare_algorithms, select_final_algorithm
-import pandas as pd
-import math
-from database import save_recommendation, get_user_recommendations
-
-# Funções para cálculo das métricas da árvore de decisão
-def calcular_gini(classes):
-    """Calcula a impureza de Gini."""
-    total = sum(classes.values())
-    gini = 1 - sum((count / total) ** 2 for count in classes.values())
-    return gini
-
-def calcular_entropia(classes):
-    """Calcula a entropia."""
-    total = sum(classes.values())
-    entropia = -sum((count / total) * math.log2(count / total) for count in classes.values() if count != 0)
-    return entropia
-
-def calcular_profundidade_decisoria(decisoes):
-    """Calcula a profundidade média da árvore de decisão."""
-    if not decisoes:
-        return 0
-    profundidade_total = sum(decisoes)
-    return profundidade_total / len(decisoes)
-
-def calcular_pruning(total_nos, nos_podados):
-    """Calcula o pruning ratio (proporção de nós podados)."""
-    if total_nos == 0:
-        return 0
-    pruning_ratio = (total_nos - nos_podados) / total_nos
-    return pruning_ratio
+from database import get_user_recommendations
+from utils import init_session_state
+from metrics import calcular_gini, calcular_entropia, calcular_profundidade_decisoria, calcular_pruning
 
 # Função para exibir a página inicial
 def show_home_page():
@@ -84,8 +56,7 @@ def show_user_profile():
 # Função principal que controla a navegação e o estado da sessão
 def main():
     # Inicializa o estado da sessão se necessário
-    if 'page' not in st.session_state:
-        st.session_state.page = 'Início'
+    init_session_state()
 
     st.set_page_config(page_title="SeletorDLTSaude", page_icon="🏥", layout="wide")
 
@@ -107,7 +78,7 @@ def main():
         menu_option = st.sidebar.selectbox(
             "Escolha uma opção",
             menu_options,
-            index=menu_options.index(st.session_state.page) if 'page' in st.session_state and st.session_state.page in menu_options else 0
+            index=menu_options.index(st.session_state.page) if st.session_state.page in menu_options else 0
         )
 
         # Atualiza a página no estado da sessão com base na escolha
@@ -125,6 +96,8 @@ def main():
         elif st.session_state.page == 'Logout':
             logout()
             st.session_state.page = 'Início'  # Retorna à página de login após o logout
+        
+        st.rerun()
 
 if __name__ == "__main__":
     main()
