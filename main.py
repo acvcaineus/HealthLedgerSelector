@@ -113,9 +113,62 @@ def show_recommendation_comparison():
         st.write(f"Algoritmo de Consenso Recomendado: {rec.get('consensus', 'Não disponível')}")
         
         if 'consensus_group' in rec:
-            st.subheader("Comparação com Outras Opções")
+            st.subheader("Comparação Visual dos Algoritmos")
             comparison_data = compare_algorithms(rec['consensus_group'])
+            
+            # Create radar chart
+            categories = ['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança']
+            fig = go.Figure()
+
+            for alg, scores in comparison_data['Segurança'].items():
+                fig.add_trace(go.Scatterpolar(
+                    r=[comparison_data[cat][alg] for cat in categories],
+                    theta=categories,
+                    fill='toself',
+                    name=alg
+                ))
+
+            fig.update_layout(
+                polar=dict(
+                    radialaxis=dict(
+                        visible=True,
+                        range=[0, 5]
+                    )),
+                showlegend=True
+            )
+            
+            st.plotly_chart(fig)
+
+            st.subheader("Comparação Detalhada")
             st.table(comparison_data)
+
+            st.subheader("Justificativa da Recomendação")
+            st.write(f"O algoritmo {rec['consensus']} foi selecionado porque:")
+            if rec['consensus'] in comparison_data['Segurança']:
+                security_score = comparison_data['Segurança'][rec['consensus']]
+                st.write(f"- Possui alta segurança (pontuação {security_score}/5), crucial para aplicações de saúde.")
+            if rec['consensus'] in comparison_data['Escalabilidade']:
+                scalability_score = comparison_data['Escalabilidade'][rec['consensus']]
+                st.write(f"- Oferece boa escalabilidade (pontuação {scalability_score}/5), importante para lidar com grandes volumes de dados de saúde.")
+            if rec['consensus'] in comparison_data['Eficiência Energética']:
+                energy_score = comparison_data['Eficiência Energética'][rec['consensus']]
+                st.write(f"- Apresenta eficiência energética (pontuação {energy_score}/5), contribuindo para sustentabilidade.")
+            if rec['consensus'] in comparison_data['Governança']:
+                governance_score = comparison_data['Governança'][rec['consensus']]
+                st.write(f"- Possui boa governança (pontuação {governance_score}/5), essencial para sistemas de saúde regulamentados.")
+
+            st.subheader("Cenários de Aplicação")
+            scenarios = {
+                "PBFT": "Ideal para prontuários eletrônicos e sistemas que requerem alta segurança e controle centralizado.",
+                "PoW": "Adequado para sistemas de pagamento descentralizados e proteção de dados críticos de saúde pública.",
+                "PoS": "Ótimo para redes de saúde que necessitam de alta escalabilidade e eficiência energética.",
+                "DPoS": "Perfeito para sistemas de monitoramento de saúde pública e redes regionais de saúde.",
+                "PoA": "Ideal para sistemas locais de saúde e agendamento de pacientes.",
+                "Tangle": "Excelente para monitoramento de dispositivos IoT em saúde e processamento de dados em tempo real."
+            }
+            for alg, scenario in scenarios.items():
+                st.write(f"**{alg}**: {scenario}")
+
         else:
             st.write("Dados de comparação não disponíveis.")
         
