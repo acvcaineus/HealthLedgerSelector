@@ -1,4 +1,3 @@
-
 import streamlit as st
 from user_management import login, register, logout, is_authenticated
 from decision_tree import run_decision_tree
@@ -13,7 +12,7 @@ def show_home_page():
 
     if st.button("Iniciar Questionário"):
         st.session_state.page = "Árvore de Decisão"
-        st.rerun()
+        st.experimental_rerun()
 
 # Função para exibir as métricas calculadas
 def show_metrics():
@@ -88,16 +87,14 @@ def main():
         if st.session_state.page == 'Início':
             show_home_page()
         elif st.session_state.page == 'Árvore de Decisão':
-            run_decision_tree()  # Executa a árvore de decisão
+            run_decision_tree()
         elif st.session_state.page == 'Métricas':
-            show_metrics()  # Exibe as métricas calculadas
+            show_metrics()
         elif st.session_state.page == 'Perfil':
-            show_user_profile()  # Exibe o perfil do usuário
+            show_user_profile()
         elif st.session_state.page == 'Logout':
             logout()
             st.session_state.page = 'Início'  # Retorna à página de login após o logout
-        
-        st.rerun()
 
 if __name__ == "__main__":
     main()
