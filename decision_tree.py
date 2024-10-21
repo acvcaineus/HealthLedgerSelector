@@ -31,27 +31,9 @@ def init_session_state():
         st.session_state.answers = {}
         st.session_state.recommendation = None  # Armazena a recomendação final
 
-# Função para visualizar as métricas de Decision Tree
-def show_decision_tree_metrics():
-    st.subheader("Métricas da Árvore de Decisão")
-    st.write("""
-    **Impureza de Gini**: Mede a impureza ou diversidade dos nós da árvore.
-    - Fórmula: Gini(t) = 1 - Σ(pi^2)
-    - 0.0: Puro, 1.0: Máxima impureza.
-
-    **Entropia**: Quantifica a desordem ou incerteza.
-    - Fórmula: Entropia(t) = -Σ(pi * log2(pi))
-
-    **Profundidade Decisória**: Mede o número de divisões feitas para chegar à decisão final.
-    - Baixa: Menor que 3, Média: 3-6, Alta: Mais de 6.
-
-    **Pruning (Poda)**: Processo de simplificação da árvore para evitar overfitting.
-    - Redução de nós sem perda de precisão.
-    """)
-
 # Função para exibir a árvore de decisão interativa
 def show_interactive_decision_tree():
-    st.header('Árvore de Decisão Interativa para Contextos de Saúde')
+    st.header('Framework Proposto para Contextos de Saúde')
 
     # Inicializa o estado de sessão, se necessário
     init_session_state()
@@ -169,5 +151,4 @@ def restart_decision_tree():
 def run_decision_tree():
     show_interactive_decision_tree()
     st.markdown("---")
-    show_decision_tree_metrics()  # Botão para visualizar métricas
     restart_decision_tree()  # Botão para reiniciar
