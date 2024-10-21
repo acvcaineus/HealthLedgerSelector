@@ -103,6 +103,9 @@ def show_recommendation(answers):
         save_recommendation(st.session_state.username, scenario, recommendation)
         st.success("Recomendação salva com sucesso no seu perfil!")
 
+    # Add button to lead to the comparison page
+    st.button("Comparar Algoritmos", on_click=lambda: setattr(st.session_state, 'page', 'Comparação de Recomendações'))
+
     return recommendation
 
 def restart_decision_tree():

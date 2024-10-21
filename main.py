@@ -116,46 +116,48 @@ def show_recommendation_comparison():
             st.subheader("Comparação Visual dos Algoritmos")
             comparison_data = compare_algorithms(rec['consensus_group'])
             
-            # Create radar chart
-            categories = ['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança']
-            fig = go.Figure()
+            new_metrics = {
+                'Latência': {alg: round(5 - score, 2) for alg, score in comparison_data['Escalabilidade'].items()},
+                'Throughput': comparison_data['Escalabilidade'],
+                'Tolerância a Falhas': comparison_data['Segurança'],
+                'Nível de Descentralização': {alg: round((score + comparison_data['Governança'][alg]) / 2, 2) for alg, score in comparison_data['Segurança'].items()}
+            }
+            comparison_data.update(new_metrics)
 
-            for alg, scores in comparison_data['Segurança'].items():
-                fig.add_trace(go.Scatterpolar(
-                    r=[comparison_data[cat][alg] for cat in categories],
-                    theta=categories,
-                    fill='toself',
-                    name=alg
-                ))
+            available_metrics = list(comparison_data.keys())
+            selected_metrics = st.multiselect("Selecione as métricas para comparar", available_metrics, default=available_metrics[:4])
 
-            fig.update_layout(
-                polar=dict(
-                    radialaxis=dict(
-                        visible=True,
-                        range=[0, 5]
-                    )),
-                showlegend=True
-            )
-            
-            st.plotly_chart(fig)
+            if selected_metrics:
+                fig = go.Figure()
+
+                for alg in comparison_data['Segurança'].keys():
+                    fig.add_trace(go.Scatterpolar(
+                        r=[comparison_data[metric][alg] for metric in selected_metrics],
+                        theta=selected_metrics,
+                        fill='toself',
+                        name=alg
+                    ))
+
+                fig.update_layout(
+                    polar=dict(
+                        radialaxis=dict(
+                            visible=True,
+                            range=[0, 5]
+                        )),
+                    showlegend=True
+                )
+                
+                st.plotly_chart(fig)
 
             st.subheader("Comparação Detalhada")
-            st.table(comparison_data)
+            st.table({metric: comparison_data[metric] for metric in selected_metrics})
 
             st.subheader("Justificativa da Recomendação")
             st.write(f"O algoritmo {rec['consensus']} foi selecionado porque:")
-            if rec['consensus'] in comparison_data['Segurança']:
-                security_score = comparison_data['Segurança'][rec['consensus']]
-                st.write(f"- Possui alta segurança (pontuação {security_score}/5), crucial para aplicações de saúde.")
-            if rec['consensus'] in comparison_data['Escalabilidade']:
-                scalability_score = comparison_data['Escalabilidade'][rec['consensus']]
-                st.write(f"- Oferece boa escalabilidade (pontuação {scalability_score}/5), importante para lidar com grandes volumes de dados de saúde.")
-            if rec['consensus'] in comparison_data['Eficiência Energética']:
-                energy_score = comparison_data['Eficiência Energética'][rec['consensus']]
-                st.write(f"- Apresenta eficiência energética (pontuação {energy_score}/5), contribuindo para sustentabilidade.")
-            if rec['consensus'] in comparison_data['Governança']:
-                governance_score = comparison_data['Governança'][rec['consensus']]
-                st.write(f"- Possui boa governança (pontuação {governance_score}/5), essencial para sistemas de saúde regulamentados.")
+            for metric in selected_metrics:
+                if rec['consensus'] in comparison_data[metric]:
+                    score = comparison_data[metric][rec['consensus']]
+                    st.write(f"- {metric}: pontuação {score}/5")
 
             st.subheader("Cenários de Aplicação")
             scenarios = {
@@ -167,7 +169,8 @@ def show_recommendation_comparison():
                 "Tangle": "Excelente para monitoramento de dispositivos IoT em saúde e processamento de dados em tempo real."
             }
             for alg, scenario in scenarios.items():
-                st.write(f"**{alg}**: {scenario}")
+                if alg in comparison_data['Segurança']:
+                    st.write(f"**{alg}**: {scenario}")
 
         else:
             st.write("Dados de comparação não disponíveis.")
