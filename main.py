@@ -8,8 +8,27 @@ import plotly.graph_objects as go
 
 # Função para exibir a página inicial
 def show_home_page():
-    st.title("SeletorDLTSaude")
+    st.title("Seleção de DLT e Consenso na Saúde")
     st.write("Bem-vindo ao SeletorDLTSaude, um sistema de recomendação de tecnologias de ledger distribuído (DLT) para aplicações em saúde.")
+
+    st.write('''
+    ## Como a ferramenta funciona:
+    1. **Questionário Interativo**: Responda a perguntas sobre requisitos específicos do seu projeto de saúde.
+    2. **Análise Baseada em Camadas**: Utilizamos a pilha Shermin para avaliar as necessidades em diferentes níveis (Aplicação, Consenso, Infraestrutura, Internet).
+    3. **Recomendação Personalizada**: Com base nas suas respostas, sugerimos a DLT e o algoritmo de consenso mais adequados.
+
+    ## Funcionalidades:
+    - Avaliação detalhada de requisitos de projeto
+    - Comparação visual de diferentes DLTs e algoritmos
+    - Explicações claras sobre as recomendações
+    - Perfil de usuário para salvar e revisar recomendações anteriores
+
+    ## Benefícios ao adotar esta ferramenta:
+    - Tomada de decisão informada sobre tecnologias blockchain para saúde
+    - Economia de tempo na pesquisa e seleção de DLTs
+    - Alinhamento das soluções tecnológicas com as necessidades específicas do seu projeto
+    - Melhoria contínua das recomendações através do feedback dos usuários
+    ''')
 
     if st.button("Iniciar Questionário"):
         st.session_state.page = "Framework Proposto"
