@@ -12,7 +12,7 @@ def show_home_page():
 
     if st.button("Iniciar Questionário"):
         st.session_state.page = "Árvore de Decisão"
-        st.experimental_rerun()
+        st.rerun()
 
 # Função para exibir as métricas calculadas
 def show_metrics():
