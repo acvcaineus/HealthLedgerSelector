@@ -5,6 +5,7 @@ from decision_tree import run_decision_tree
 from decision_logic import get_recommendation, compare_algorithms, select_final_algorithm
 import pandas as pd
 import math
+from database import save_recommendation, get_user_recommendations
 
 # Funções para cálculo das métricas da árvore de decisão
 def calcular_gini(classes):
@@ -62,6 +63,24 @@ def show_metrics():
     st.write(f"**Profundidade Decisória**: {profundidade:.2f}")
     st.write(f"**Pruning Ratio**: {pruning_ratio:.2f}")
 
+# Função para exibir o perfil do usuário
+def show_user_profile():
+    st.header("Perfil do Usuário")
+    st.write(f"Bem-vindo, {st.session_state.username}!")
+
+    recommendations = get_user_recommendations(st.session_state.username)
+    
+    if recommendations:
+        st.subheader("Suas Recomendações Salvas:")
+        for rec in recommendations:
+            st.write(f"Cenário: {rec['scenario']}")
+            st.write(f"DLT Recomendada: {rec['dlt']}")
+            st.write(f"Algoritmo de Consenso: {rec['consensus']}")
+            st.write(f"Data: {rec['timestamp']}")
+            st.write("---")
+    else:
+        st.write("Você ainda não tem recomendações salvas.")
+
 # Função principal que controla a navegação e o estado da sessão
 def main():
     # Inicializa o estado da sessão se necessário
@@ -82,7 +101,7 @@ def main():
     else:
         # Barra lateral com opções de menu
         st.sidebar.title("Menu")
-        menu_options = ['Início', 'Árvore de Decisão', 'Métricas', 'Logout']
+        menu_options = ['Início', 'Árvore de Decisão', 'Métricas', 'Perfil', 'Logout']
 
         # Exibe o seletor de opções de menu e mantém a página corrente no estado de sessão
         menu_option = st.sidebar.selectbox(
@@ -101,6 +120,8 @@ def main():
             run_decision_tree()  # Executa a árvore de decisão
         elif st.session_state.page == 'Métricas':
             show_metrics()  # Exibe as métricas calculadas
+        elif st.session_state.page == 'Perfil':
+            show_user_profile()  # Exibe o perfil do usuário
         elif st.session_state.page == 'Logout':
             logout()
             st.session_state.page = 'Início'  # Retorna à página de login após o logout

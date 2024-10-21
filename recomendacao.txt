@@ -1,0 +1,3 @@
+DLT Recomendada: DLT Permissionada Privada
+Algoritmo de Consenso Recomendado: PBFT
+Explicação: A aplicação exige alta privacidade e controle centralizado. A DLT Permissionada Privada com PBFT é adequada para garantir segurança e controle.

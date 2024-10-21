@@ -1,5 +1,6 @@
 import streamlit as st
 import graphviz as gv
+from database import save_recommendation
 
 # Função para retornar as perguntas por fase
 def get_questions():
@@ -141,13 +142,21 @@ def show_recommendation(answers):
     st.write("**Respostas acumuladas**:")
     st.json(answers)
 
-    # Botão para salvar a recomendação
+    # Salvar a recomendação no perfil do usuário
     if st.button("Salvar Recomendação"):
-        with open("recomendacao.txt", "w") as f:
-            f.write(f"DLT Recomendada: {dlt}\n")
-            f.write(f"Algoritmo de Consenso Recomendado: {consensus}\n")
-            f.write(f"Explicação: {explanation}\n")
-        st.success("Recomendação salva com sucesso!")
+        scenario = "Cenário Geral"  # Você pode personalizar isso com base nas respostas
+        recommendation = {
+            "dlt": dlt,
+            "consensus": consensus
+        }
+        save_recommendation(st.session_state.username, scenario, recommendation)
+        st.success("Recomendação salva com sucesso no seu perfil!")
+
+    return {
+        "dlt": dlt,
+        "consensus": consensus,
+        "explanation": explanation
+    }
 
 # Função para reiniciar a árvore de decisão
 def restart_decision_tree():

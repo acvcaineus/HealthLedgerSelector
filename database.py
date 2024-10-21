@@ -67,7 +67,7 @@ def save_recommendation(username, scenario, recommendation):
                  (username, scenario, dlt, consensus, timestamp) 
                  VALUES (?, ?, ?, ?, ?)""",
               (username, scenario, recommendation['dlt'], 
-               recommendation['consensus_group'], timestamp))
+               recommendation['consensus'], timestamp))
     conn.commit()
     conn.close()
 
