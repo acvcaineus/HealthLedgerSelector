@@ -90,7 +90,7 @@ def show_interactive_decision_tree():
         if st.session_state.current_phase >= len(phases):
             st.session_state.recommendation = show_recommendation(st.session_state.answers)  # Mostra a recomendação final
         else:
-            st.experimental_rerun()  # Recarrega a página para mostrar a próxima pergunta
+            st.rerun()  # Recarrega a página para mostrar a próxima pergunta
 
     # Progresso geral
     total_questions = sum(len(q) for q in questions.values())
@@ -154,7 +154,7 @@ def restart_decision_tree():
     if st.button("Reiniciar"):
         for key in st.session_state.keys():
             del st.session_state[key]
-        st.experimental_rerun()
+        st.rerun()
 
 # Função principal para rodar a árvore de decisão
 def run_decision_tree():
