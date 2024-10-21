@@ -5,6 +5,7 @@ from database import get_user_recommendations
 from utils import init_session_state
 from metrics import calcular_gini, calcular_entropia, calcular_profundidade_decisoria, calcular_pruning
 import plotly.graph_objects as go
+from decision_logic import compare_algorithms
 
 # Função para exibir a página inicial
 def show_home_page():
@@ -29,6 +30,15 @@ def show_home_page():
     - Alinhamento das soluções tecnológicas com as necessidades específicas do seu projeto
     - Melhoria contínua das recomendações através do feedback dos usuários
     ''')
+
+    st.write("## Tabela de DLTs, Grupos de Algoritmos e Algoritmos por Grupo")
+    with st.expander("Clique para expandir"):
+        st.table({
+            'Grupo': ['Alta Segurança e Controle', 'Alta Eficiência Operacional', 'Escalabilidade e Governança Flexível', 'Alta Escalabilidade em Redes IoT', 'Alta Segurança e Descentralização de Dados Críticos'],
+            'Tipos DLTs': ['DLT Permissionada Privada, DLT Pública Permissionless', 'DLT Permissionada Simples', 'DLT Híbrida, DLT com Consenso Delegado', 'DLT Pública', 'DLT Pública Permissionless'],
+            'Algoritmos de Consenso': ['PBFT, PoW', 'RAFT, PoA', 'PoS, DPoS', 'Tangle', 'PoW, PoS'],
+            'Cenários de Uso': ['Prontuários eletrônicos, integração de dados sensíveis', 'Sistemas locais de saúde, agendamento de pacientes', 'Monitoramento de saúde pública, redes regionais de saúde', 'Monitoramento de dispositivos IoT em saúde', 'Sistemas de pagamento descentralizados, dados críticos de saúde pública']
+        })
 
     if st.button("Iniciar Questionário"):
         st.session_state.page = "Framework Proposto"
@@ -102,6 +112,29 @@ def show_user_profile():
     else:
         st.write("Você ainda não tem recomendações salvas.")
 
+# New function for comparing recommendations
+def show_recommendation_comparison():
+    st.header("Comparação de Recomendações")
+    if 'recommendation' in st.session_state:
+        rec = st.session_state.recommendation
+        st.write(f"DLT Recomendada: {rec['dlt']}")
+        st.write(f"Algoritmo de Consenso Recomendado: {rec['consensus']}")
+        st.write(f"Grupo de Consenso: {rec['consensus_group']}")
+        st.write(f"Explicação: {rec['explanation']}")
+        
+        st.subheader("Comparação com Outras Opções")
+        comparison_data = compare_algorithms(rec['consensus_group'])
+        st.table(comparison_data)
+        
+        st.subheader("Pesos Atribuídos")
+        st.write("Os seguintes pesos foram considerados na escolha do algoritmo:")
+        st.write("- Segurança: 40%")
+        st.write("- Escalabilidade: 30%")
+        st.write("- Eficiência Energética: 20%")
+        st.write("- Governança: 10%")
+    else:
+        st.write("Nenhuma recomendação disponível para comparação.")
+
 # Função principal que controla a navegação e o estado da sessão
 def main():
     # Inicializa o estado da sessão se necessário
@@ -121,7 +154,7 @@ def main():
     else:
         # Barra lateral com opções de menu
         st.sidebar.title("Menu")
-        menu_options = ['Início', 'Framework Proposto', 'Métricas', 'Perfil', 'Logout']
+        menu_options = ['Início', 'Framework Proposto', 'Comparação de Recomendações', 'Métricas', 'Perfil', 'Logout']
 
         # Exibe o seletor de opções de menu e mantém a página corrente no estado de sessão
         menu_option = st.sidebar.selectbox(
@@ -138,6 +171,8 @@ def main():
             show_home_page()
         elif st.session_state.page == 'Framework Proposto':
             run_decision_tree()
+        elif st.session_state.page == 'Comparação de Recomendações':
+            show_recommendation_comparison()
         elif st.session_state.page == 'Métricas':
             show_metrics()
         elif st.session_state.page == 'Perfil':

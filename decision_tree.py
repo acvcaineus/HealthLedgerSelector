@@ -80,10 +80,9 @@ def show_interactive_decision_tree():
     current_question_overall = sum(len(questions[p]) for p in phases[:st.session_state.current_phase]) + st.session_state.current_question
     st.progress(current_question_overall / total_questions)
 
-    # Exibe progresso e debug
+    # Exibe progresso
     st.write(f'Fase atual: {st.session_state.current_phase + 1}/{len(phases)}')
     st.write(f'Pergunta atual: {st.session_state.current_question + 1}/{len(questions[current_phase])}')
-    st.write('Debug - Respostas atuais:', st.session_state.answers)
 
     # Visualização do fluxo de decisão
     st.subheader("Fluxo de Decisão")
