@@ -1,0 +1,38 @@
+
+DLT	Grupo de Algoritmo	Algoritmo de Consenso	Caso de Uso	Desafios e Limitações	Referência Bibliográfica
+Hyperledger Fabric	Alta Segurança e Controle dos dados	RAFT/IBFT	Rastreabilidade de medicamentos na cadeia de suprimentos	Baixa escalabilidade para redes muito grandes	Mehmood et al. (2025) - "BLPCA-ledger: A lightweight plenum consensus protocols for consortium blockchain" Acesse aqui​.
+VeChain	Alta Eficiência Operacional em redes locais	Proof of Authority (PoA)	Rastreamento de suprimentos médicos e cadeia farmacêutica	Dependência de validadores centralizados	Popoola et al. (2024) - "A critical literature review of security and privacy in smart home healthcare schemes adopting IoT & blockchain" Acesse aqui​.
+Quorum (Mediledger)	Escalabilidade e Governança Flexível	RAFT/IBFT	Monitoramento e rastreamento de medicamentos	Escalabilidade limitada em redes públicas	Mehmood et al. (2025) - "BLPCA-ledger: A lightweight plenum consensus protocols for consortium blockchain" Acesse aqui​.
+IOTA	Alta Escalabilidade em Redes IoT	Tangle	Compartilhamento seguro de dados de pacientes via IoT	Maturidade tecnológica (não totalmente implementada)	Salim et al. (2024) - "Privacy-preserving and scalable federated blockchain scheme for healthcare 4.0" Acesse aqui​.
+Ripple (XRP Ledger)	Alta Eficiência Operacional em redes locais	Ripple Consensus Algorithm	Processamento eficiente de transações e segurança de dados	Centralização nos validadores principais	Makhdoom et al. (2024) - "PrivySeC: A secure and privacy-compliant distributed framework for personal data sharing in IoT ecosystems" Acesse aqui​.
+Stellar	Alta Eficiência Operacional em redes locais	Stellar Consensus Protocol (SCP)	Gerenciamento de transações de pagamentos entre provedores	Governança dependente do quorum	Javed et al. (2024) - "Mutual authentication enabled trust model for vehicular energy networks using Blockchain in Smart Healthcare Systems" Acesse aqui​.
+Bitcoin	Alta Segurança e Descentralização	Proof of Work (PoW)	Armazenamento seguro de dados médicos críticos	Consumo energético elevado, escalabilidade limitada	Liu et al. (2024) - "A systematic study on integrating blockchain in healthcare for electronic health record management and tracking medical supplies" Acesse aqui​.
+Ethereum (PoW)	Alta Segurança e Descentralização	Proof of Work (PoW)	Contratos inteligentes e registros médicos eletrônicos	Consumo de energia elevado	Makhdoom et al. (2024) - "PrivySeC: A secure and privacy-compliant distributed framework for personal data sharing in IoT ecosystems" Acesse aqui​.
+Ethereum 2.0 (PoS)	Escalabilidade e Governança Flexível	Proof of Stake (PoS)	Aceleração de ensaios clínicos e compartilhamento de dados	Governança flexível, mas centralização é possível	Nawaz et al. (2024) - "Hyperledger sawtooth based supply chain traceability system for counterfeit drugs" Acesse aqui​.
+Respostas Detalhadas para Perguntas da Banca:
+1. Justificativa Teórica e Relevância:
+
+Por que focar em blockchain/DLT para o setor de saúde?
+O setor de saúde exige alta segurança, rastreabilidade e interoperabilidade para lidar com dados sensíveis e garantir a conformidade regulatória (como a LGPD e HIPAA). A tecnologia blockchain oferece soluções inovadoras como imutabilidade de dados, consentimento seguro para compartilhamento de informações e integração de dispositivos IoT para monitoramento de pacientes. A capacidade de manter a integridade dos registros médicos e combater fraudes no rastreamento de medicamentos também foi demonstrada em estudos como o Medledger e FarmaTrust​.
+2. Fundamentação Metodológica:
+
+Como você escolheu as DLTs incluídas no framework?
+As DLTs foram escolhidas com base em sua aplicabilidade ao setor de saúde, levando em consideração fatores como segurança, eficiência operacional, escalabilidade e conformidade regulatória. Cada DLT possui casos de uso reais documentados na literatura, como o Medledger com Hyperledger Fabric para rastreamento de medicamentos, e o Patientory com IOTA para o compartilhamento seguro de dados via IoT​.
+Como o seu framework pode ser aplicado em diferentes cenários de saúde?
+O framework foi desenvolvido para ser flexível e aplicável em diferentes ambientes de saúde, como hospitais, clínicas e cadeias de suprimentos farmacêuticos. Por exemplo, DLTs permissionadas como Hyperledger Fabric são ideais para ambientes de hospitais, enquanto IOTA pode ser usada para monitoramento em tempo real de pacientes com dispositivos IoT em redes de saúde interconectadas​.
+3. Validação e Estudos de Caso:
+
+Como você validou a escolha dos casos de uso?
+Os casos de uso foram validados com base em exemplos de implementação bem-sucedidos, descritos em estudos de caso, como o Medledger para rastreamento de medicamentos, e o Embleema para aceleração de ensaios clínicos. Esses exemplos foram fundamentados por pesquisas acadêmicas e têm sido aplicados com sucesso em cenários reais​.
+4. Desafios e Limitações:
+
+Quais são as principais limitações da blockchain para a saúde?
+Um dos principais desafios da blockchain no setor de saúde é a escalabilidade, especialmente em redes públicas (como Bitcoin e Ethereum), devido ao consumo energético elevado e à latência nas transações. Outro desafio é a dependência de validadores centralizados em DLTs como VeChain e Ripple, que pode limitar a descentralização completa​.
+5. Impacto e Futuro:
+
+Qual é o impacto prático do seu framework para o setor de saúde no Brasil?
+No contexto brasileiro, o framework pode ser aplicado para melhorar a rastreabilidade de medicamentos (combatendo a falsificação), otimizar o compartilhamento de registros médicos entre diferentes instituições e garantir a privacidade de dados sensíveis de pacientes. O uso de blockchain pode também ajudar a mitigar fraudes em sistemas de pagamento entre provedores de saúde e seguradoras​.
+6. Aspectos Éticos e Regulamentares:
+
+Como o seu framework garante a conformidade com leis de proteção de dados, como a LGPD e HIPAA?
+A conformidade com as regulamentações de proteção de dados é assegurada pela própria arquitetura da blockchain, que oferece registros imutáveis e mecanismos de consentimento para o compartilhamento de informações. DLTs como Hyperledger Fabric e Corda foram desenvolvidas com foco na privacidade e controle de acesso, alinhando-se perfeitamente às exigências da LGPD e HIPAA​.

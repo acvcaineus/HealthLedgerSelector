@@ -1,43 +1,28 @@
 import streamlit as st
-from user_management import login, register, logout, is_authenticated
-from decision_tree import run_decision_tree
-from database import get_user_recommendations
-from utils import init_session_state
-from metrics import calcular_gini, calcular_entropia, calcular_profundidade_decisoria, calcular_pruning
+import pandas as pd
 import plotly.graph_objects as go
+from user_management import login, register, is_authenticated, logout
+from decision_tree import run_decision_tree
 from decision_logic import compare_algorithms
+from database import get_user_recommendations
+from metrics import calcular_gini, calcular_entropia, calcular_profundidade_decisoria, calcular_pruning
+from utils import init_session_state
 
 def show_home_page():
-    st.title("Seleção de DLT e Consenso na Saúde")
-    st.write("Bem-vindo ao SeletorDLTSaude, um sistema de recomendação de tecnologias de ledger distribuído (DLT) para aplicações em saúde.")
+    st.title("SeletorDLTSaude - Sistema de Seleção de DLT para Saúde")
+    st.write("Bem-vindo ao SeletorDLTSaude, uma aplicação para ajudar na escolha de tecnologias de ledger distribuído (DLT) para projetos de saúde.")
 
-    st.write('''
-    ## Como a ferramenta funciona:
-    1. **Questionário Interativo**: Responda a perguntas sobre requisitos específicos do seu projeto de saúde.
-    2. **Análise Baseada em Camadas**: Utilizamos a pilha Shermin para avaliar as necessidades em diferentes níveis (Aplicação, Consenso, Infraestrutura, Internet).
-    3. **Recomendação Personalizada**: Com base nas suas respostas, sugerimos a DLT e o algoritmo de consenso mais adequados.
-
-    ## Funcionalidades:
-    - Avaliação detalhada de requisitos de projeto
-    - Comparação visual de diferentes DLTs e algoritmos
-    - Explicações claras sobre as recomendações
-    - Perfil de usuário para salvar e revisar recomendações anteriores
-
-    ## Benefícios ao adotar esta ferramenta:
-    - Tomada de decisão informada sobre tecnologias blockchain para saúde
-    - Economia de tempo na pesquisa e seleção de DLTs
-    - Alinhamento das soluções tecnológicas com as necessidades específicas do seu projeto
-    - Melhoria contínua das recomendações através do feedback dos usuários
-    ''')
-
-    st.write("## Tabela de DLTs, Grupos de Algoritmos e Algoritmos por Grupo")
-    with st.expander("Clique para expandir"):
-        st.table({
-            'Grupo': ['Alta Segurança e Controle', 'Alta Eficiência Operacional', 'Escalabilidade e Governança Flexível', 'Alta Escalabilidade em Redes IoT', 'Alta Segurança e Descentralização de Dados Críticos'],
-            'Tipos DLTs': ['DLT Permissionada Privada, DLT Pública Permissionless', 'DLT Permissionada Simples', 'DLT Híbrida, DLT com Consenso Delegado', 'DLT Pública', 'DLT Pública Permissionless'],
-            'Algoritmos de Consenso': ['PBFT, PoW', 'RAFT, PoA', 'PoS, DPoS', 'Tangle', 'PoW, PoS'],
-            'Cenários de Uso': ['Prontuários eletrônicos, integração de dados sensíveis', 'Sistemas locais de saúde, agendamento de pacientes', 'Monitoramento de saúde pública, redes regionais de saúde', 'Monitoramento de dispositivos IoT em saúde', 'Sistemas de pagamento descentralizados, dados críticos de saúde pública']
-        })
+    st.subheader("Informações sobre DLTs para Saúde")
+    dlt_data = {
+        'DLT': ['Hyperledger Fabric', 'VeChain', 'Quorum (Mediledger)', 'IOTA', 'Ripple (XRP Ledger)', 'Stellar', 'Bitcoin', 'Ethereum (PoW)', 'Ethereum 2.0 (PoS)'],
+        'Grupo de Algoritmo': ['Alta Segurança e Controle dos dados', 'Alta Eficiência Operacional em redes locais', 'Escalabilidade e Governança Flexível', 'Alta Escalabilidade em Redes IoT', 'Alta Eficiência Operacional em redes locais', 'Alta Eficiência Operacional em redes locais', 'Alta Segurança e Descentralização', 'Alta Segurança e Descentralização', 'Escalabilidade e Governança Flexível'],
+        'Algoritmo de Consenso': ['RAFT/IBFT', 'Proof of Authority (PoA)', 'RAFT/IBFT', 'Tangle', 'Ripple Consensus Algorithm', 'Stellar Consensus Protocol (SCP)', 'Proof of Work (PoW)', 'Proof of Work (PoW)', 'Proof of Stake (PoS)'],
+        'Caso de Uso': ['Rastreabilidade de medicamentos na cadeia de suprimentos', 'Rastreamento de suprimentos médicos e cadeia farmacêutica', 'Monitoramento e rastreamento de medicamentos', 'Compartilhamento seguro de dados de pacientes via IoT', 'Processamento eficiente de transações e segurança de dados', 'Gerenciamento de transações de pagamentos entre provedores', 'Armazenamento seguro de dados médicos críticos', 'Contratos inteligentes e registros médicos eletrônicos', 'Aceleração de ensaios clínicos e compartilhamento de dados'],
+        'Desafios e Limitações': ['Baixa escalabilidade para redes muito grandes', 'Dependência de validadores centralizados', 'Escalabilidade limitada em redes públicas', 'Maturidade tecnológica (não totalmente implementada)', 'Centralização nos validadores principais', 'Governança dependente do quorum', 'Consumo energético elevado, escalabilidade limitada', 'Consumo de energia elevado', 'Governança flexível, mas centralização é possível'],
+        'Referência Bibliográfica': ['Mehmood et al. (2025)', 'Popoola et al. (2024)', 'Mehmood et al. (2025)', 'Salim et al. (2024)', 'Makhdoom et al. (2024)', 'Javed et al. (2024)', 'Liu et al. (2024)', 'Makhdoom et al. (2024)', 'Nawaz et al. (2024)']
+    }
+    df = pd.DataFrame(dlt_data)
+    st.table(df)
 
     if st.button("Iniciar Questionário"):
         st.session_state.page = "Framework Proposto"
@@ -159,18 +144,37 @@ def show_recommendation_comparison():
                     score = comparison_data[metric][rec['consensus']]
                     st.write(f"- {metric}: pontuação {score}/5")
 
-            st.subheader("Cenários de Aplicação")
+            st.subheader("Cenários de Aplicação e Fundamentação Científica")
             scenarios = {
-                "PBFT": "Ideal para prontuários eletrônicos e sistemas que requerem alta segurança e controle centralizado.",
-                "PoW": "Adequado para sistemas de pagamento descentralizados e proteção de dados críticos de saúde pública.",
-                "PoS": "Ótimo para redes de saúde que necessitam de alta escalabilidade e eficiência energética.",
-                "DPoS": "Perfeito para sistemas de monitoramento de saúde pública e redes regionais de saúde.",
-                "PoA": "Ideal para sistemas locais de saúde e agendamento de pacientes.",
-                "Tangle": "Excelente para monitoramento de dispositivos IoT em saúde e processamento de dados em tempo real."
+                "PBFT": {
+                    "description": "Ideal para prontuários eletrônicos e sistemas que requerem alta segurança e controle centralizado.",
+                    "reference": "Mehmood et al. (2025) - 'BLPCA-ledger: A lightweight plenum consensus protocols for consortium blockchain'"
+                },
+                "PoW": {
+                    "description": "Adequado para sistemas de pagamento descentralizados e proteção de dados críticos de saúde pública.",
+                    "reference": "Liu et al. (2024) - 'A systematic study on integrating blockchain in healthcare for electronic health record management and tracking medical supplies'"
+                },
+                "PoS": {
+                    "description": "Ótimo para redes de saúde que necessitam de alta escalabilidade e eficiência energética.",
+                    "reference": "Nawaz et al. (2024) - 'Hyperledger sawtooth based supply chain traceability system for counterfeit drugs'"
+                },
+                "DPoS": {
+                    "description": "Perfeito para sistemas de monitoramento de saúde pública e redes regionais de saúde.",
+                    "reference": "Javed et al. (2024) - 'Mutual authentication enabled trust model for vehicular energy networks using Blockchain in Smart Healthcare Systems'"
+                },
+                "PoA": {
+                    "description": "Ideal para sistemas locais de saúde e agendamento de pacientes.",
+                    "reference": "Popoola et al. (2024) - 'A critical literature review of security and privacy in smart home healthcare schemes adopting IoT & blockchain'"
+                },
+                "Tangle": {
+                    "description": "Excelente para monitoramento de dispositivos IoT em saúde e processamento de dados em tempo real.",
+                    "reference": "Salim et al. (2024) - 'Privacy-preserving and scalable federated blockchain scheme for healthcare 4.0'"
+                }
             }
-            for alg, scenario in scenarios.items():
+            for alg, info in scenarios.items():
                 if alg in comparison_data['Segurança']:
-                    st.write(f"**{alg}**: {scenario}")
+                    st.write(f"**{alg}**: {info['description']}")
+                    st.write(f"*Referência:* {info['reference']}")
 
         else:
             st.write("Dados de comparação não disponíveis.")
@@ -215,12 +219,30 @@ def show_framework_info():
     As respostas do usuário são mapeadas para características específicas, que por sua vez influenciam a pontuação final de cada opção.
     """)
     
+    st.subheader("Embasamento Científico")
+    st.write("""
+    O framework proposto é apoiado por recentes pesquisas científicas na área de blockchain e DLT aplicadas à saúde. Alguns dos principais achados incluem:
+
+    1. Segurança e Privacidade: Estudos como o de Popoola et al. (2024) destacam a importância da segurança e privacidade em sistemas de saúde baseados em IoT e blockchain, especialmente em ambientes domésticos inteligentes.
+
+    2. Rastreabilidade na Cadeia de Suprimentos: Mehmood et al. (2025) propõem protocolos de consenso leves para blockchains de consórcio, visando melhorar a rastreabilidade de medicamentos.
+
+    3. Escalabilidade e Eficiência: Salim et al. (2024) apresentam um esquema federado de blockchain para Healthcare 4.0, focando na preservação da privacidade e na escalabilidade.
+
+    4. Interoperabilidade: Makhdoom et al. (2024) desenvolveram um framework distribuído e compatível com a privacidade para compartilhamento de dados pessoais em ecossistemas IoT.
+
+    5. Autenticação e Confiança: Javed et al. (2024) propõem um modelo de confiança baseado em autenticação mútua para redes de energia veicular usando Blockchain em Sistemas de Saúde Inteligentes.
+
+    Estes estudos corroboram a escolha das DLTs e algoritmos de consenso incluídos no framework, destacando sua aplicabilidade em diversos cenários de saúde, desde o gerenciamento de registros médicos eletrônicos até o rastreamento de suprimentos médicos.
+    """)
+    
     st.subheader("Limitações")
     st.write("""
     1. Generalização: O framework pode não capturar todas as nuances de projetos de saúde altamente especializados.
     2. Dependência de dados atualizados: A eficácia das recomendações depende da atualização constante das informações sobre DLTs e algoritmos.
     3. Simplificação: Algumas complexidades técnicas são simplificadas para tornar o processo de decisão mais acessível.
     4. Foco limitado: O framework se concentra principalmente em DLTs e pode não abordar todos os aspectos de implementação de blockchain em saúde.
+    5. Maturidade Tecnológica: Algumas DLTs, como IOTA, ainda estão em fase de desenvolvimento e implementação completa, como apontado por Salim et al. (2024).
     """)
 
 def main():
