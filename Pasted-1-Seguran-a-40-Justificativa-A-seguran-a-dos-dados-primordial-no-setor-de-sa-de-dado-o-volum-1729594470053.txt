@@ -1,0 +1,17 @@
+1. Segurança (40%)
+Justificativa: A segurança dos dados é primordial no setor de saúde, dado o volume de informações sensíveis que são manipuladas, como registros médicos e dados pessoais de pacientes. A adoção de tecnologias baseadas em blockchain oferece um nível elevado de segurança através da imutabilidade dos registros e criptografia robusta. Estudos indicam que blockchains, como Hyperledger Fabric e Quorum, são especialmente projetadas para garantir a integridade dos dados em redes permissionadas .
+Aplicação na matriz: Avaliar o nível de segurança oferecido por cada DLT com base na sua arquitetura e nos mecanismos de consenso, como Proof of Authority (PoA) e Pluggable Consensus, que proporcionam controle detalhado sobre o acesso e modificação dos dados​.
+2. Escalabilidade (25%)
+Justificativa: A escalabilidade é fundamental para que as DLTs suportem o crescente volume de dados no setor de saúde, especialmente com o aumento de dispositivos IoT e registros médicos eletrônicos. VeChain e Quorum são citadas como soluções escaláveis, capazes de gerenciar grandes volumes de transações por segundo, sem comprometer a eficiência operacional .
+Aplicação na matriz: A escalabilidade será avaliada com base na capacidade de suportar redes hospitalares extensas e fluxos contínuos de dados.
+3. Eficiência Energética (20%)
+Justificativa: Dado o crescente foco em sustentabilidade, a eficiência energética é uma métrica importante, especialmente para tecnologias blockchain que requerem processamento intensivo, como Proof of Work (PoW). Alternativas como Proof of Stake (PoS) e Proof of Authority (PoA) oferecem menor consumo de energia e são consideradas mais adequadas para sistemas de saúde, que precisam de soluções ambientalmente sustentáveis .
+Aplicação na matriz: DLTs como Ethereum 2.0 (PoS) e Hyperledger Fabric serão avaliadas com base na eficiência energética por transação, com DLTs menos eficientes, como Bitcoin (PoW), recebendo pontuações mais baixas .
+4. Governança (15%)
+Justificativa: A governança flexível e controlada é necessária para garantir a conformidade com as regulamentações de saúde, como a LGPD no Brasil, e para gerenciar os acessos de diferentes atores (profissionais de saúde, pacientes, seguradoras). DLTs permissionadas, como Hyperledger Fabric e Corda, oferecem controle detalhado sobre quem pode acessar e modificar os dados, sendo ideais para ambientes de saúde que precisam de maior controle .
+Aplicação na matriz: A avaliação da governança inclui a flexibilidade na gestão de permissões e a capacidade de adaptação às regulamentações locais.
+Fundamentação científica baseada na baseagora.xml:
+Segurança: Pesquisas mostram que a imutabilidade dos registros e a criptografia de ponta das DLTs aumentam a confiança e protegem os dados contra violações, essenciais para o gerenciamento de dados médicos sensíveis .
+Escalabilidade: Estudos destacam a necessidade de soluções escaláveis que suportem o aumento exponencial de transações, especialmente em redes que lidam com o rastreamento de medicamentos e o compartilhamento de EHRs (Registros Eletrônicos de Saúde) .
+Eficiência Energética: O uso de tecnologias mais eficientes energeticamente, como PoS e PoA, é recomendado para garantir a viabilidade em grandes redes hospitalares, reduzindo o impacto ambiental .
+Governança: A importância de uma governança flexível e adaptável, especialmente em redes permissionadas, é reforçada por diversos estudos que indicam a necessidade de manter o controle total sobre o acesso e a atualização dos dados .

@@ -8,8 +8,8 @@ consensus_groups = {
     'Alta Segurança e Descentralização de Dados Críticos': ['PoW', 'PoS']
 }
 
-def get_recommendation(answers, weights):
-    score = {
+def create_evaluation_matrix(answers):
+    matrix = {
         "DLT Permissionada Privada": 0,
         "DLT Pública Permissionless": 0,
         "DLT Permissionada Simples": 0,
@@ -20,21 +20,36 @@ def get_recommendation(answers, weights):
 
     for question_id, answer in answers.items():
         if question_id == "privacy" and answer == "Sim":
-            score["DLT Permissionada Privada"] += 2 * weights["security"]
+            matrix["DLT Permissionada Privada"] += 2
         elif question_id == "integration" and answer == "Sim":
-            score["DLT Híbrida"] += 2 * weights["scalability"]
+            matrix["DLT Híbrida"] += 2
         elif question_id == "data_volume" and answer == "Sim":
-            score["DLT Pública"] += 2 * weights["scalability"]
+            matrix["DLT Pública"] += 2
         elif question_id == "energy_efficiency" and answer == "Sim":
-            score["DLT Permissionada Simples"] += 2 * weights["energy_efficiency"]
+            matrix["DLT Permissionada Simples"] += 2
         elif question_id == "network_security" and answer == "Sim":
-            score["DLT Pública Permissionless"] += 2 * weights["security"]
+            matrix["DLT Pública Permissionless"] += 2
         elif question_id == "scalability" and answer == "Sim":
-            score["DLT com Consenso Delegado"] += 2 * weights["scalability"]
+            matrix["DLT com Consenso Delegado"] += 2
         elif question_id == "governance_flexibility" and answer == "Sim":
-            score["DLT Híbrida"] += 2 * weights["governance"]
+            matrix["DLT Híbrida"] += 2
         elif question_id == "interoperability" and answer == "Sim":
-            score["DLT Pública"] += 2 * weights["scalability"]
+            matrix["DLT Pública"] += 2
+
+    return matrix
+
+def get_recommendation(answers, weights):
+    evaluation_matrix = create_evaluation_matrix(answers)
+    score = {dlt: value * weights["security"] for dlt, value in evaluation_matrix.items()}
+
+    for question_id, answer in answers.items():
+        if question_id == "scalability" and answer == "Sim":
+            score["DLT Pública"] += weights["scalability"]
+            score["DLT com Consenso Delegado"] += weights["scalability"]
+        elif question_id == "energy_efficiency" and answer == "Sim":
+            score["DLT Permissionada Simples"] += weights["energy_efficiency"]
+        elif question_id == "governance_flexibility" and answer == "Sim":
+            score["DLT Híbrida"] += weights["governance"]
 
     recommended_dlt = max(score, key=score.get)
 
@@ -52,7 +67,8 @@ def get_recommendation(answers, weights):
         "dlt": recommended_dlt,
         "consensus_group": recommended_group,
         "consensus": select_final_algorithm(recommended_group, weights),
-        "algorithms": consensus_groups[recommended_group]
+        "algorithms": consensus_groups[recommended_group],
+        "evaluation_matrix": evaluation_matrix
     }
 
 def compare_algorithms(consensus_group):
@@ -86,5 +102,3 @@ def select_final_algorithm(consensus_group, priorities):
         return "No suitable algorithm found"
     
     return max(scores, key=scores.get)
-
-# The rest of the file remains unchanged

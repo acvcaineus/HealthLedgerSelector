@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from user_management import login, register, is_authenticated, logout
 from decision_tree import run_decision_tree
-from decision_logic import compare_algorithms
+from decision_logic import compare_algorithms, consensus_algorithms
 from database import get_user_recommendations
 from metrics import calcular_gini, calcular_entropia, calcular_profundidade_decisoria, calcular_pruning
 from utils import init_session_state
@@ -24,7 +24,10 @@ def show_home_page():
     df = pd.DataFrame(dlt_data)
     st.table(df)
 
-    if st.button("Iniciar Questionário"):
+    st.markdown("---")
+    st.subheader("Iniciar o Processo de Seleção de DLT")
+    if st.button("Iniciar Questionário", key="start_questionnaire", help="Clique aqui para começar o processo de seleção de DLT"):
+        st.success("Questionário iniciado! Redirecionando para o Framework Proposto...")
         st.session_state.page = "Framework Proposto"
         st.rerun()
 
@@ -136,6 +139,12 @@ def show_recommendation_comparison():
 
             st.subheader("Comparação Detalhada")
             st.table({metric: comparison_data[metric] for metric in selected_metrics})
+
+            st.subheader("Gráfico de Barras - Comparação de Algoritmos")
+            alg_scores = {alg: sum(consensus_algorithms[alg].values()) for alg in rec['algorithms']}
+            fig = go.Figure(data=[go.Bar(x=list(alg_scores.keys()), y=list(alg_scores.values()))])
+            fig.update_layout(title="Pontuação Total dos Algoritmos de Consenso", xaxis_title="Algoritmos", yaxis_title="Pontuação")
+            st.plotly_chart(fig)
 
             st.subheader("Justificativa da Recomendação")
             st.write(f"O algoritmo {rec['consensus']} foi selecionado porque:")

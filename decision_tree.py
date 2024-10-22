@@ -1,5 +1,6 @@
 import streamlit as st
 import graphviz as gv
+import plotly.graph_objects as go
 from database import save_recommendation
 from decision_logic import get_recommendation
 
@@ -95,6 +96,18 @@ def show_recommendation(answers):
     st.write(f"**Grupo de Consenso**: {recommendation['consensus_group']}")
     st.write(f"**Algoritmo de Consenso Recomendado**: {recommendation['consensus']}")
     
+    st.subheader("Matriz de Avaliação")
+    evaluation_matrix = recommendation['evaluation_matrix']
+    fig = go.Figure(data=[go.Bar(x=list(evaluation_matrix.keys()), y=list(evaluation_matrix.values()))])
+    fig.update_layout(title="Pontuação das DLTs", xaxis_title="DLTs", yaxis_title="Pontuação")
+    st.plotly_chart(fig)
+
+    st.subheader("Pontuações dos Algoritmos de Consenso")
+    consensus_scores = {alg: sum(consensus_algorithms[alg].values()) for alg in recommendation['algorithms']}
+    fig = go.Figure(data=[go.Bar(x=list(consensus_scores.keys()), y=list(consensus_scores.values()))])
+    fig.update_layout(title="Pontuação dos Algoritmos de Consenso", xaxis_title="Algoritmos", yaxis_title="Pontuação")
+    st.plotly_chart(fig)
+
     with st.expander("Ver Respostas Acumuladas"):
         st.json(answers)
 
@@ -103,7 +116,6 @@ def show_recommendation(answers):
         save_recommendation(st.session_state.username, scenario, recommendation)
         st.success("Recomendação salva com sucesso no seu perfil!")
 
-    # Add button to lead to the comparison page
     st.button("Comparar Algoritmos", on_click=lambda: setattr(st.session_state, 'page', 'Comparação de Recomendações'))
 
     return recommendation
