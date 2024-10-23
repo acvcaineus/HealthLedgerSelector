@@ -72,14 +72,6 @@ def show_interactive_decision_tree():
     st.write(f'Fase atual: {st.session_state.current_phase + 1}/{len(phases)}')
     st.write(f'Pergunta atual: {st.session_state.current_question + 1}/{len(questions[current_phase])}')
 
-    st.subheader("Fluxo de Decisão")
-    decision_flow = gv.Digraph(format="png")
-    decision_flow.node("Início", "Início")
-    for phase_key, question_key in st.session_state.answers.items():
-        decision_flow.node(f"{phase_key}", f"{phase_key} - {question_key}")
-        decision_flow.edge("Início", f"{phase_key}")
-    st.graphviz_chart(decision_flow)
-
 def show_recommendation(answers):
     st.subheader('Recomendação Final:')
 
@@ -96,7 +88,80 @@ def show_recommendation(answers):
     st.write(f"**DLT Recomendada**: {recommendation['dlt']}")
     st.write(f"**Grupo de Consenso**: {recommendation['consensus_group']}")
     st.write(f"**Algoritmo de Consenso Recomendado**: {recommendation['consensus']}")
-    
+
+    # New section for application scenarios
+    st.subheader("Cenários de Aplicação Recomendados")
+    st.write("Para o seu caso de uso, considerando as respostas fornecidas, recomendamos:")
+
+    # Mapping DLT types to scenarios and use cases
+    dlt_scenarios = {
+        "DLT Permissionada Privada": {
+            "descricao": "Alta segurança e resiliência contra falhas bizantinas. Máxima proteção de dados sensíveis em redes permissionadas e descentralizadas.",
+            "casos_uso": ["Prontuários eletrônicos", "Integração de dados sensíveis", "Sistemas de pagamento descentralizados"],
+            "exemplos": "Hyperledger Fabric implementado em sistemas hospitalares para gerenciamento de registros médicos.",
+            "referencia": "Mehmood et al. (2025) - BLPCA-ledger"
+        },
+        "DLT Pública Permissionless": {
+            "descricao": "Máxima segurança e descentralização para redes públicas, garantindo proteção de dados críticos de saúde pública.",
+            "casos_uso": ["Sistemas de pagamento descentralizados", "Dados críticos de saúde pública"],
+            "exemplos": "Bitcoin e Ethereum para armazenamento seguro de dados médicos críticos.",
+            "referencia": "Liu et al. (2024) - Blockchain in healthcare for EHR management"
+        },
+        "DLT Permissionada Simples": {
+            "descricao": "Simplicidade e eficiência em redes permissionadas menores. Validação rápida e leve, ideal para redes locais.",
+            "casos_uso": ["Sistemas locais de saúde", "Agendamento de pacientes", "Redes locais de hospitais"],
+            "exemplos": "Quorum e VeChain para rastreamento de suprimentos médicos.",
+            "referencia": "Popoola et al. (2024) - Security and privacy in smart home healthcare"
+        },
+        "DLT Híbrida": {
+            "descricao": "Alta escalabilidade e eficiência energética com governança descentralizada ou semi-descentralizada.",
+            "casos_uso": ["Monitoramento de saúde pública", "Redes regionais de saúde", "Integração de EHRs"],
+            "exemplos": "Ethereum 2.0 para aceleração de ensaios clínicos e compartilhamento de dados.",
+            "referencia": "Nawaz et al. (2024) - Supply chain traceability system"
+        },
+        "DLT com Consenso Delegado": {
+            "descricao": "Alta escalabilidade e eficiência energética com governança descentralizada ou semi-descentralizada.",
+            "casos_uso": ["Monitoramento de saúde pública", "Redes regionais de saúde", "Integração de EHRs"],
+            "exemplos": "EOS para monitoramento de saúde pública e integração de dados.",
+            "referencia": "Javed et al. (2024) - Trust model for healthcare systems"
+        },
+        "DLT Pública": {
+            "descricao": "Alta escalabilidade e eficiência para o monitoramento de dispositivos IoT em tempo real.",
+            "casos_uso": ["Monitoramento de dispositivos IoT em saúde", "Dados em tempo real"],
+            "exemplos": "IOTA para compartilhamento seguro de dados de pacientes via IoT.",
+            "referencia": "Salim et al. (2024) - Privacy-preserving blockchain for healthcare"
+        }
+    }
+
+    recommended_scenario = dlt_scenarios.get(recommendation['dlt'], {})
+    with st.expander("Ver Detalhes do Cenário Recomendado"):
+        st.write("### Descrição do Cenário")
+        st.write(recommended_scenario.get("descricao", "Descrição não disponível"))
+        
+        st.write("### Casos de Uso Típicos")
+        for caso in recommended_scenario.get("casos_uso", []):
+            st.write(f"- {caso}")
+        
+        st.write("### Exemplos de Implementação")
+        st.write(recommended_scenario.get("exemplos", "Exemplos não disponíveis"))
+        
+        st.write("### Justificativa da Escolha")
+        st.write("Com base nas suas respostas e nos pesos atribuídos:")
+        st.write(f"- Segurança ({weights['security']*100}%)")
+        st.write(f"- Escalabilidade ({weights['scalability']*100}%)")
+        st.write(f"- Eficiência Energética ({weights['energy_efficiency']*100}%)")
+        st.write(f"- Governança ({weights['governance']*100}%)")
+        st.write(f"\nReferência: {recommended_scenario.get('referencia', 'Não disponível')}")
+
+    with st.expander("Ver Outros Cenários para Comparação"):
+        for dlt_type, scenario in dlt_scenarios.items():
+            if dlt_type != recommendation['dlt']:
+                st.write(f"### {dlt_type}")
+                st.write(scenario['descricao'])
+                st.write("**Casos de Uso:**")
+                for caso in scenario['casos_uso']:
+                    st.write(f"- {caso}")
+
     st.subheader("Matriz de Avaliação")
     evaluation_matrix = recommendation['evaluation_matrix']
     scores = {dlt: data["score"] for dlt, data in evaluation_matrix.items()}
@@ -115,7 +180,7 @@ def show_recommendation(answers):
 
     st.subheader("Pontuações dos Algoritmos de Consenso")
     if 'algorithms' in recommendation:
-        consensus_scores = {alg: sum(consensus_algorithms[alg].values()) for alg in recommendation['algorithms']}
+        consensus_scores = {alg: sum(float(value) for value in consensus_algorithms[alg].values()) for alg in recommendation['algorithms']}
         fig = go.Figure(data=[go.Bar(x=list(consensus_scores.keys()), y=list(consensus_scores.values()))])
         fig.update_layout(title="Pontuação dos Algoritmos de Consenso", xaxis_title="Algoritmos", yaxis_title="Pontuação")
         st.plotly_chart(fig)
