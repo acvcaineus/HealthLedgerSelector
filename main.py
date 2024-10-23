@@ -5,7 +5,9 @@ from user_management import login, register, is_authenticated, logout
 from decision_tree import run_decision_tree
 from decision_logic import compare_algorithms, consensus_algorithms
 from database import get_user_recommendations
-from metrics import calcular_gini, calcular_entropia, calcular_profundidade_decisoria, calcular_pruning
+from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_decisoria, 
+                    calcular_pruning, calcular_peso_caracteristica, calcular_jaccard_similarity,
+                    calcular_confiabilidade_recomendacao, calcular_metricas_desempenho)
 from utils import init_session_state
 
 def show_home_page():
@@ -33,11 +35,12 @@ def show_home_page():
 
 def show_metrics():
     st.header("Métricas e Diferenciais do Framework Proposto")
-
+    
     classes = {"Sim": 70, "Não": 30}
     decisoes = [3, 4, 2, 5]
     total_nos = 20
     nos_podados = 5
+    pesos = {"segurança": 0.4, "escalabilidade": 0.3, "eficiência": 0.2, "governança": 0.1}
     
     gini = calcular_gini(classes)
     entropia = calcular_entropia(classes)
@@ -56,23 +59,99 @@ def show_metrics():
         go.Bar(name='Métricas', x=['Gini', 'Entropia', 'Profundidade', 'Pruning'],
                y=[gini, entropia, profundidade, pruning_ratio])
     ])
+    fig.update_layout(title="Visão Geral das Métricas do Framework")
     st.plotly_chart(fig)
 
-    st.subheader("Explicação das Métricas")
-    st.write("""
-    - **Impureza de Gini**: Mede a diversidade das classes em cada nó da árvore.
-    - **Entropia**: Quantifica a incerteza ou aleatoriedade nas decisões.
-    - **Profundidade Decisória**: Indica a complexidade da árvore de decisão.
-    - **Pruning Ratio**: Mostra a eficácia da poda na simplificação do modelo.
-    """)
+    st.subheader("Fórmulas e Explicações Detalhadas")
+    
+    with st.expander("Impureza de Gini"):
+        st.write("""
+        **Fórmula**: Gini = 1 - Σ(pi²)
+        
+        Onde:
+        - pi é a proporção de cada classe no conjunto de dados
+        - Σ representa o somatório de todas as classes
+        
+        **Interpretação**:
+        - Valor próximo a 0: indica alta pureza (decisões mais confiáveis)
+        - Valor próximo a 1: indica alta impureza (decisões menos confiáveis)
+        
+        **Aplicação no Framework**:
+        Usada para medir a qualidade das decisões em cada nó da árvore de decisão,
+        ajudando a identificar pontos onde o framework pode ser mais preciso.
+        """)
 
-    st.subheader("Diferenciais do Framework Proposto")
+    with st.expander("Entropia de Shannon"):
+        st.write("""
+        **Fórmula**: Entropia = -Σ(pi * log2(pi))
+        
+        Onde:
+        - pi é a proporção de cada classe
+        - log2 é o logaritmo na base 2
+        
+        **Interpretação**:
+        - Valor baixo: menor incerteza nas decisões
+        - Valor alto: maior incerteza nas decisões
+        
+        **Aplicação no Framework**:
+        Utilizada para medir a quantidade de informação necessária para classificar
+        corretamente uma DLT ou algoritmo de consenso.
+        """)
+
+    with st.expander("Profundidade Decisória"):
+        st.write("""
+        **Fórmula**: Profundidade Média = Σ(profundidades) / número de decisões
+        
+        **Interpretação**:
+        - Valor baixo: árvore de decisão mais simples e interpretável
+        - Valor alto: árvore de decisão mais complexa
+        
+        **Aplicação no Framework**:
+        Indica a complexidade do processo decisório, ajudando a balancear
+        precisão e interpretabilidade.
+        """)
+
+    with st.expander("Pruning Ratio"):
+        st.write("""
+        **Fórmula**: Pruning Ratio = (total_nós - nós_podados) / total_nós
+        
+        **Interpretação**:
+        - Próximo a 1: modelo mais simplificado
+        - Próximo a 0: modelo mais complexo
+        
+        **Aplicação no Framework**:
+        Mede a eficácia da simplificação do modelo de decisão, garantindo
+        um equilíbrio entre precisão e simplicidade.
+        """)
+
+    st.subheader("Métricas Avançadas")
+    
+    st.write("**Pesos Normalizados das Características:**")
+    for caracteristica, peso in pesos.items():
+        peso_norm = calcular_peso_caracteristica(caracteristica, pesos)
+        st.write(f"- {caracteristica.capitalize()}: {peso_norm:.2%}")
+
+    st.write("**Métricas de Desempenho do Sistema:**")
+    historico_exemplo = [
+        {'acerto': True}, {'acerto': True}, 
+        {'acerto': False}, {'acerto': True}
+    ]
+    precisao, recall, f1 = calcular_metricas_desempenho(historico_exemplo)
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Precisão", f"{precisao:.2%}")
+    with col2:
+        st.metric("Recall", f"{recall:.2%}")
+    with col3:
+        st.metric("F1-Score", f"{f1:.2%}")
+
+    st.subheader("Validação Cruzada do Framework")
     st.write("""
-    1. **Adaptabilidade ao Contexto de Saúde**: Nosso framework é especialmente projetado para atender às necessidades específicas do setor de saúde.
-    2. **Integração de Múltiplos Critérios**: Considera diversos fatores como segurança, escalabilidade e eficiência energética na recomendação de DLTs.
-    3. **Visualização Interativa**: Oferece uma interface gráfica intuitiva para melhor compreensão das decisões.
-    4. **Feedback Contínuo**: Permite que os usuários forneçam feedback, melhorando continuamente as recomendações.
-    5. **Atualização em Tempo Real**: Incorpora as últimas tendências e avanços em DLTs para o setor de saúde.
+    O framework utiliza validação cruzada para garantir a robustez das recomendações:
+    1. **Similaridade de Jaccard**: Mede a similaridade entre diferentes recomendações
+    2. **Confiabilidade**: Avalia a confiança nas recomendações baseada nos scores
+    3. **Métricas de Desempenho**: Monitora precisão, recall e F1-score do sistema
     """)
 
 def show_user_profile():
@@ -187,15 +266,6 @@ def show_recommendation_comparison():
 
         else:
             st.write("Dados de comparação não disponíveis.")
-        
-        st.subheader("Pesos Atribuídos")
-        st.write("Os seguintes pesos foram considerados na escolha do algoritmo:")
-        st.write("- Segurança: 40%")
-        st.write("- Escalabilidade: 30%")
-        st.write("- Eficiência Energética: 20%")
-        st.write("- Governança: 10%")
-    else:
-        st.write("Nenhuma recomendação disponível para comparação. Por favor, complete o questionário primeiro.")
 
 def show_framework_info():
     st.header("Sobre o Framework Proposto")
