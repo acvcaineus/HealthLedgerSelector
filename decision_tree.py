@@ -3,6 +3,7 @@ import graphviz as gv
 import plotly.graph_objects as go
 from database import save_recommendation
 from decision_logic import get_recommendation
+from dlt_data import consensus_algorithms
 
 def get_questions():
     return {
@@ -98,15 +99,26 @@ def show_recommendation(answers):
     
     st.subheader("Matriz de Avaliação")
     evaluation_matrix = recommendation['evaluation_matrix']
-    fig = go.Figure(data=[go.Bar(x=list(evaluation_matrix.keys()), y=list(evaluation_matrix.values()))])
+    scores = {dlt: data["score"] for dlt, data in evaluation_matrix.items()}
+    fig = go.Figure(data=[go.Bar(x=list(scores.keys()), y=list(scores.values()))])
     fig.update_layout(title="Pontuação das DLTs", xaxis_title="DLTs", yaxis_title="Pontuação")
     st.plotly_chart(fig)
 
+    if 'academic_validation' in recommendation:
+        st.subheader("Validação Acadêmica")
+        academic_data = recommendation['academic_validation']
+        if academic_data:
+            st.write(f"**Score Acadêmico**: {academic_data.get('score', 'N/A')}/5")
+            st.write(f"**Citações**: {academic_data.get('citations', 'N/A')}")
+            st.write(f"**Referência**: {academic_data.get('reference', 'N/A')}")
+            st.write(f"**Validação**: {academic_data.get('validation', 'N/A')}")
+
     st.subheader("Pontuações dos Algoritmos de Consenso")
-    consensus_scores = {alg: sum(consensus_algorithms[alg].values()) for alg in recommendation['algorithms']}
-    fig = go.Figure(data=[go.Bar(x=list(consensus_scores.keys()), y=list(consensus_scores.values()))])
-    fig.update_layout(title="Pontuação dos Algoritmos de Consenso", xaxis_title="Algoritmos", yaxis_title="Pontuação")
-    st.plotly_chart(fig)
+    if 'algorithms' in recommendation:
+        consensus_scores = {alg: sum(consensus_algorithms[alg].values()) for alg in recommendation['algorithms']}
+        fig = go.Figure(data=[go.Bar(x=list(consensus_scores.keys()), y=list(consensus_scores.values()))])
+        fig.update_layout(title="Pontuação dos Algoritmos de Consenso", xaxis_title="Algoritmos", yaxis_title="Pontuação")
+        st.plotly_chart(fig)
 
     with st.expander("Ver Respostas Acumuladas"):
         st.json(answers)
