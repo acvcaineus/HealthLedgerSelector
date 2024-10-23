@@ -100,7 +100,6 @@ def create_evaluation_matrix(answers):
         }
     }
 
-    # Update scores based on answers
     for question_id, answer in answers.items():
         if question_id == "privacy" and answer == "Sim":
             matrix["DLT Permissionada Privada"]["metrics"]["security"] += 2
@@ -125,7 +124,8 @@ def create_evaluation_matrix(answers):
 
     # Calculate final scores
     for dlt in matrix:
-        matrix[dlt]["score"] = sum(matrix[dlt]["metrics"].values()) / len(matrix[dlt]["metrics"])
+        total = sum(float(value) for value in matrix[dlt]["metrics"].values())
+        matrix[dlt]["score"] = total / len(matrix[dlt]["metrics"])
 
     return matrix
 
@@ -136,16 +136,16 @@ def get_recommendation(answers, weights):
     weighted_scores = {}
     for dlt, data in evaluation_matrix.items():
         weighted_score = (
-            data["metrics"]["security"] * weights["security"] +
-            data["metrics"]["scalability"] * weights["scalability"] +
-            data["metrics"]["energy_efficiency"] * weights["energy_efficiency"] +
-            data["metrics"]["governance"] * weights["governance"] +
-            data["metrics"]["academic_validation"] * 0.1  # Academic validation weight
+            float(data["metrics"]["security"]) * float(weights["security"]) +
+            float(data["metrics"]["scalability"]) * float(weights["scalability"]) +
+            float(data["metrics"]["energy_efficiency"]) * float(weights["energy_efficiency"]) +
+            float(data["metrics"]["governance"]) * float(weights["governance"]) +
+            float(data["metrics"]["academic_validation"]) * 0.1  # Academic validation weight
         )
-        weighted_scores[dlt] = weighted_score
+        weighted_scores[dlt] = float(weighted_score)
 
     # Find DLT with maximum weighted score
-    recommended_dlt = sorted(weighted_scores.items(), key=lambda x: x[1], reverse=True)[0][0]
+    recommended_dlt = max(weighted_scores.items(), key=lambda x: float(x[1]))[0]
 
     # Get consensus group based on DLT type
     group_mapping = {
@@ -160,7 +160,7 @@ def get_recommendation(answers, weights):
     recommended_group = group_mapping.get(recommended_dlt, "Alta Segurança e Controle")
     
     # Calculate confidence score
-    confidence_scores = list(weighted_scores.values())
+    confidence_scores = [float(score) for score in weighted_scores.values()]
     is_reliable = calcular_confiabilidade_recomendacao(confidence_scores)
 
     return {
@@ -179,16 +179,15 @@ def compare_algorithms(consensus_group):
         "Segurança": {},
         "Escalabilidade": {},
         "Eficiência Energética": {},
-        "Governança": {},
-        "Validação Acadêmica": {}
+        "Governança": {}
     }
 
     for alg in algorithms:
-        for metric in comparison_data.keys():
-            if metric == "Validação Acadêmica":
-                comparison_data[metric][alg] = academic_scores.get(alg, {}).get("score", 3)
-            else:
-                comparison_data[metric][alg] = consensus_algorithms.get(alg, {}).get(metric.lower().replace(" ", "_"), 3)
+        alg_data = consensus_algorithms.get(alg, {})
+        comparison_data["Segurança"][alg] = float(alg_data.get("security", 3))
+        comparison_data["Escalabilidade"][alg] = float(alg_data.get("scalability", 3))
+        comparison_data["Eficiência Energética"][alg] = float(alg_data.get("energy_efficiency", 3))
+        comparison_data["Governança"][alg] = float(alg_data.get("governance", 3))
 
     return comparison_data
 
@@ -199,17 +198,22 @@ def select_final_algorithm(consensus_group, priorities):
     if not algorithms:
         return "No suitable algorithm found"
     
-    scores = {alg: 0 for alg in algorithms}
+    scores = {alg: 0.0 for alg in algorithms}
+    
+    metric_mapping = {
+        "security": "Segurança",
+        "scalability": "Escalabilidade",
+        "energy_efficiency": "Eficiência Energética",
+        "governance": "Governança"
+    }
     
     for alg in algorithms:
         for metric, priority in priorities.items():
-            metric_name = metric.capitalize()
-            if metric_name in comparison_data and alg in comparison_data[metric_name]:
-                scores[alg] += comparison_data[metric_name][alg] * priority
-        
-        # Add academic validation score
-        academic_score = comparison_data.get("Validação Acadêmica", {}).get(alg, 0)
-        scores[alg] += academic_score * 0.1  # Academic validation weight
+            metric_name = metric_mapping.get(metric)
+            if metric_name and metric_name in comparison_data and alg in comparison_data[metric_name]:
+                scores[alg] += float(comparison_data[metric_name][alg]) * float(priority)
     
     # Find algorithm with maximum score
-    return sorted(scores.items(), key=lambda x: x[1], reverse=True)[0][0] if scores else "No suitable algorithm found"
+    if scores:
+        return max(scores.items(), key=lambda x: float(x[1]))[0]
+    return "No suitable algorithm found"
