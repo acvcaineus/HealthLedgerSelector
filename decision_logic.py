@@ -2,11 +2,11 @@ from dlt_data import questions, dlt_classes, consensus_algorithms
 from metrics import calcular_gini, calcular_entropia, calcular_confiabilidade_recomendacao
 
 consensus_groups = {
-    'Alta Segurança e Controle': ['PBFT', 'PoW'],
-    'Alta Eficiência Operacional': ['RAFT', 'PoA'],
-    'Escalabilidade e Governança Flexível': ['PoS', 'DPoS'],
+    'Alta Segurança e Controle': ['Practical Byzantine Fault Tolerance (PBFT)', 'Proof of Work (PoW)'],
+    'Alta Eficiência Operacional': ['Raft Consensus', 'Proof of Authority (PoA)'],
+    'Escalabilidade e Governança Flexível': ['Proof of Stake (PoS)', 'Delegated Proof of Stake (DPoS)'],
     'Alta Escalabilidade em Redes IoT': ['Tangle'],
-    'Alta Segurança e Descentralização de Dados Críticos': ['PoW', 'PoS']
+    'Alta Segurança e Descentralização de Dados Críticos': ['Proof of Work (PoW)', 'Proof of Stake (PoS)']
 }
 
 academic_scores = {
@@ -108,7 +108,20 @@ def create_evaluation_matrix(answers):
         elif question_id == "integration" and answer == "Sim":
             matrix["DLT Híbrida"]["metrics"]["scalability"] += 2
             matrix["DLT Híbrida"]["metrics"]["academic_validation"] += academic_scores.get("Quorum", {}).get("score", 0)
-        # Add other conditions for metrics...
+        elif question_id == "data_volume" and answer == "Sim":
+            matrix["DLT Pública"]["metrics"]["scalability"] += 2
+            matrix["DLT Pública"]["metrics"]["academic_validation"] += academic_scores.get("IOTA", {}).get("score", 0)
+        elif question_id == "energy_efficiency" and answer == "Sim":
+            matrix["DLT Permissionada Simples"]["metrics"]["energy_efficiency"] += 2
+            matrix["DLT Permissionada Simples"]["metrics"]["academic_validation"] += academic_scores.get("VeChain", {}).get("score", 0)
+        elif question_id == "network_security" and answer == "Sim":
+            matrix["DLT Pública Permissionless"]["metrics"]["security"] += 2
+        elif question_id == "scalability" and answer == "Sim":
+            matrix["DLT com Consenso Delegado"]["metrics"]["scalability"] += 2
+        elif question_id == "governance_flexibility" and answer == "Sim":
+            matrix["DLT Híbrida"]["metrics"]["governance"] += 2
+        elif question_id == "interoperability" and answer == "Sim":
+            matrix["DLT Pública"]["metrics"]["scalability"] += 2
 
     # Calculate final scores
     for dlt in matrix:
@@ -131,7 +144,8 @@ def get_recommendation(answers, weights):
         )
         weighted_scores[dlt] = weighted_score
 
-    recommended_dlt = max(weighted_scores, key=weighted_scores.get)
+    # Find DLT with maximum weighted score
+    recommended_dlt = sorted(weighted_scores.items(), key=lambda x: x[1], reverse=True)[0][0]
 
     # Get consensus group based on DLT type
     group_mapping = {
@@ -197,4 +211,5 @@ def select_final_algorithm(consensus_group, priorities):
         academic_score = comparison_data.get("Validação Acadêmica", {}).get(alg, 0)
         scores[alg] += academic_score * 0.1  # Academic validation weight
     
-    return max(scores, key=scores.get) if scores else "No suitable algorithm found"
+    # Find algorithm with maximum score
+    return sorted(scores.items(), key=lambda x: x[1], reverse=True)[0][0] if scores else "No suitable algorithm found"
