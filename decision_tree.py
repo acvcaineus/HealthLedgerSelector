@@ -10,10 +10,28 @@ def show_recommendation(answers, weights):
     recommendation = get_recommendation(answers, weights)
     
     st.header("Recomendação Final")
+
+    # Phase explanations
+    st.markdown("### Fases do Processo de Decisão")
+    phases = {
+        "Aplicação": ["privacy", "integration"],
+        "Consenso": ["network_security", "scalability"],
+        "Infraestrutura": ["data_volume", "energy_efficiency"],
+        "Internet": ["governance_flexibility", "interoperability"]
+    }
     
-    # Clean recommendation display
+    for phase, questions in phases.items():
+        with st.expander(f"📋 Fase: {phase}"):
+            answered = sum(1 for q in questions if q in answers)
+            total = len(questions)
+            st.progress(answered / total)
+            st.markdown(f"**Progresso:** {answered}/{total} perguntas respondidas")
+            for q in questions:
+                if q in answers:
+                    st.markdown(f"✓ {q}: **{answers[q]}**")
+    
+    # Main recommendation display
     col1, col2 = st.columns([2, 1])
-    
     with col1:
         st.subheader("DLT Recomendada")
         st.markdown(f"""
@@ -34,30 +52,68 @@ def show_recommendation(answers, weights):
             help="Baseado na diferença entre o score máximo e a média dos scores"
         )
     
-    # Decision Tree Metrics
-    st.subheader("Métricas da Árvore de Decisão")
-    col1, col2 = st.columns(2)
+    # Confidence metrics explanation
+    with st.expander("🔍 Explicação das Métricas de Confiança"):
+        st.markdown('''
+            ### Como calculamos a confiança?
+            - **Índice de Gini**: Mede a pureza da classificação
+            - **Entropia**: Mede a incerteza na decisão
+            - **Confiabilidade**: Baseada na diferença entre scores
+            
+            [Ver página de métricas completa](Métricas)
+        ''')
     
-    with col1:
+    # Detailed calculations
+    with st.expander("📊 Detalhes dos Cálculos"):
+        st.markdown("### Cálculos Realizados")
+        st.latex(r"Gini = 1 - \sum_{i=1}^{n} p_i^2")
+        st.markdown("### Parâmetros Utilizados")
         classes = {k: v['score'] for k, v in recommendation['evaluation_matrix'].items()}
-        gini = calcular_gini(classes)
-        st.metric(
-            label="Índice de Gini",
-            value=f"{gini:.3f}",
-            help="Medida de pureza da classificação (menor é melhor)"
-        )
+        for dlt, score in classes.items():
+            st.write(f"- {dlt}: {score:.3f}")
     
-    with col2:
-        entropy = calcular_entropia(classes)
-        st.metric(
-            label="Entropia",
-            value=f"{entropy:.3f}",
-            help="Medida de incerteza na decisão (menor é melhor)"
-        )
+    # Decision Tree Metrics in collapsible sections
+    with st.expander("📈 Métricas da Árvore de Decisão"):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            gini = calcular_gini(classes)
+            st.metric(
+                label="Índice de Gini",
+                value=f"{gini:.3f}",
+                help="Medida de pureza da classificação (menor é melhor)"
+            )
+            st.markdown("""
+                **Interpretação do Índice de Gini:**
+                - 0.0 - 0.3: Excelente separação
+                - 0.3 - 0.6: Boa separação
+                - > 0.6: Separação moderada
+            """)
+        
+        with col2:
+            entropy = calcular_entropia(classes)
+            st.metric(
+                label="Entropia",
+                value=f"{entropy:.3f}",
+                help="Medida de incerteza na decisão (menor é melhor)"
+            )
+            st.markdown("""
+                **Interpretação da Entropia:**
+                - 0.0 - 1.0: Baixa incerteza
+                - 1.0 - 2.0: Incerteza moderada
+                - > 2.0: Alta incerteza
+            """)
 
-    # Clean evaluation matrix display
-    st.subheader("Matriz de Avaliação")
-    if 'evaluation_matrix' in recommendation:
+    # Evaluation matrix with explanations
+    with st.expander("📊 Matriz de Avaliação"):
+        st.markdown("""
+        ### Interpretação das Métricas
+        - **Segurança**: Proteção dos dados e resistência a ataques
+        - **Escalabilidade**: Capacidade de crescimento
+        - **Eficiência**: Consumo de recursos
+        - **Governança**: Controle e gestão da rede
+        """)
+        
         matrix_data = []
         y_labels = []
         
@@ -65,7 +121,7 @@ def show_recommendation(answers, weights):
             y_labels.append(dlt)
             row = []
             for metric, value in data['metrics'].items():
-                if metric != "academic_validation":  # Skip academic validation metrics
+                if metric != "academic_validation":
                     try:
                         row.append(float(value))
                     except (ValueError, TypeError):
@@ -120,7 +176,7 @@ def show_interactive_decision_tree():
 
     st.title("Framework de Seleção de DLT")
     
-    # Restored all previous questions
+    # Questions with phases
     questions = [
         {
             "id": "privacy",
@@ -191,8 +247,33 @@ def show_interactive_decision_tree():
     current_phase = next((q["phase"] for q in questions if q["id"] not in st.session_state.answers), "Completo")
     progress = len(st.session_state.answers) / len(questions)
     
+    # Phase progress visualization
+    phase_colors = {
+        "Aplicação": "#2ecc71",
+        "Consenso": "#3498db",
+        "Infraestrutura": "#e74c3c",
+        "Internet": "#f1c40f"
+    }
+    
+    st.markdown(f"""
+        <div style='background-color: {phase_colors.get(current_phase, "#95a5a6")}; 
+             padding: 10px; border-radius: 5px; color: white;'>
+            <h3>Fase Atual: {current_phase}</h3>
+            <p>Progresso: {int(progress * 100)}%</p>
+        </div>
+    """, unsafe_allow_html=True)
+    
     st.progress(progress)
-    st.markdown(f"**Fase Atual:** {current_phase}")
+
+    # Show phase explanation
+    with st.expander(f"ℹ️ Sobre a fase: {current_phase}"):
+        phase_explanations = {
+            "Aplicação": "Esta fase avalia os requisitos básicos da aplicação em termos de privacidade e integração.",
+            "Consenso": "Analisa as necessidades de segurança e escalabilidade da rede.",
+            "Infraestrutura": "Avalia requisitos técnicos como volume de dados e eficiência.",
+            "Internet": "Considera aspectos de governança e interoperabilidade."
+        }
+        st.markdown(phase_explanations.get(current_phase, "Todas as fases completadas."))
 
     current_question = None
     for q in questions:
@@ -201,7 +282,11 @@ def show_interactive_decision_tree():
             break
 
     if current_question:
-        st.subheader(f"Característica: {current_question['characteristic']}")
+        with st.expander("💡 Detalhes da Característica", expanded=True):
+            st.subheader(f"Avaliando: {current_question['characteristic']}")
+            st.markdown(f"**Fase:** {current_question['phase']}")
+            st.markdown(f"**Descrição:** {current_question['tooltip']}")
+        
         response = st.radio(
             current_question["text"],
             current_question["options"],
