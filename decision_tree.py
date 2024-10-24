@@ -1,217 +1,110 @@
 import streamlit as st
-import graphviz as gv
 import plotly.graph_objects as go
+from decision_logic import get_recommendation, consensus_algorithms
 from database import save_recommendation
-from decision_logic import get_recommendation
-from dlt_data import consensus_algorithms
-
-def get_questions():
-    return {
-        'Aplicação': [
-            "A aplicação exige alta privacidade e controle centralizado?",
-            "A aplicação precisa de alta escalabilidade e eficiência energética?"
-        ],
-        'Consenso': [
-            "A rede exige alta resiliência contra ataques e falhas bizantinas?",
-            "A eficiência energética é um fator crucial para a rede?"
-        ],
-        'Infraestrutura': [
-            "A rede precisa integrar-se a sistemas legados de saúde (ex: EHRs, bancos de dados hospitalares)?",
-            "A infraestrutura precisa lidar com grandes volumes de dados ou dispositivos IoT?"
-        ],
-        'Internet': [
-            "A rede precisa de governança centralizada?",
-            "A validação de consenso deve ser delegada a um subconjunto de validadores (DPoS)?"
-        ]
-    }
-
-def init_session_state():
-    if 'current_phase' not in st.session_state:
-        st.session_state.current_phase = 0
-        st.session_state.current_question = 0
-        st.session_state.answers = {}
-        st.session_state.recommendation = None
 
 def show_interactive_decision_tree():
-    st.header('Framework Proposto para Contextos de Saúde')
-
-    init_session_state()
-
-    phases = ['Aplicação', 'Consenso', 'Infraestrutura', 'Internet']
-    questions = get_questions()
-
-    if st.session_state.current_phase >= len(phases):
-        st.write("Todas as fases foram completadas!")
-        show_recommendation(st.session_state.answers)
-        return
-
-    current_phase = phases[st.session_state.current_phase]
-    current_question = questions[current_phase][st.session_state.current_question]
-
-    st.subheader(f'Fase {st.session_state.current_phase + 1}: {current_phase}')
-    answer = st.radio(current_question, ['Sim', 'Não'], key=f'question_{st.session_state.current_phase}_{st.session_state.current_question}')
-
-    if st.button('Próxima Pergunta', key=f'button_{st.session_state.current_phase}_{st.session_state.current_question}'):
-        st.session_state.answers[f'{current_phase}_{st.session_state.current_question}'] = answer
-
-        if st.session_state.current_question < len(questions[current_phase]) - 1:
-            st.session_state.current_question += 1
-        else:
-            st.session_state.current_question = 0
-            st.session_state.current_phase += 1
-
-        if st.session_state.current_phase >= len(phases):
-            st.session_state.recommendation = show_recommendation(st.session_state.answers)
-        else:
-            st.experimental_rerun()
-
-    total_questions = sum(len(q) for q in questions.values())
-    current_question_overall = sum(len(questions[p]) for p in phases[:st.session_state.current_phase]) + st.session_state.current_question
-    st.progress(float(current_question_overall) / float(total_questions))
-
-    st.write(f'Fase atual: {st.session_state.current_phase + 1}/{len(phases)}')
-    st.write(f'Pergunta atual: {st.session_state.current_question + 1}/{len(questions[current_phase])}')
-
-def show_recommendation(answers):
-    st.subheader('Recomendação Final:')
-
-    weights = {
-        "security": 0.4,
-        "scalability": 0.3,
-        "energy_efficiency": 0.2,
-        "governance": 0.1
-    }
-
-    recommendation = get_recommendation(answers, weights)
-    st.session_state.recommendation = recommendation
+    if 'answers' not in st.session_state:
+        st.session_state.answers = {}
     
-    st.write(f"**DLT Recomendada**: {recommendation['dlt']}")
-    st.write(f"**Grupo de Consenso**: {recommendation['consensus_group']}")
-    st.write(f"**Algoritmo de Consenso Recomendado**: {recommendation['consensus']}")
-
-    # New section for application scenarios
-    st.subheader("Cenários de Aplicação Recomendados")
-    st.write("Para o seu caso de uso, considerando as respostas fornecidas, recomendamos:")
-
-    # Mapping DLT types to scenarios and use cases
-    dlt_scenarios = {
-        "DLT Permissionada Privada": {
-            "descricao": "Alta segurança e resiliência contra falhas bizantinas. Máxima proteção de dados sensíveis em redes permissionadas e descentralizadas.",
-            "casos_uso": ["Prontuários eletrônicos", "Integração de dados sensíveis", "Sistemas de pagamento descentralizados"],
-            "exemplos": "Hyperledger Fabric implementado em sistemas hospitalares para gerenciamento de registros médicos.",
-            "referencia": "Mehmood et al. (2025) - BLPCA-ledger"
+    st.title("Framework de Seleção de DLT")
+    
+    questions = [
+        {
+            "id": "privacy",
+            "text": "A privacidade dos dados do paciente é crítica?",
+            "options": ["Sim", "Não"]
         },
-        "DLT Pública Permissionless": {
-            "descricao": "Máxima segurança e descentralização para redes públicas, garantindo proteção de dados críticos de saúde pública.",
-            "casos_uso": ["Sistemas de pagamento descentralizados", "Dados críticos de saúde pública"],
-            "exemplos": "Bitcoin e Ethereum para armazenamento seguro de dados médicos críticos.",
-            "referencia": "Liu et al. (2024) - Blockchain in healthcare for EHR management"
+        {
+            "id": "integration",
+            "text": "É necessária integração com outros sistemas de saúde?",
+            "options": ["Sim", "Não"]
         },
-        "DLT Permissionada Simples": {
-            "descricao": "Simplicidade e eficiência em redes permissionadas menores. Validação rápida e leve, ideal para redes locais.",
-            "casos_uso": ["Sistemas locais de saúde", "Agendamento de pacientes", "Redes locais de hospitais"],
-            "exemplos": "Quorum e VeChain para rastreamento de suprimentos médicos.",
-            "referencia": "Popoola et al. (2024) - Security and privacy in smart home healthcare"
+        {
+            "id": "data_volume",
+            "text": "O sistema precisa lidar com grandes volumes de registros médicos?",
+            "options": ["Sim", "Não"]
         },
-        "DLT Híbrida": {
-            "descricao": "Alta escalabilidade e eficiência energética com governança descentralizada ou semi-descentralizada.",
-            "casos_uso": ["Monitoramento de saúde pública", "Redes regionais de saúde", "Integração de EHRs"],
-            "exemplos": "Ethereum 2.0 para aceleração de ensaios clínicos e compartilhamento de dados.",
-            "referencia": "Nawaz et al. (2024) - Supply chain traceability system"
-        },
-        "DLT com Consenso Delegado": {
-            "descricao": "Alta escalabilidade e eficiência energética com governança descentralizada ou semi-descentralizada.",
-            "casos_uso": ["Monitoramento de saúde pública", "Redes regionais de saúde", "Integração de EHRs"],
-            "exemplos": "EOS para monitoramento de saúde pública e integração de dados.",
-            "referencia": "Javed et al. (2024) - Trust model for healthcare systems"
-        },
-        "DLT Pública": {
-            "descricao": "Alta escalabilidade e eficiência para o monitoramento de dispositivos IoT em tempo real.",
-            "casos_uso": ["Monitoramento de dispositivos IoT em saúde", "Dados em tempo real"],
-            "exemplos": "IOTA para compartilhamento seguro de dados de pacientes via IoT.",
-            "referencia": "Salim et al. (2024) - Privacy-preserving blockchain for healthcare"
+        {
+            "id": "energy_efficiency",
+            "text": "A eficiência energética é uma preocupação importante?",
+            "options": ["Sim", "Não"]
         }
-    }
-
-    recommended_scenario = dlt_scenarios.get(recommendation['dlt'], {})
-    with st.expander("Ver Detalhes do Cenário Recomendado"):
-        st.write("### Descrição do Cenário")
-        st.write(recommended_scenario.get("descricao", "Descrição não disponível"))
+    ]
+    
+    current_question = None
+    for q in questions:
+        if q["id"] not in st.session_state.answers:
+            current_question = q
+            break
+    
+    if current_question:
+        st.subheader(f"Pergunta {len(st.session_state.answers) + 1} de {len(questions)}")
+        response = st.radio(current_question["text"], current_question["options"])
         
-        st.write("### Casos de Uso Típicos")
-        for caso in recommended_scenario.get("casos_uso", []):
-            st.write(f"- {caso}")
-        
-        st.write("### Exemplos de Implementação")
-        st.write(recommended_scenario.get("exemplos", "Exemplos não disponíveis"))
-        
-        st.write("### Justificativa da Escolha")
-        st.write("Com base nas suas respostas e nos pesos atribuídos:")
-        st.write(f"- Segurança ({float(weights['security'])*100}%)")
-        st.write(f"- Escalabilidade ({float(weights['scalability'])*100}%)")
-        st.write(f"- Eficiência Energética ({float(weights['energy_efficiency'])*100}%)")
-        st.write(f"- Governança ({float(weights['governance'])*100}%)")
-        st.write(f"\nReferência: {recommended_scenario.get('referencia', 'Não disponível')}")
+        if st.button("Próxima Pergunta"):
+            st.session_state.answers[current_question["id"]] = response
+            st.experimental_rerun()
+    
+    if len(st.session_state.answers) == len(questions):
+        weights = {
+            "security": 0.4,
+            "scalability": 0.25,
+            "energy_efficiency": 0.20,
+            "governance": 0.15
+        }
+        st.session_state.recommendation = show_recommendation(st.session_state.answers, weights)
 
-    with st.expander("Ver Outros Cenários para Comparação"):
-        for dlt_type, scenario in dlt_scenarios.items():
-            if dlt_type != recommendation['dlt']:
-                st.write(f"### {dlt_type}")
-                st.write(scenario['descricao'])
-                st.write("**Casos de Uso:**")
-                for caso in scenario['casos_uso']:
-                    st.write(f"- {caso}")
-
+def show_recommendation(answers, weights):
+    recommendation = get_recommendation(answers, weights)
+    
+    st.header("Recomendação")
+    st.write(f"**DLT Recomendada:** {recommendation['dlt']}")
+    st.write(f"**Grupo de Consenso:** {recommendation['consensus_group']}")
+    st.write(f"**Algoritmo de Consenso:** {recommendation['consensus']}")
+    
+    # Show evaluation matrix
     st.subheader("Matriz de Avaliação")
-    evaluation_matrix = recommendation['evaluation_matrix']
-    scores = {dlt: float(data["score"]) for dlt, data in evaluation_matrix.items()}
-    fig = go.Figure(data=[go.Bar(x=list(scores.keys()), y=list(scores.values()))])
-    fig.update_layout(title="Pontuação das DLTs", xaxis_title="DLTs", yaxis_title="Pontuação")
-    st.plotly_chart(fig)
-
-    if 'academic_validation' in recommendation:
-        st.subheader("Validação Acadêmica")
-        academic_data = recommendation['academic_validation']
-        if academic_data:
-            st.write(f"**Score Acadêmico**: {float(academic_data.get('score', 0))/5}")
-            st.write(f"**Citações**: {academic_data.get('citations', 'N/A')}")
-            st.write(f"**Referência**: {academic_data.get('reference', 'N/A')}")
-            st.write(f"**Validação**: {academic_data.get('validation', 'N/A')}")
-
+    if 'evaluation_matrix' in recommendation:
+        for dlt, data in recommendation['evaluation_matrix'].items():
+            with st.expander(f"Ver detalhes para {dlt}"):
+                for metric, value in data['metrics'].items():
+                    st.write(f"{metric}: {float(value):.2f}")
+    
+    # Show algorithm scores
     st.subheader("Pontuações dos Algoritmos de Consenso")
     if 'algorithms' in recommendation:
         consensus_scores = {}
         for alg in recommendation['algorithms']:
             if alg in consensus_algorithms:
                 total_score = 0.0
-                for value in consensus_algorithms[alg].values():
+                for metric, value in consensus_algorithms[alg].items():
                     try:
-                        total_score += float(value)
+                        metric_weight = float(weights.get(metric, 0.25))
+                        total_score += float(value) * metric_weight
                     except (ValueError, TypeError):
-                        total_score += 0.0
-                consensus_scores[alg] = total_score
-
+                        continue
+                consensus_scores[alg] = float(total_score)
+        
         if consensus_scores:
-            fig = go.Figure(data=[go.Bar(x=list(consensus_scores.keys()), y=list(consensus_scores.values()))])
-            fig.update_layout(title="Pontuação dos Algoritmos de Consenso", xaxis_title="Algoritmos", yaxis_title="Pontuação")
+            fig = go.Figure(data=[
+                go.Bar(
+                    x=list(consensus_scores.keys()),
+                    y=[float(score) for score in consensus_scores.values()]
+                )
+            ])
+            fig.update_layout(
+                title="Pontuação dos Algoritmos de Consenso",
+                xaxis_title="Algoritmos",
+                yaxis_title="Pontuação"
+            )
             st.plotly_chart(fig)
-
-    with st.expander("Ver Respostas Acumuladas"):
-        st.json(answers)
-
-    if st.button("Salvar Recomendação"):
-        scenario = "Cenário Geral"
-        save_recommendation(st.session_state.username, scenario, recommendation)
-        st.success("Recomendação salva com sucesso no seu perfil!")
-
-    st.button("Comparar Algoritmos", on_click=lambda: setattr(st.session_state, 'page', 'Comparação de Recomendações'))
-
+    
     return recommendation
 
 def restart_decision_tree():
     if st.button("Reiniciar"):
-        for key in st.session_state.keys():
-            del st.session_state[key]
+        st.session_state.answers = {}
         st.experimental_rerun()
 
 def run_decision_tree():
