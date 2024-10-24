@@ -37,7 +37,7 @@ def login():
             st.session_state.authenticated = True
             st.session_state.username = username
             st.success("Login realizado com sucesso!")
-            st.experimental_rerun()  # Atualizado para usar experimental_rerun
+            st.rerun()  # Updated to use rerun
         else:
             st.error("Nome de usuário ou senha inválidos")
 
@@ -52,4 +52,4 @@ def logout():
     if 'username' in st.session_state:
         del st.session_state['username']
     st.success("Logout realizado com sucesso!")
-    st.experimental_rerun()  # Atualizado para usar experimental_rerun
+    st.rerun()  # Updated to use rerun

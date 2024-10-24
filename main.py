@@ -31,7 +31,7 @@ def show_home_page():
     if st.button("Iniciar Questionário", key="start_questionnaire", help="Clique aqui para começar o processo de seleção de DLT"):
         st.success("Questionário iniciado! Redirecionando para o Framework Proposto...")
         st.session_state.page = "Framework Proposto"
-        st.experimental_rerun()
+        st.rerun()  # Updated to use rerun
 
 def show_framework_info():
     st.header("Sobre o Framework de Seleção de DLT")
@@ -76,7 +76,6 @@ def show_recommendation_comparison():
         
     comparison_data = compare_algorithms(rec['consensus_group'])
     
-    # Radar Chart
     metrics = list(comparison_data.keys())
     algorithms = list(comparison_data['Segurança'].keys())
     
@@ -96,7 +95,6 @@ def show_recommendation_comparison():
     )
     st.plotly_chart(fig)
     
-    # Detailed Metrics Table
     st.subheader("Métricas Detalhadas")
     for metric in metrics:
         st.write(f"**{metric}**")
@@ -111,29 +109,24 @@ def show_metrics():
     
     st.subheader("Fórmulas e Cálculos")
     
-    # Gini Index
     st.write("### 1. Índice de Gini")
     st.latex(r"Gini = 1 - \sum_{i=1}^{n} p_i^2")
     st.write("Onde:")
     st.write("- p_i é a proporção de cada classe no conjunto")
     st.write("- Valores mais próximos de 0 indicam maior pureza nas decisões")
     
-    # Entropy
     st.write("### 2. Entropia")
     st.latex(r"Entropia = -\sum_{i=1}^{n} p_i \log_2(p_i)")
     st.write("Onde:")
     st.write("- p_i é a proporção de cada classe")
     st.write("- Menor entropia indica decisões mais consistentes")
     
-    # Weighted Scores
     st.write("### 3. Pontuação Ponderada")
     st.latex(r"Score = \sum_{i=1}^{n} w_i \times v_i")
     st.write("Onde:")
     st.write("- w_i é o peso de cada critério")
     st.write("- v_i é o valor normalizado do critério")
     
-    # Example Calculations
-    st.subheader("Exemplo de Cálculos")
     example_data = {
         "Métrica": ["Segurança", "Escalabilidade", "Eficiência", "Governança"],
         "Valor Base": [4.5, 3.8, 4.2, 3.9],
@@ -144,6 +137,17 @@ def show_metrics():
     
     total_score = sum(float(score) for score in example_data["Score Final"])
     st.write(f"Score Total do Exemplo: {total_score:.2f}")
+
+def show_user_profile():
+    st.header(f"Perfil do Usuário: {st.session_state.username}")
+    recommendations = get_user_recommendations(st.session_state.username)
+    if recommendations:
+        st.subheader("Últimas Recomendações")
+        for rec in recommendations:
+            st.write(f"DLT: {rec['dlt']}")
+            st.write(f"Consenso: {rec['consensus']}")
+            st.write(f"Data: {rec['timestamp']}")
+            st.markdown("---")
 
 def main():
     st.set_page_config(page_title="SeletorDLTSaude", page_icon="🏥", layout="wide")
@@ -184,7 +188,7 @@ def main():
         elif menu_option == 'Logout':
             logout()
             st.session_state.page = 'Início'
-            st.experimental_rerun()
+            st.rerun()  # Updated to use rerun
 
 if __name__ == "__main__":
     main()
