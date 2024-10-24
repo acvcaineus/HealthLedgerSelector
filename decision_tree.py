@@ -5,8 +5,164 @@ from database import save_recommendation
 import networkx as nx
 import plotly.figure_factory as ff
 from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_decisoria, 
-                    calcular_pruning, calcular_confiabilidade_recomendacao)
-import pandas as pd
+                    calcular_pruning, calcular_confiabilidade_recomendacao, get_metric_explanation)
+
+def show_recommendation(answers, weights):
+    recommendation = get_recommendation(answers, weights)
+    
+    st.header("Recomendação Final")
+    
+    # Enhanced recommendation display with academic validation
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        st.subheader("DLT Recomendada")
+        st.markdown(f"""
+        <div style='background-color: #f0f2f6; padding: 20px; border-radius: 10px;'>
+            <h3 style='color: #1f77b4;'>{recommendation['dlt']}</h3>
+            <p><strong>Grupo de Consenso:</strong> {recommendation['consensus_group']}</p>
+            <p><strong>Algoritmo:</strong> {recommendation['consensus']}</p>
+            <div style='margin-top: 10px; padding: 10px; background-color: #e8f4f8; border-radius: 5px;'>
+                <p><strong>Validação Acadêmica:</strong></p>
+                <ul>
+                    <li>Score: {recommendation['academic_validation'].get('score', 'N/A')}/5.0</li>
+                    <li>Citações: {recommendation['academic_validation'].get('citations', 'N/A')}</li>
+                    <li>Referência: {recommendation['academic_validation'].get('reference', 'N/A')}</li>
+                </ul>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.subheader("Métricas de Confiança")
+        confidence_score = recommendation.get('confidence', False)
+        st.metric(
+            label="Índice de Confiança",
+            value=f"{'Alto' if confidence_score else 'Médio'}",
+            delta=f"{'↑' if confidence_score else '→'}",
+            help="Baseado na diferença entre o score máximo e a média dos scores"
+        )
+        
+        # Add validation metrics
+        if 'academic_validation' in recommendation:
+            validation_score = recommendation['academic_validation'].get('score', 0)
+            st.metric(
+                label="Validação Acadêmica",
+                value=f"{validation_score:.1f}/5.0",
+                delta=f"{'↑' if validation_score > 4.0 else '→' if validation_score > 3.0 else '↓'}",
+                help="Score baseado em publicações acadêmicas e implementações práticas"
+            )
+
+    # Enhanced evaluation matrix with detailed explanations
+    st.subheader("Matriz de Avaliação Detalhada")
+    if 'evaluation_matrix' in recommendation:
+        # Add metric explanations
+        st.markdown("""
+        ### Interpretação das Métricas
+        
+        #### 1. Segurança
+        - **Alta (4-5):** Forte proteção contra ataques e garantia de privacidade
+        - **Média (2-3):** Proteção adequada para casos gerais
+        - **Baixa (0-1):** Requer medidas adicionais de segurança
+        
+        #### 2. Escalabilidade
+        - **Alta (4-5):** Suporta grande volume de transações
+        - **Média (2-3):** Adequada para volume moderado
+        - **Baixa (0-1):** Limitações em alta demanda
+        
+        #### 3. Eficiência Energética
+        - **Alta (4-5):** Baixo consumo de energia
+        - **Média (2-3):** Consumo moderado
+        - **Baixa (0-1):** Alto consumo energético
+        
+        #### 4. Governança
+        - **Alta (4-5):** Controle e flexibilidade elevados
+        - **Média (2-3):** Controle moderado
+        - **Baixa (0-1):** Controle limitado
+        """)
+        
+        matrix_data = []
+        y_labels = []
+        
+        # Color scale explanation with icons
+        st.markdown("""
+        **Escala de Cores:**
+        - 🔴 Vermelho (0-2): Baixo desempenho
+        - 🟡 Amarelo (2-3.5): Desempenho médio
+        - 🟢 Verde (3.5-5): Alto desempenho
+        """)
+        
+        # Prepare matrix data
+        for dlt, data in recommendation['evaluation_matrix'].items():
+            y_labels.append(dlt)
+            row = []
+            for metric, value in data['metrics'].items():
+                try:
+                    row.append(float(value))
+                except (ValueError, TypeError):
+                    row.append(0.0)
+            matrix_data.append(row)
+            
+        # Create enhanced heatmap
+        fig = go.Figure(data=go.Heatmap(
+            z=matrix_data,
+            x=list(recommendation['evaluation_matrix'][y_labels[0]]['metrics'].keys()),
+            y=y_labels,
+            colorscale=[
+                [0, "#ff0000"],    # Red for low values
+                [0.4, "#ffff00"],  # Yellow for medium values
+                [0.7, "#00ff00"]   # Green for high values
+            ],
+            hoverongaps=False,
+            hovertemplate="<b>DLT:</b> %{y}<br>" +
+                         "<b>Métrica:</b> %{x}<br>" +
+                         "<b>Valor:</b> %{z:.2f}<br>" +
+                         "<extra></extra>"
+        ))
+        
+        fig.update_layout(
+            title={
+                'text': "Matriz de Avaliação das DLTs",
+                'y': 0.9,
+                'x': 0.5,
+                'xanchor': 'center',
+                'yanchor': 'top'
+            },
+            xaxis_title="Métricas",
+            yaxis_title="DLTs",
+            height=400,
+            margin=dict(l=60, r=30, t=100, b=50)
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Add comparative analysis
+        st.subheader("Análise Comparativa")
+        st.markdown("""
+        Esta análise mostra como a DLT recomendada se compara com alternativas em aspectos chave:
+        
+        1. **Adequação ao Caso de Uso**
+           - Avaliação da compatibilidade com requisitos específicos
+           - Análise de implementações similares
+        
+        2. **Performance Técnica**
+           - Métricas de desempenho e escalabilidade
+           - Eficiência energética e custos operacionais
+        
+        3. **Maturidade da Tecnologia**
+           - Tempo de existência e estabilidade
+           - Tamanho e atividade da comunidade
+        """)
+        
+        # Save recommendation to database
+        if st.session_state.get('username'):
+            save_recommendation(
+                st.session_state.username,
+                'Healthcare DLT Selection',
+                recommendation
+            )
+
+    return recommendation
 
 def show_initial_table():
     st.subheader("Tabela de DLTs e Características")
@@ -16,8 +172,7 @@ def show_initial_table():
         'Algoritmo de Consenso': ['RAFT/IBFT', 'Proof of Authority (PoA)', 'RAFT/IBFT', 'Tangle', 'RCA', 'SCP', 'PoW', 'PoW', 'PoS'],
         'Caso de Uso': ['Rastreabilidade médica', 'Rastreamento de suprimentos', 'Monitoramento', 'IoT em saúde', 'Transações', 'Pagamentos', 'Dados críticos', 'Contratos inteligentes', 'Ensaios clínicos']
     }
-    df = pd.DataFrame(dlt_data)
-    st.table(df)
+    st.table(dlt_data)
 
 def show_interactive_decision_tree():
     if 'answers' not in st.session_state:
@@ -68,7 +223,6 @@ def show_interactive_decision_tree():
     current_phase = next((q["phase"] for q in questions if q["id"] not in st.session_state.answers), "Completo")
     progress = len(st.session_state.answers) / len(questions)
     
-    # Color coding for phases
     phase_colors = {
         "Aplicação": "#2ecc71",
         "Consenso": "#3498db",
@@ -149,14 +303,14 @@ def show_decision_flow(answers, questions):
     for i, q in enumerate(questions):
         x = (i + 1) * 2
         y = 0
-        q_id = f"{q['characteristic']}"  # Simplified node display
+        q_id = f"{q['characteristic']}"
         pos[q_id] = (x, y)
         
         node_attrs[q_id] = {
             "color": phase_colors.get(q["phase"], "#95a5a6"),
             "size": 35,
             "symbol": "diamond",
-            "tooltip": f"{q['phase']}: {q['text']}"  # Full question in tooltip
+            "tooltip": f"{q['phase']}: {q['text']}"
         }
         
         if q["id"] in answers:
@@ -222,99 +376,6 @@ def show_decision_flow(answers, questions):
     )
     
     st.plotly_chart(fig, use_container_width=True)
-
-def show_recommendation(answers, weights):
-    recommendation = get_recommendation(answers, weights)
-    
-    st.header("Recomendação Final")
-    
-    # Main recommendation display with better alignment
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        st.subheader("DLT Recomendada")
-        st.markdown(f"""
-        <div style='background-color: #f0f2f6; padding: 20px; border-radius: 10px;'>
-            <h3 style='color: #1f77b4;'>{recommendation['dlt']}</h3>
-            <p><strong>Grupo de Consenso:</strong> {recommendation['consensus_group']}</p>
-            <p><strong>Algoritmo:</strong> {recommendation['consensus']}</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        st.subheader("Métricas de Confiança")
-        confidence_score = recommendation.get('confidence', False)
-        st.metric(
-            label="Índice de Confiança",
-            value=f"{'Alto' if confidence_score else 'Médio'}",
-            delta=f"{'↑' if confidence_score else '→'}"
-        )
-
-    # Enhanced evaluation matrix with clear color scale
-    st.subheader("Matriz de Avaliação Detalhada")
-    if 'evaluation_matrix' in recommendation:
-        matrix_data = []
-        y_labels = []
-        
-        # Color scale explanation
-        st.markdown("""
-        **Escala de Cores:**
-        - 🔴 Vermelho (0-2): Baixo desempenho
-        - 🟡 Amarelo (2-3.5): Desempenho médio
-        - 🟢 Verde (3.5-5): Alto desempenho
-        """)
-
-        for dlt, data in recommendation['evaluation_matrix'].items():
-            y_labels.append(dlt)
-            row = []
-            for metric, value in data['metrics'].items():
-                try:
-                    row.append(float(value))
-                except (ValueError, TypeError):
-                    row.append(0.0)
-            matrix_data.append(row)
-
-        metrics_info = {
-            "security": "Segurança",
-            "scalability": "Escalabilidade",
-            "energy_efficiency": "Eficiência Energética",
-            "governance": "Governança",
-            "academic_validation": "Validação Acadêmica"
-        }
-
-        fig = go.Figure(data=go.Heatmap(
-            z=matrix_data,
-            x=[metrics_info[m] for m in recommendation['evaluation_matrix'][y_labels[0]]['metrics'].keys()],
-            y=y_labels,
-            colorscale=[
-                [0, "#ff0000"],    # Red for low values
-                [0.4, "#ffff00"],  # Yellow for medium values
-                [0.7, "#00ff00"]   # Green for high values
-            ],
-            hoverongaps=False,
-            hovertemplate="<b>DLT:</b> %{y}<br>" +
-                         "<b>Métrica:</b> %{x}<br>" +
-                         "<b>Valor:</b> %{z:.2f}<br>" +
-                         "<extra></extra>"
-        ))
-
-        fig.update_layout(
-            title={
-                'text': "Matriz de Avaliação das DLTs",
-                'y': 0.9,
-                'x': 0.5,
-                'xanchor': 'center',
-                'yanchor': 'top'
-            },
-            xaxis_title="Métricas",
-            yaxis_title="DLTs",
-            height=400,
-            margin=dict(l=60, r=30, t=100, b=50)
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
-
-    return recommendation
 
 def restart_decision_tree():
     if st.button("Reiniciar Processo", help="Clique para começar um novo processo de seleção"):
