@@ -63,11 +63,11 @@ def show_interactive_decision_tree():
         if st.session_state.current_phase >= len(phases):
             st.session_state.recommendation = show_recommendation(st.session_state.answers)
         else:
-            st.rerun()
+            st.experimental_rerun()
 
     total_questions = sum(len(q) for q in questions.values())
     current_question_overall = sum(len(questions[p]) for p in phases[:st.session_state.current_phase]) + st.session_state.current_question
-    st.progress(current_question_overall / total_questions)
+    st.progress(float(current_question_overall) / float(total_questions))
 
     st.write(f'Fase atual: {st.session_state.current_phase + 1}/{len(phases)}')
     st.write(f'Pergunta atual: {st.session_state.current_question + 1}/{len(questions[current_phase])}')
@@ -147,10 +147,10 @@ def show_recommendation(answers):
         
         st.write("### Justificativa da Escolha")
         st.write("Com base nas suas respostas e nos pesos atribuídos:")
-        st.write(f"- Segurança ({weights['security']*100}%)")
-        st.write(f"- Escalabilidade ({weights['scalability']*100}%)")
-        st.write(f"- Eficiência Energética ({weights['energy_efficiency']*100}%)")
-        st.write(f"- Governança ({weights['governance']*100}%)")
+        st.write(f"- Segurança ({float(weights['security'])*100}%)")
+        st.write(f"- Escalabilidade ({float(weights['scalability'])*100}%)")
+        st.write(f"- Eficiência Energética ({float(weights['energy_efficiency'])*100}%)")
+        st.write(f"- Governança ({float(weights['governance'])*100}%)")
         st.write(f"\nReferência: {recommended_scenario.get('referencia', 'Não disponível')}")
 
     with st.expander("Ver Outros Cenários para Comparação"):
@@ -164,7 +164,7 @@ def show_recommendation(answers):
 
     st.subheader("Matriz de Avaliação")
     evaluation_matrix = recommendation['evaluation_matrix']
-    scores = {dlt: data["score"] for dlt, data in evaluation_matrix.items()}
+    scores = {dlt: float(data["score"]) for dlt, data in evaluation_matrix.items()}
     fig = go.Figure(data=[go.Bar(x=list(scores.keys()), y=list(scores.values()))])
     fig.update_layout(title="Pontuação das DLTs", xaxis_title="DLTs", yaxis_title="Pontuação")
     st.plotly_chart(fig)
@@ -173,17 +173,28 @@ def show_recommendation(answers):
         st.subheader("Validação Acadêmica")
         academic_data = recommendation['academic_validation']
         if academic_data:
-            st.write(f"**Score Acadêmico**: {academic_data.get('score', 'N/A')}/5")
+            st.write(f"**Score Acadêmico**: {float(academic_data.get('score', 0))/5}")
             st.write(f"**Citações**: {academic_data.get('citations', 'N/A')}")
             st.write(f"**Referência**: {academic_data.get('reference', 'N/A')}")
             st.write(f"**Validação**: {academic_data.get('validation', 'N/A')}")
 
     st.subheader("Pontuações dos Algoritmos de Consenso")
     if 'algorithms' in recommendation:
-        consensus_scores = {alg: sum(float(value) for value in consensus_algorithms[alg].values()) for alg in recommendation['algorithms']}
-        fig = go.Figure(data=[go.Bar(x=list(consensus_scores.keys()), y=list(consensus_scores.values()))])
-        fig.update_layout(title="Pontuação dos Algoritmos de Consenso", xaxis_title="Algoritmos", yaxis_title="Pontuação")
-        st.plotly_chart(fig)
+        consensus_scores = {}
+        for alg in recommendation['algorithms']:
+            if alg in consensus_algorithms:
+                total_score = 0.0
+                for value in consensus_algorithms[alg].values():
+                    try:
+                        total_score += float(value)
+                    except (ValueError, TypeError):
+                        total_score += 0.0
+                consensus_scores[alg] = total_score
+
+        if consensus_scores:
+            fig = go.Figure(data=[go.Bar(x=list(consensus_scores.keys()), y=list(consensus_scores.values()))])
+            fig.update_layout(title="Pontuação dos Algoritmos de Consenso", xaxis_title="Algoritmos", yaxis_title="Pontuação")
+            st.plotly_chart(fig)
 
     with st.expander("Ver Respostas Acumuladas"):
         st.json(answers)
@@ -201,7 +212,7 @@ def restart_decision_tree():
     if st.button("Reiniciar"):
         for key in st.session_state.keys():
             del st.session_state[key]
-        st.rerun()
+        st.experimental_rerun()
 
 def run_decision_tree():
     show_interactive_decision_tree()
