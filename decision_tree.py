@@ -4,6 +4,8 @@ from decision_logic import get_recommendation, consensus_algorithms
 from database import save_recommendation
 import networkx as nx
 import plotly.figure_factory as ff
+from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_decisoria, 
+                    calcular_pruning, calcular_confiabilidade_recomendacao)
 
 def show_interactive_decision_tree():
     if 'answers' not in st.session_state:
@@ -11,42 +13,51 @@ def show_interactive_decision_tree():
 
     st.title("Framework de Seleção de DLT")
     
-    # Enhanced questions with detailed tooltips and explanations
     questions = [
         {
             "id": "privacy",
             "text": "A privacidade dos dados do paciente é crítica?",
             "options": ["Sim", "Não"],
             "phase": "Segurança",
-            "tooltip": "Considere requisitos de LGPD e HIPAA para proteção de dados sensíveis"
+            "tooltip": "Considere requisitos de LGPD e HIPAA para proteção de dados sensíveis",
+            "impact": ["Proteção de dados", "Conformidade regulatória"]
         },
         {
             "id": "integration",
             "text": "É necessária integração com outros sistemas de saúde?",
             "options": ["Sim", "Não"],
             "phase": "Interoperabilidade",
-            "tooltip": "Avalie a necessidade de comunicação com sistemas legados ou externos"
+            "tooltip": "Avalie a necessidade de comunicação com sistemas legados ou externos",
+            "impact": ["Comunicação entre sistemas", "Flexibilidade da solução"]
         },
         {
             "id": "data_volume",
             "text": "O sistema precisa lidar com grandes volumes de registros médicos?",
             "options": ["Sim", "Não"],
             "phase": "Escalabilidade",
-            "tooltip": "Considere o volume de transações e armazenamento necessário"
+            "tooltip": "Considere o volume de transações e armazenamento necessário",
+            "impact": ["Capacidade de processamento", "Performance do sistema"]
         },
         {
             "id": "energy_efficiency",
             "text": "A eficiência energética é uma preocupação importante?",
             "options": ["Sim", "Não"],
             "phase": "Eficiência",
-            "tooltip": "Avalie o impacto do consumo energético na operação"
+            "tooltip": "Avalie o impacto do consumo energético na operação",
+            "impact": ["Sustentabilidade", "Custos operacionais"]
         }
     ]
 
-    # Enhanced progress bar with phase indication
     current_phase = next((q["phase"] for q in questions if q["id"] not in st.session_state.answers), "Completo")
     progress = len(st.session_state.answers) / len(questions)
-    st.progress(progress, text=f"Fase Atual: {current_phase} - Progresso: {int(progress * 100)}%")
+    
+    # Enhanced progress display with color coding
+    progress_color = "#2ecc71" if progress > 0.75 else "#f1c40f" if progress > 0.5 else "#e74c3c"
+    st.markdown(f"""
+    <div style='background-color: {progress_color}; padding: 10px; border-radius: 5px; color: white;'>
+        Fase Atual: {current_phase} - Progresso: {int(progress * 100)}%
+    </div>
+    """, unsafe_allow_html=True)
 
     current_question = None
     for q in questions:
@@ -58,24 +69,22 @@ def show_interactive_decision_tree():
         col1, col2 = st.columns([3, 1])
         with col1:
             st.subheader(f"Fase: {current_question['phase']}")
-            response = st.radio(current_question["text"], current_question["options"])
+            response = st.radio(
+                current_question["text"], 
+                current_question["options"],
+                help=current_question["tooltip"]
+            )
             st.info(current_question["tooltip"])
         
         with col2:
             st.markdown("### Impacto da Decisão")
-            st.write("Esta escolha afetará:")
-            if current_question["phase"] == "Segurança":
-                st.write("- Proteção de dados")
-                st.write("- Conformidade regulatória")
-            elif current_question["phase"] == "Interoperabilidade":
-                st.write("- Comunicação entre sistemas")
-                st.write("- Flexibilidade da solução")
+            for impact in current_question["impact"]:
+                st.write(f"- {impact}")
 
         if st.button("Próxima Pergunta"):
             st.session_state.answers[current_question["id"]] = response
             st.experimental_rerun()
 
-    # Enhanced decision flow visualization
     if st.session_state.answers:
         st.subheader("Visualização do Fluxo de Decisão")
         show_decision_flow(st.session_state.answers, questions)
@@ -92,35 +101,32 @@ def show_interactive_decision_tree():
 def show_decision_flow(answers, questions):
     G = nx.DiGraph()
     
-    # Enhanced node attributes
+    # Enhanced node attributes with tooltips
     node_attrs = {
         "Início": {
             "color": "#1f77b4",
             "size": 40,
-            "symbol": "circle"
+            "symbol": "circle",
+            "tooltip": "Início do processo de decisão"
         }
     }
     
-    # Add nodes with improved positioning
     pos = {}
     pos["Início"] = (0, 0)
     
-    # Calculate positions for better visualization
-    num_questions = len(questions)
     for i, q in enumerate(questions):
         x = (i + 1) * 2
         y = 0
         q_id = f"Q{i+1}: {q['text']}"
         pos[q_id] = (x, y)
         
-        # Add question nodes with attributes
         node_attrs[q_id] = {
             "color": "#2ecc71" if q["id"] in answers else "#e74c3c",
             "size": 35,
-            "symbol": "diamond"
+            "symbol": "diamond",
+            "tooltip": q["tooltip"]
         }
         
-        # Add answer nodes if question is answered
         if q["id"] in answers:
             answer = answers[q["id"]]
             answer_id = f"A{i+1}: {answer}"
@@ -128,18 +134,16 @@ def show_decision_flow(answers, questions):
             node_attrs[answer_id] = {
                 "color": "#3498db",
                 "size": 30,
-                "symbol": "square"
+                "symbol": "square",
+                "tooltip": f"Resposta selecionada: {answer}"
             }
             
-            # Add edges
             G.add_edge("Início", q_id)
             G.add_edge(q_id, answer_id)
 
-    # Create the visualization
     edge_trace = []
     node_trace = []
     
-    # Create edges
     for edge in G.edges():
         x0, y0 = pos[edge[0]]
         x1, y1 = pos[edge[1]]
@@ -151,7 +155,6 @@ def show_decision_flow(answers, questions):
             mode='lines'
         ))
 
-    # Create nodes
     for node in G.nodes():
         x, y = pos[node]
         attrs = node_attrs[node]
@@ -167,10 +170,10 @@ def show_decision_flow(answers, questions):
             ),
             text=[node],
             textposition="top center",
+            hovertext=attrs["tooltip"],
             hoverinfo='text'
         ))
 
-    # Create the figure with improved layout
     fig = go.Figure(data=edge_trace + node_trace)
     fig.update_layout(
         showlegend=False,
@@ -179,7 +182,11 @@ def show_decision_flow(answers, questions):
         plot_bgcolor='white',
         xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-        title="Fluxo de Decisão Interativo"
+        title={
+            'text': "Fluxo de Decisão Interativo",
+            'x': 0.5,
+            'xanchor': 'center'
+        }
     )
     
     st.plotly_chart(fig, use_container_width=True)
@@ -189,7 +196,7 @@ def show_recommendation(answers, weights):
     
     st.header("Recomendação Final")
     
-    # Create three columns for better organization
+    # Main recommendation display
     col1, col2 = st.columns(2)
     
     with col1:
@@ -211,17 +218,85 @@ def show_recommendation(answers, weights):
             delta=f"{'↑' if confidence_score else '→'}"
         )
 
-    # Enhanced evaluation matrix visualization
+    # New section: Advantages and Disadvantages
+    st.subheader("Análise da Recomendação")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("#### Vantagens")
+        advantages = {
+            "DLT Permissionada Privada": [
+                "Alta segurança e privacidade",
+                "Controle de acesso granular",
+                "Conformidade com regulamentações"
+            ],
+            "DLT Pública": [
+                "Máxima descentralização",
+                "Transparência total",
+                "Resistência à censura"
+            ],
+            "DLT Híbrida": [
+                "Flexibilidade de configuração",
+                "Balanceamento de privacidade/transparência",
+                "Escalabilidade customizável"
+            ]
+        }
+        for adv in advantages.get(recommendation['dlt'], []):
+            st.markdown(f"✓ {adv}")
+    
+    with col2:
+        st.markdown("#### Desvantagens")
+        disadvantages = {
+            "DLT Permissionada Privada": [
+                "Menor descentralização",
+                "Custos de infraestrutura",
+                "Complexidade de gestão"
+            ],
+            "DLT Pública": [
+                "Menor privacidade",
+                "Custos de transação variáveis",
+                "Menor controle"
+            ],
+            "DLT Híbrida": [
+                "Maior complexidade técnica",
+                "Necessidade de governança híbrida",
+                "Custos de manutenção"
+            ]
+        }
+        for disadv in disadvantages.get(recommendation['dlt'], []):
+            st.markdown(f"⚠ {disadv}")
+
+    # Enhanced evaluation matrix
     st.subheader("Matriz de Avaliação Detalhada")
     if 'evaluation_matrix' in recommendation:
         matrix_data = []
         y_labels = []
         metrics_info = {
-            "security": {"name": "Segurança", "description": "Proteção de dados e resistência a ataques"},
-            "scalability": {"name": "Escalabilidade", "description": "Capacidade de crescimento e processamento"},
-            "energy_efficiency": {"name": "Eficiência Energética", "description": "Consumo e impacto ambiental"},
-            "governance": {"name": "Governança", "description": "Controle e gestão da rede"},
-            "academic_validation": {"name": "Validação Acadêmica", "description": "Respaldo em pesquisas"}
+            "security": {
+                "name": "Segurança",
+                "description": "Proteção de dados e resistência a ataques",
+                "scale": "1-5, onde 5 indica máxima segurança"
+            },
+            "scalability": {
+                "name": "Escalabilidade",
+                "description": "Capacidade de crescimento e processamento",
+                "scale": "1-5, onde 5 indica máxima escalabilidade"
+            },
+            "energy_efficiency": {
+                "name": "Eficiência Energética",
+                "description": "Consumo e impacto ambiental",
+                "scale": "1-5, onde 5 indica máxima eficiência"
+            },
+            "governance": {
+                "name": "Governança",
+                "description": "Controle e gestão da rede",
+                "scale": "1-5, onde 5 indica melhor governança"
+            },
+            "academic_validation": {
+                "name": "Validação Acadêmica",
+                "description": "Respaldo em pesquisas científicas",
+                "scale": "1-5, onde 5 indica maior validação"
+            }
         }
 
         for dlt, data in recommendation['evaluation_matrix'].items():
@@ -234,20 +309,28 @@ def show_recommendation(answers, weights):
                     row.append(0.0)
             matrix_data.append(row)
 
+        # Create heatmap with enhanced tooltips
         fig = go.Figure(data=go.Heatmap(
             z=matrix_data,
             x=[metrics_info[m]["name"] for m in recommendation['evaluation_matrix'][y_labels[0]]['metrics'].keys()],
             y=y_labels,
-            colorscale='Viridis',
+            colorscale=[
+                [0, "#ff0000"],    # Red for low values
+                [0.5, "#ffff00"],  # Yellow for medium values
+                [1, "#00ff00"]     # Green for high values
+            ],
             hoverongaps=False,
-            hovertemplate="<b>DLT:</b> %{y}<br><b>Métrica:</b> %{x}<br><b>Valor:</b> %{z:.2f}<extra></extra>"
+            hovertemplate="<b>DLT:</b> %{y}<br>" +
+                         "<b>Métrica:</b> %{x}<br>" +
+                         "<b>Valor:</b> %{z:.2f}<br>" +
+                         "<extra></extra>"
         ))
 
         fig.update_layout(
             title={
                 'text': "Matriz de Avaliação das DLTs",
-                'y':0.9,
-                'x':0.5,
+                'y': 0.9,
+                'x': 0.5,
                 'xanchor': 'center',
                 'yanchor': 'top'
             },
@@ -259,14 +342,51 @@ def show_recommendation(answers, weights):
         
         st.plotly_chart(fig, use_container_width=True)
 
-        # Detailed metrics explanation
+        # Metrics explanation with tooltips
         st.subheader("Explicação das Métricas")
         for metric, info in metrics_info.items():
-            with st.expander(f"{info['name']}"):
+            with st.expander(f"{info['name']} - {info['scale']}"):
                 st.write(info['description'])
                 if metric in recommendation['evaluation_matrix'][recommendation['dlt']]['metrics']:
                     value = float(recommendation['evaluation_matrix'][recommendation['dlt']]['metrics'][metric])
-                    st.metric(label="Pontuação", value=f"{value:.2f}/5.0")
+                    st.metric(
+                        label="Pontuação",
+                        value=f"{value:.2f}/5.0",
+                        help=f"Escala: {info['scale']}"
+                    )
+
+        # Comparative Analysis
+        st.subheader("Análise Comparativa")
+        comp_fig = go.Figure()
+        
+        for i, dlt in enumerate(y_labels):
+            comp_fig.add_trace(go.Scatter(
+                x=[metrics_info[m]["name"] for m in recommendation['evaluation_matrix'][dlt]['metrics'].keys()],
+                y=[float(v) for v in recommendation['evaluation_matrix'][dlt]['metrics'].values()],
+                name=dlt,
+                mode='lines+markers',
+                line=dict(width=2),
+                marker=dict(size=8),
+                hovertemplate="<b>%{x}</b><br>" +
+                             "Valor: %{y:.2f}<br>" +
+                             "<extra></extra>"
+            ))
+
+        comp_fig.update_layout(
+            title="Comparação entre DLTs",
+            xaxis_title="Métricas",
+            yaxis_title="Pontuação",
+            yaxis=dict(range=[0, 5]),
+            legend=dict(
+                yanchor="top",
+                y=0.99,
+                xanchor="left",
+                x=0.01
+            ),
+            hovermode="x unified"
+        )
+        
+        st.plotly_chart(comp_fig, use_container_width=True)
 
     return recommendation
 
