@@ -31,7 +31,7 @@ def show_home_page():
     if st.button("Iniciar Questionário", key="start_questionnaire", help="Clique aqui para começar o processo de seleção de DLT"):
         st.success("Questionário iniciado! Redirecionando para o Framework Proposto...")
         st.session_state.page = "Framework Proposto"
-        st.rerun()  # Updated to use rerun
+        st.experimental_rerun()  # Updated to use experimental_rerun
 
 def show_framework_info():
     st.header("Sobre o Framework de Seleção de DLT")
@@ -188,7 +188,7 @@ def main():
         elif menu_option == 'Logout':
             logout()
             st.session_state.page = 'Início'
-            st.rerun()  # Updated to use rerun
+            st.experimental_rerun()  # Updated to use experimental_rerun
 
 if __name__ == "__main__":
     main()

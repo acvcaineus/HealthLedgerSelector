@@ -2,7 +2,6 @@ import streamlit as st
 import bcrypt
 from database import create_user, get_user
 
-# Função para registro de novos usuários
 def register():
     st.subheader("Criar uma Conta")
     new_username = st.text_input("Nome de Usuário", key="register_username")
@@ -23,7 +22,6 @@ def register():
             else:
                 st.error("Nome de usuário já existe. Por favor, escolha um nome de usuário diferente.")
 
-# Função para login
 def login():
     st.subheader("Login")
     username = st.text_input("Nome de Usuário", key="login_username")
@@ -37,19 +35,17 @@ def login():
             st.session_state.authenticated = True
             st.session_state.username = username
             st.success("Login realizado com sucesso!")
-            st.rerun()  # Updated to use rerun
+            st.experimental_rerun()
         else:
             st.error("Nome de usuário ou senha inválidos")
 
-# Função para verificar se o usuário está autenticado
 def is_authenticated():
     return st.session_state.get('authenticated', False)
 
-# Função para logout
 def logout():
     if 'authenticated' in st.session_state:
         del st.session_state['authenticated']
     if 'username' in st.session_state:
         del st.session_state['username']
     st.success("Logout realizado com sucesso!")
-    st.rerun()  # Updated to use rerun
+    st.experimental_rerun()

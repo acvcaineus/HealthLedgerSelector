@@ -55,7 +55,7 @@ def show_interactive_decision_tree():
 
         if st.button("Próxima Pergunta"):
             st.session_state.answers[current_question["id"]] = response
-            st.rerun()
+            st.experimental_rerun()  # Updated to use experimental_rerun
 
     # Show decision flow diagram
     if st.session_state.answers:
@@ -251,7 +251,7 @@ def show_recommendation(answers, weights):
 def restart_decision_tree():
     if st.button("Reiniciar"):
         st.session_state.answers = {}
-        st.rerun()
+        st.experimental_rerun()  # Updated to use experimental_rerun
 
 def run_decision_tree():
     show_interactive_decision_tree()
