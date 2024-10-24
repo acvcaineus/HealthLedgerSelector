@@ -94,55 +94,73 @@ def show_metrics():
                 value=f"{pruning_ratio:.2%}",
                 help="Porcentagem de nós removidos para simplificação"
             )
+
+def show_reference_table():
+    # Updated table structure with data from the provided file
+    dlt_data = {
+        'DLT': [
+            'Hyperledger Fabric', 'Corda', 'Quorum', 'VeChain', 'IOTA',
+            'Ripple (XRP Ledger)', 'Stellar', 'Bitcoin', 'Ethereum (PoW)',
+            'Ethereum 2.0 (PoS)'
+        ],
+        'Tipo de DLT': [
+            'DLT Permissionada Privada', 'DLT Permissionada Simples', 'DLT Híbrida',
+            'DLT Híbrida', 'DLT com Consenso Delegado', 'DLT com Consenso Delegado',
+            'DLT com Consenso Delegado', 'DLT Pública', 'DLT Pública',
+            'DLT Pública Permissionless'
+        ],
+        'Grupo de Algoritmo': [
+            'Alta Segurança e Controle dos dados sensíveis',
+            'Alta Segurança e Controle dos dados sensíveis',
+            'Escalabilidade e Governança Flexível',
+            'Alta Eficiência Operacional em redes locais',
+            'Alta Escalabilidade em Redes IoT',
+            'Alta Eficiência Operacional em redes locais',
+            'Alta Eficiência Operacional em redes locais',
+            'Alta Segurança e Descentralização de dados críticos',
+            'Alta Segurança e Descentralização de dados críticos',
+            'Escalabilidade e Governança Flexível'
+        ],
+        'Algoritmo de Consenso': [
+            'RAFT/IBFT', 'RAFT', 'RAFT/IBFT', 'PoA', 'Tangle',
+            'Ripple Consensus Algorithm', 'SCP', 'PoW', 'PoW', 'PoS'
+        ],
+        'Principais Características': [
+            'Alta tolerância a falhas, consenso rápido em ambientes permissionados',
+            'Consenso baseado em líderes, adequado para redes privadas',
+            'Flexibilidade de governança, consenso eficiente para redes híbridas',
+            'Alta eficiência, baixa latência, consenso delegado a validadores autorizados',
+            'Escalabilidade alta, arquitetura sem blocos, adequada para IoT',
+            'Consenso rápido, baixa latência, baseado em validadores confiáveis',
+            'Consenso baseado em quórum, alta eficiência, tolerância a falhas',
+            'Segurança alta, descentralização, consumo elevado de energia',
+            'Segurança alta, descentralização, escalabilidade limitada, alto custo',
+            'Eficiência energética, incentivo à participação, redução da centralização'
+        ],
+        'Estudos de Uso': [
+            'Guardtime: Aplicado em sistemas de saúde da Estônia',
+            'ProCredEx: Validação de credenciais de profissionais de saúde nos EUA',
+            'Chronicled (Mediledger Project): Rastreamento de medicamentos',
+            'FarmaTrust: Rastreamento de medicamentos e combate à falsificação',
+            'Patientory: Compartilhamento de dados de pacientes via IoT',
+            'Change Healthcare: Gestão de ciclo de receita',
+            'MedicalChain: Controle de dados e consultas telemédicas',
+            'Guardtime: Rastreamento de dados de saúde em redes públicas',
+            'Embleema: Desenvolvimento de medicamentos e ensaios clínicos',
+            'MTBC: Gestão de registros eletrônicos de saúde (EHR)'
+        ]
+    }
     
-    # Visual Scales
-    st.subheader("4. Escalas Visuais de Métricas")
-    
-    if 'recommendation' in st.session_state:
-        rec = st.session_state.recommendation
-        if 'evaluation_matrix' in rec:
-            metrics = rec['evaluation_matrix'][rec['dlt']]['metrics']
-            
-            fig = go.Figure()
-            
-            fig.add_trace(go.Scatterpolar(
-                r=[float(metrics[m]) for m in metrics.keys()],
-                theta=list(metrics.keys()),
-                fill='toself',
-                name=rec['dlt'],
-                line_color='#2ecc71'
-            ))
-            
-            avg_metrics = {}
-            for metric in metrics.keys():
-                values = [float(data['metrics'][metric]) 
-                         for data in rec['evaluation_matrix'].values()]
-                avg_metrics[metric] = sum(values) / len(values)
-            
-            fig.add_trace(go.Scatterpolar(
-                r=[avg_metrics[m] for m in metrics.keys()],
-                theta=list(metrics.keys()),
-                fill='toself',
-                name='Média',
-                line_color='#3498db'
-            ))
-            
-            fig.update_layout(
-                polar=dict(
-                    radialaxis=dict(
-                        visible=True,
-                        range=[0, 5]
-                    )
-                ),
-                showlegend=True,
-                title="Comparação com Média das DLTs"
-            )
-            
-            st.plotly_chart(fig, use_container_width=True)
+    df = pd.DataFrame(dlt_data)
+    st.table(df)
 
 def show_home_page():
     st.title("SeletorDLTSaude - Sistema de Seleção de DLT para Saúde")
     st.write("Bem-vindo ao SeletorDLTSaude, uma aplicação para ajudar na escolha de tecnologias de ledger distribuído (DLT) para projetos de saúde.")
+
+    st.markdown("## Referência de DLTs e Algoritmos")
+    st.write("Abaixo está uma tabela detalhada com as principais DLTs e suas características para aplicações em saúde:")
+    show_reference_table()
 
     st.markdown("---")
     st.subheader("Iniciar o Processo de Seleção de DLT")

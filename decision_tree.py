@@ -3,16 +3,15 @@ import plotly.graph_objects as go
 from decision_logic import get_recommendation, consensus_algorithms
 from database import save_recommendation
 import networkx as nx
-import plotly.figure_factory as ff
 from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_decisoria, 
-                    calcular_pruning, calcular_confiabilidade_recomendacao, get_metric_explanation)
+                    calcular_pruning, calcular_confiabilidade_recomendacao)
 
 def show_recommendation(answers, weights):
     recommendation = get_recommendation(answers, weights)
     
     st.header("Recomendação Final")
     
-    # Enhanced recommendation display with academic validation
+    # Clean recommendation display
     col1, col2 = st.columns([2, 1])
     
     with col1:
@@ -22,14 +21,6 @@ def show_recommendation(answers, weights):
             <h3 style='color: #1f77b4;'>{recommendation['dlt']}</h3>
             <p><strong>Grupo de Consenso:</strong> {recommendation['consensus_group']}</p>
             <p><strong>Algoritmo:</strong> {recommendation['consensus']}</p>
-            <div style='margin-top: 10px; padding: 10px; background-color: #e8f4f8; border-radius: 5px;'>
-                <p><strong>Validação Acadêmica:</strong></p>
-                <ul>
-                    <li>Score: {recommendation['academic_validation'].get('score', 'N/A')}/5.0</li>
-                    <li>Citações: {recommendation['academic_validation'].get('citations', 'N/A')}</li>
-                    <li>Referência: {recommendation['academic_validation'].get('reference', 'N/A')}</li>
-                </ul>
-            </div>
         </div>
         """, unsafe_allow_html=True)
     
@@ -42,71 +33,51 @@ def show_recommendation(answers, weights):
             delta=f"{'↑' if confidence_score else '→'}",
             help="Baseado na diferença entre o score máximo e a média dos scores"
         )
-        
-        # Add validation metrics
-        if 'academic_validation' in recommendation:
-            validation_score = recommendation['academic_validation'].get('score', 0)
-            st.metric(
-                label="Validação Acadêmica",
-                value=f"{validation_score:.1f}/5.0",
-                delta=f"{'↑' if validation_score > 4.0 else '→' if validation_score > 3.0 else '↓'}",
-                help="Score baseado em publicações acadêmicas e implementações práticas"
-            )
+    
+    # Decision Tree Metrics
+    st.subheader("Métricas da Árvore de Decisão")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        classes = {k: v['score'] for k, v in recommendation['evaluation_matrix'].items()}
+        gini = calcular_gini(classes)
+        st.metric(
+            label="Índice de Gini",
+            value=f"{gini:.3f}",
+            help="Medida de pureza da classificação (menor é melhor)"
+        )
+    
+    with col2:
+        entropy = calcular_entropia(classes)
+        st.metric(
+            label="Entropia",
+            value=f"{entropy:.3f}",
+            help="Medida de incerteza na decisão (menor é melhor)"
+        )
 
-    # Enhanced evaluation matrix with detailed explanations
-    st.subheader("Matriz de Avaliação Detalhada")
+    # Clean evaluation matrix display
+    st.subheader("Matriz de Avaliação")
     if 'evaluation_matrix' in recommendation:
-        # Add metric explanations
-        st.markdown("""
-        ### Interpretação das Métricas
-        
-        #### 1. Segurança
-        - **Alta (4-5):** Forte proteção contra ataques e garantia de privacidade
-        - **Média (2-3):** Proteção adequada para casos gerais
-        - **Baixa (0-1):** Requer medidas adicionais de segurança
-        
-        #### 2. Escalabilidade
-        - **Alta (4-5):** Suporta grande volume de transações
-        - **Média (2-3):** Adequada para volume moderado
-        - **Baixa (0-1):** Limitações em alta demanda
-        
-        #### 3. Eficiência Energética
-        - **Alta (4-5):** Baixo consumo de energia
-        - **Média (2-3):** Consumo moderado
-        - **Baixa (0-1):** Alto consumo energético
-        
-        #### 4. Governança
-        - **Alta (4-5):** Controle e flexibilidade elevados
-        - **Média (2-3):** Controle moderado
-        - **Baixa (0-1):** Controle limitado
-        """)
-        
         matrix_data = []
         y_labels = []
         
-        # Color scale explanation with icons
-        st.markdown("""
-        **Escala de Cores:**
-        - 🔴 Vermelho (0-2): Baixo desempenho
-        - 🟡 Amarelo (2-3.5): Desempenho médio
-        - 🟢 Verde (3.5-5): Alto desempenho
-        """)
-        
-        # Prepare matrix data
         for dlt, data in recommendation['evaluation_matrix'].items():
             y_labels.append(dlt)
             row = []
             for metric, value in data['metrics'].items():
-                try:
-                    row.append(float(value))
-                except (ValueError, TypeError):
-                    row.append(0.0)
+                if metric != "academic_validation":  # Skip academic validation metrics
+                    try:
+                        row.append(float(value))
+                    except (ValueError, TypeError):
+                        row.append(0.0)
             matrix_data.append(row)
-            
-        # Create enhanced heatmap
+        
+        metrics = [m for m in recommendation['evaluation_matrix'][y_labels[0]]['metrics'].keys() 
+                  if m != "academic_validation"]
+        
         fig = go.Figure(data=go.Heatmap(
             z=matrix_data,
-            x=list(recommendation['evaluation_matrix'][y_labels[0]]['metrics'].keys()),
+            x=metrics,
             y=y_labels,
             colorscale=[
                 [0, "#ff0000"],    # Red for low values
@@ -121,66 +92,35 @@ def show_recommendation(answers, weights):
         ))
         
         fig.update_layout(
-            title={
-                'text': "Matriz de Avaliação das DLTs",
-                'y': 0.9,
-                'x': 0.5,
-                'xanchor': 'center',
-                'yanchor': 'top'
-            },
+            title="Avaliação Comparativa das DLTs",
             xaxis_title="Métricas",
             yaxis_title="DLTs",
-            height=400,
-            margin=dict(l=60, r=30, t=100, b=50)
+            height=400
         )
         
         st.plotly_chart(fig, use_container_width=True)
-        
-        # Add comparative analysis
-        st.subheader("Análise Comparativa")
-        st.markdown("""
-        Esta análise mostra como a DLT recomendada se compara com alternativas em aspectos chave:
-        
-        1. **Adequação ao Caso de Uso**
-           - Avaliação da compatibilidade com requisitos específicos
-           - Análise de implementações similares
-        
-        2. **Performance Técnica**
-           - Métricas de desempenho e escalabilidade
-           - Eficiência energética e custos operacionais
-        
-        3. **Maturidade da Tecnologia**
-           - Tempo de existência e estabilidade
-           - Tamanho e atividade da comunidade
-        """)
-        
-        # Save recommendation to database
+
+    # Save recommendation button
+    if st.button("Salvar Recomendação"):
         if st.session_state.get('username'):
             save_recommendation(
                 st.session_state.username,
                 'Healthcare DLT Selection',
                 recommendation
             )
+            st.success("Recomendação salva com sucesso!")
+        else:
+            st.warning("Faça login para salvar a recomendação.")
 
     return recommendation
-
-def show_initial_table():
-    st.subheader("Tabela de DLTs e Características")
-    dlt_data = {
-        'DLT': ['Hyperledger Fabric', 'VeChain', 'Quorum (Mediledger)', 'IOTA', 'Ripple (XRP Ledger)', 'Stellar', 'Bitcoin', 'Ethereum (PoW)', 'Ethereum 2.0 (PoS)'],
-        'Grupo de Algoritmo': ['Alta Segurança e Controle', 'Alta Eficiência Operacional', 'Escalabilidade e Governança', 'Alta Escalabilidade IoT', 'Alta Eficiência', 'Alta Eficiência', 'Alta Segurança', 'Alta Segurança', 'Escalabilidade'],
-        'Algoritmo de Consenso': ['RAFT/IBFT', 'Proof of Authority (PoA)', 'RAFT/IBFT', 'Tangle', 'RCA', 'SCP', 'PoW', 'PoW', 'PoS'],
-        'Caso de Uso': ['Rastreabilidade médica', 'Rastreamento de suprimentos', 'Monitoramento', 'IoT em saúde', 'Transações', 'Pagamentos', 'Dados críticos', 'Contratos inteligentes', 'Ensaios clínicos']
-    }
-    st.table(dlt_data)
 
 def show_interactive_decision_tree():
     if 'answers' not in st.session_state:
         st.session_state.answers = {}
 
     st.title("Framework de Seleção de DLT")
-    show_initial_table()
     
+    # Restored all previous questions
     questions = [
         {
             "id": "privacy",
@@ -188,54 +128,71 @@ def show_interactive_decision_tree():
             "characteristic": "Privacidade",
             "text": "A privacidade dos dados do paciente é crítica?",
             "options": ["Sim", "Não"],
-            "tooltip": "Considere requisitos de LGPD e HIPAA para proteção de dados sensíveis",
-            "impact": ["Proteção de dados", "Conformidade regulatória"]
+            "tooltip": "Considere requisitos de LGPD e HIPAA"
         },
         {
-            "id": "consensus",
-            "phase": "Consenso",
-            "characteristic": "Descentralização",
-            "text": "É necessário alto grau de descentralização?",
+            "id": "integration",
+            "phase": "Aplicação",
+            "characteristic": "Integração",
+            "text": "É necessária integração com outros sistemas de saúde?",
             "options": ["Sim", "Não"],
-            "tooltip": "Avalie a necessidade de descentralização do processo decisório",
-            "impact": ["Distribuição de poder", "Autonomia da rede"]
+            "tooltip": "Considere interoperabilidade com sistemas existentes"
         },
         {
-            "id": "infrastructure",
+            "id": "data_volume",
             "phase": "Infraestrutura",
-            "characteristic": "Escalabilidade",
-            "text": "A infraestrutura precisa ser altamente escalável?",
+            "characteristic": "Volume de Dados",
+            "text": "O sistema precisa lidar com grandes volumes de registros?",
             "options": ["Sim", "Não"],
-            "tooltip": "Considere o volume de transações e capacidade de crescimento",
-            "impact": ["Performance", "Capacidade"]
+            "tooltip": "Considere o volume de transações esperado"
         },
         {
-            "id": "internet",
-            "phase": "Internet",
-            "characteristic": "Conectividade",
-            "text": "É necessária conexão permanente com a internet?",
+            "id": "energy_efficiency",
+            "phase": "Infraestrutura",
+            "characteristic": "Eficiência Energética",
+            "text": "A eficiência energética é uma preocupação importante?",
             "options": ["Sim", "Não"],
-            "tooltip": "Avalie a necessidade de conectividade constante",
-            "impact": ["Disponibilidade", "Acessibilidade"]
+            "tooltip": "Considere o consumo de energia do sistema"
+        },
+        {
+            "id": "network_security",
+            "phase": "Consenso",
+            "characteristic": "Segurança",
+            "text": "É necessário alto nível de segurança na rede?",
+            "options": ["Sim", "Não"],
+            "tooltip": "Considere requisitos de segurança"
+        },
+        {
+            "id": "scalability",
+            "phase": "Consenso",
+            "characteristic": "Escalabilidade",
+            "text": "A escalabilidade é uma característica chave?",
+            "options": ["Sim", "Não"],
+            "tooltip": "Considere necessidades futuras de crescimento"
+        },
+        {
+            "id": "governance_flexibility",
+            "phase": "Internet",
+            "characteristic": "Governança",
+            "text": "A governança do sistema precisa ser flexível?",
+            "options": ["Sim", "Não"],
+            "tooltip": "Considere necessidades de adaptação"
+        },
+        {
+            "id": "interoperability",
+            "phase": "Internet",
+            "characteristic": "Interoperabilidade",
+            "text": "A interoperabilidade com outros sistemas é importante?",
+            "options": ["Sim", "Não"],
+            "tooltip": "Considere integração com outras redes"
         }
     ]
 
     current_phase = next((q["phase"] for q in questions if q["id"] not in st.session_state.answers), "Completo")
     progress = len(st.session_state.answers) / len(questions)
     
-    phase_colors = {
-        "Aplicação": "#2ecc71",
-        "Consenso": "#3498db",
-        "Infraestrutura": "#e74c3c",
-        "Internet": "#f1c40f",
-        "Completo": "#9b59b6"
-    }
-    
-    st.markdown(f"""
-    <div style='background-color: {phase_colors.get(current_phase, "#95a5a6")}; padding: 10px; border-radius: 5px; color: white;'>
-        Fase Atual: {current_phase} - Progresso: {int(progress * 100)}%
-    </div>
-    """, unsafe_allow_html=True)
+    st.progress(progress)
+    st.markdown(f"**Fase Atual:** {current_phase}")
 
     current_question = None
     for q in questions:
@@ -244,29 +201,16 @@ def show_interactive_decision_tree():
             break
 
     if current_question:
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            st.subheader(f"Fase: {current_question['phase']}")
-            st.markdown(f"**Característica: {current_question['characteristic']}**")
-            response = st.radio(
-                current_question["text"], 
-                current_question["options"],
-                help=current_question["tooltip"]
-            )
-            st.info(current_question["tooltip"])
-        
-        with col2:
-            st.markdown("### Impacto da Decisão")
-            for impact in current_question["impact"]:
-                st.write(f"- {impact}")
+        st.subheader(f"Característica: {current_question['characteristic']}")
+        response = st.radio(
+            current_question["text"],
+            current_question["options"],
+            help=current_question["tooltip"]
+        )
 
         if st.button("Próxima Pergunta"):
             st.session_state.answers[current_question["id"]] = response
             st.experimental_rerun()
-
-    if st.session_state.answers:
-        st.subheader("Visualização do Fluxo de Decisão")
-        show_decision_flow(st.session_state.answers, questions)
 
     if len(st.session_state.answers) == len(questions):
         weights = {
@@ -276,106 +220,6 @@ def show_interactive_decision_tree():
             "governance": float(0.15)
         }
         st.session_state.recommendation = show_recommendation(st.session_state.answers, weights)
-
-def show_decision_flow(answers, questions):
-    G = nx.DiGraph()
-    
-    # Color coding for phases
-    phase_colors = {
-        "Aplicação": "#2ecc71",
-        "Consenso": "#3498db",
-        "Infraestrutura": "#e74c3c",
-        "Internet": "#f1c40f"
-    }
-    
-    node_attrs = {
-        "Início": {
-            "color": "#1f77b4",
-            "size": 40,
-            "symbol": "circle",
-            "tooltip": "Início do processo de decisão"
-        }
-    }
-    
-    pos = {}
-    pos["Início"] = (0, 0)
-    
-    for i, q in enumerate(questions):
-        x = (i + 1) * 2
-        y = 0
-        q_id = f"{q['characteristic']}"
-        pos[q_id] = (x, y)
-        
-        node_attrs[q_id] = {
-            "color": phase_colors.get(q["phase"], "#95a5a6"),
-            "size": 35,
-            "symbol": "diamond",
-            "tooltip": f"{q['phase']}: {q['text']}"
-        }
-        
-        if q["id"] in answers:
-            answer = answers[q["id"]]
-            answer_id = f"{q['characteristic']}: {answer}"
-            pos[answer_id] = (x, -1)
-            node_attrs[answer_id] = {
-                "color": phase_colors.get(q["phase"], "#95a5a6"),
-                "size": 30,
-                "symbol": "square",
-                "tooltip": f"Resposta: {answer}"
-            }
-            
-            G.add_edge("Início", q_id)
-            G.add_edge(q_id, answer_id)
-
-    edge_trace = []
-    node_trace = []
-    
-    for edge in G.edges():
-        x0, y0 = pos[edge[0]]
-        x1, y1 = pos[edge[1]]
-        edge_trace.append(go.Scatter(
-            x=[x0, x1, None],
-            y=[y0, y1, None],
-            line=dict(width=2, color='#888'),
-            hoverinfo='none',
-            mode='lines'
-        ))
-
-    for node in G.nodes():
-        x, y = pos[node]
-        attrs = node_attrs[node]
-        node_trace.append(go.Scatter(
-            x=[x],
-            y=[y],
-            mode='markers+text',
-            name=node,
-            marker=dict(
-                symbol=attrs["symbol"],
-                size=attrs["size"],
-                color=attrs["color"]
-            ),
-            text=[node],
-            textposition="top center",
-            hovertext=attrs["tooltip"],
-            hoverinfo='text'
-        ))
-
-    fig = go.Figure(data=edge_trace + node_trace)
-    fig.update_layout(
-        showlegend=False,
-        hovermode='closest',
-        margin=dict(b=20, l=5, r=5, t=40),
-        plot_bgcolor='white',
-        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-        title={
-            'text': "Fluxo de Decisão Interativo",
-            'x': 0.5,
-            'xanchor': 'center'
-        }
-    )
-    
-    st.plotly_chart(fig, use_container_width=True)
 
 def restart_decision_tree():
     if st.button("Reiniciar Processo", help="Clique para começar um novo processo de seleção"):
