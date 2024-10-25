@@ -182,7 +182,7 @@ def show_recommendation(answers, weights, questions):
             }
             
             if recommendation['dlt'] in implementation_examples:
-                st.write(f"**Exemplo Real:** {implementation_examples[recommendation['dlt']]}") 
+                st.write(f"**Exemplo Real:** {implementation_examples[recommendation['dlt']]}")
     
         with st.expander("Ver Explicação do Algoritmo de Consenso"):
             st.write(f"### Por que {recommendation['consensus']}?")
@@ -266,6 +266,91 @@ def show_recommendation(answers, weights, questions):
         
         st.plotly_chart(fig, use_container_width=True)
     
+    # Add Algorithm Evaluation Matrix
+    with st.expander("Ver Matriz de Avaliação dos Algoritmos"):
+        st.write("### Matriz de Avaliação dos Algoritmos de Consenso")
+        
+        # Create algorithm comparison matrix
+        alg_matrix_data = []
+        alg_labels = []
+        
+        for alg in recommendation['algorithms']:
+            alg_labels.append(alg)
+            row = []
+            for metric in ['security', 'scalability', 'energy_efficiency', 'governance']:
+                value = consensus_algorithms[alg][metric]
+                row.append(float(value))
+            alg_matrix_data.append(row)
+        
+        # Plot algorithm heatmap
+        fig_alg = go.Figure(data=go.Heatmap(
+            z=alg_matrix_data,
+            x=['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança'],
+            y=alg_labels,
+            colorscale='Viridis',
+            hoverongaps=False,
+            hovertemplate="<b>Algoritmo:</b> %{y}<br>" +
+                         "<b>Métrica:</b> %{x}<br>" +
+                         "<b>Valor:</b> %{z:.2f}<br>" +
+                         "<extra></extra>"
+        ))
+        
+        fig_alg.update_layout(
+            title="Comparação dos Algoritmos de Consenso",
+            height=400
+        )
+        
+        st.plotly_chart(fig_alg, use_container_width=True)
+    
+    # Add Combined DLT-Algorithm Matrix
+    with st.expander("Ver Matriz Combinada DLT-Algoritmo"):
+        st.write("### Matriz de Compatibilidade DLT-Algoritmo")
+        
+        # Create combined matrix data
+        combined_scores = {}
+        for dlt, data in recommendation['evaluation_matrix'].items():
+            dlt_scores = {}
+            for alg in recommendation['algorithms']:
+                # Calculate compatibility score
+                score = 0
+                for metric in ['security', 'scalability', 'energy_efficiency', 'governance']:
+                    dlt_value = float(data['metrics'][metric])
+                    alg_value = float(consensus_algorithms[alg][metric])
+                    score += (dlt_value * alg_value) / 4
+                dlt_scores[alg] = score
+            combined_scores[dlt] = dlt_scores
+        
+        # Convert to matrix format
+        combined_matrix = []
+        dlt_labels = list(combined_scores.keys())
+        alg_labels = recommendation['algorithms']
+        
+        for dlt in dlt_labels:
+            row = []
+            for alg in alg_labels:
+                row.append(combined_scores[dlt][alg])
+            combined_matrix.append(row)
+        
+        # Plot combined heatmap
+        fig_combined = go.Figure(data=go.Heatmap(
+            z=combined_matrix,
+            x=alg_labels,
+            y=dlt_labels,
+            colorscale='Viridis',
+            hoverongaps=False,
+            hovertemplate="<b>DLT:</b> %{y}<br>" +
+                         "<b>Algoritmo:</b> %{x}<br>" +
+                         "<b>Score:</b> %{z:.2f}<br>" +
+                         "<extra></extra>"
+        ))
+        
+        fig_combined.update_layout(
+            title="Compatibilidade entre DLTs e Algoritmos",
+            height=400
+        )
+        
+        st.plotly_chart(fig_combined, use_container_width=True)
+    
     # Save recommendation option
     if st.button("Salvar Recomendação"):
         if st.session_state.get('username'):
@@ -277,7 +362,7 @@ def show_recommendation(answers, weights, questions):
             st.success("Recomendação salva com sucesso!")
         else:
             st.warning("Faça login para salvar a recomendação.")
-
+    
     return recommendation
 
 def run_decision_tree():
