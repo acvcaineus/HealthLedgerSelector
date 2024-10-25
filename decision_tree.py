@@ -117,7 +117,7 @@ def create_progress_animation(current_phase, answers, questions):
     
     return fig
 
-def show_recommendation(answers, weights):
+def show_recommendation(answers, weights, questions):
     recommendation = get_recommendation(answers, weights)
     
     st.header("Recomendação Final")
@@ -334,7 +334,7 @@ def show_interactive_decision_tree():
             "energy_efficiency": float(0.20),
             "governance": float(0.15)
         }
-        st.session_state.recommendation = show_recommendation(st.session_state.answers, weights)
+        st.session_state.recommendation = show_recommendation(st.session_state.answers, weights, questions)
 
 def restart_decision_tree():
     if st.button("Reiniciar Processo", help="Clique para começar um novo processo de seleção"):
