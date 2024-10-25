@@ -6,72 +6,100 @@ import networkx as nx
 from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_decisoria, 
                     calcular_pruning, calcular_confiabilidade_recomendacao)
 
-def create_decision_flow_viz(current_phase, answers, questions):
+def create_progress_animation(current_phase, answers, questions):
     phases = ['Aplicação', 'Consenso', 'Infraestrutura', 'Internet']
-    
-    # Collect characteristics and questions for tooltips
-    phase_characteristics = {}
-    phase_questions = {}
-    for q in questions:
-        if q['phase'] not in phase_characteristics:
-            phase_characteristics[q['phase']] = []
-            phase_questions[q['phase']] = []
-        phase_characteristics[q['phase']].append(q['characteristic'])
-        phase_questions[q['phase']].append(q['text'])
-    
     fig = go.Figure()
     
-    # Add nodes and edges for each phase
+    # Calculate progress for each phase
+    phase_progress = {phase: 0 for phase in phases}
+    phase_total = {phase: 0 for phase in phases}
+    phase_characteristics = {phase: set() for phase in phases}
+    
+    # Collect phase information
+    for q in questions:
+        phase = q['phase']
+        phase_total[phase] += 1
+        phase_characteristics[phase].add(q['characteristic'])
+        if q['id'] in answers:
+            phase_progress[phase] += 1
+    
+    # Add animated nodes with progress indicators
     for i, phase in enumerate(phases):
-        # Determine if phase is completed, current, or pending
-        completed = all(q['phase'] == phase and q['id'] in answers for q in questions if q['phase'] == phase)
-        is_current = phase == current_phase
-        
-        # Set color based on phase status
-        if completed:
-            color = '#2ecc71'  # Green for completed
-        elif is_current:
+        # Set color and size based on phase status
+        if phase == current_phase:
             color = '#3498db'  # Blue for current
+            size = 45  # Larger for current phase
+        elif phase_progress[phase] > 0:
+            color = '#2ecc71'  # Green for completed
+            size = 40
         else:
             color = '#bdc3c7'  # Gray for pending
-        
-        # Create tooltip text with characteristics and questions
+            size = 35
+            
+        # Create tooltip text
         tooltip = f"<b>{phase}</b><br>"
-        if phase in phase_characteristics:
-            tooltip += "<br>Características:<br>"
-            tooltip += "<br>".join([f"- {char}" for char in phase_characteristics[phase]])
-            tooltip += "<br><br>Perguntas:<br>"
-            tooltip += "<br>".join([f"- {q}" for q in phase_questions[phase]])
+        tooltip += f"Progresso: {phase_progress[phase]}/{phase_total[phase]}<br>"
+        tooltip += "<br>Características:<br>"
+        tooltip += "<br>".join([f"- {char}" for char in phase_characteristics[phase]])
         
-        # Add node
+        # Add pulsing animation for current phase
+        if phase == current_phase:
+            fig.add_trace(go.Scatter(
+                x=[i], y=[0],
+                mode='markers',
+                marker=dict(
+                    size=size,
+                    color=color,
+                    line=dict(color='white', width=2),
+                    symbol='circle',
+                    opacity=0.7
+                ),
+                hovertext=tooltip,
+                hoverinfo='text',
+                showlegend=False
+            ))
+        
+        # Add main node
         fig.add_trace(go.Scatter(
             x=[i], y=[0],
-            mode='markers+text',
-            name=phase,
-            text=[phase],
-            textposition="bottom center",
+            mode='markers',
             marker=dict(
-                size=40,
+                size=size,
                 color=color,
                 line=dict(color='white', width=2)
             ),
-            hovertext=[tooltip],
-            hoverinfo='text'
+            hovertext=tooltip,
+            hoverinfo='text',
+            showlegend=False
         ))
         
-        # Add connecting line to next phase
+        # Add phase label with progress
+        fig.add_annotation(
+            x=i, y=-0.2,
+            text=f"{phase}<br>({phase_progress[phase]}/{phase_total[phase]})",
+            showarrow=False,
+            font=dict(size=12)
+        )
+        
+        # Add connecting lines
         if i < len(phases) - 1:
             fig.add_trace(go.Scatter(
-                x=[i, i+1], y=[0, 0],
+                x=[i, i+1],
+                y=[0, 0],
                 mode='lines',
-                line=dict(color='gray', width=2, dash='dot'),
+                line=dict(
+                    color='gray',
+                    width=2,
+                    dash='dot'
+                ),
                 showlegend=False
             ))
     
+    # Update layout
     fig.update_layout(
         showlegend=False,
-        height=150,
-        margin=dict(l=20, r=20, t=20, b=20),
+        height=200,
+        margin=dict(l=20, r=20, t=20, b=40),
         plot_bgcolor='white',
         xaxis=dict(
             showgrid=False,
@@ -94,7 +122,7 @@ def show_recommendation(answers, weights):
     
     st.header("Recomendação Final")
     
-    # Clean recommendation display
+    # Enhanced recommendation display
     col1, col2 = st.columns([2, 1])
     
     with col1:
@@ -104,11 +132,19 @@ def show_recommendation(answers, weights):
             <h3 style='color: #1f77b4;'>{recommendation['dlt']}</h3>
             <p><strong>Grupo de Consenso:</strong> {recommendation['consensus_group']}</p>
             <p><strong>Algoritmo:</strong> {recommendation['consensus']}</p>
+            <div style='margin-top: 10px; padding: 10px; background-color: #e8f4f8; border-radius: 5px;'>
+                <p><strong>Validação Acadêmica:</strong></p>
+                <ul>
+                    <li>Score: {recommendation['academic_validation'].get('score', 'N/A')}/5.0</li>
+                    <li>Citações: {recommendation['academic_validation'].get('citations', 'N/A')}</li>
+                    <li>Referência: {recommendation['academic_validation'].get('reference', 'N/A')}</li>
+                </ul>
+            </div>
         </div>
         """, unsafe_allow_html=True)
     
     with col2:
-        st.subheader("Métricas de Confiança")
+        st.subheader("Métricas")
         confidence_score = recommendation.get('confidence', False)
         st.metric(
             label="Índice de Confiança",
@@ -117,29 +153,8 @@ def show_recommendation(answers, weights):
             help="Baseado na diferença entre o score máximo e a média dos scores"
         )
     
-    # Decision Tree Metrics
-    st.subheader("Métricas da Árvore de Decisão")
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        classes = {k: v['score'] for k, v in recommendation['evaluation_matrix'].items()}
-        gini = calcular_gini(classes)
-        st.metric(
-            label="Índice de Gini",
-            value=f"{gini:.3f}",
-            help="Medida de pureza da classificação (menor é melhor)"
-        )
-    
-    with col2:
-        entropy = calcular_entropia(classes)
-        st.metric(
-            label="Entropia",
-            value=f"{entropy:.3f}",
-            help="Medida de incerteza na decisão (menor é melhor)"
-        )
-
-    # Clean evaluation matrix display
-    st.subheader("Matriz de Avaliação")
+    # Enhanced evaluation matrix
+    st.subheader("Matriz de Avaliação Detalhada")
     if 'evaluation_matrix' in recommendation:
         matrix_data = []
         y_labels = []
@@ -148,15 +163,13 @@ def show_recommendation(answers, weights):
             y_labels.append(dlt)
             row = []
             for metric, value in data['metrics'].items():
-                if metric != "academic_validation":  # Skip academic validation metrics
-                    try:
-                        row.append(float(value))
-                    except (ValueError, TypeError):
-                        row.append(0.0)
+                try:
+                    row.append(float(value))
+                except (ValueError, TypeError):
+                    row.append(0.0)
             matrix_data.append(row)
         
-        metrics = [m for m in recommendation['evaluation_matrix'][y_labels[0]]['metrics'].keys() 
-                  if m != "academic_validation"]
+        metrics = list(recommendation['evaluation_matrix'][y_labels[0]]['metrics'].keys())
         
         fig = go.Figure(data=go.Heatmap(
             z=matrix_data,
@@ -175,15 +188,16 @@ def show_recommendation(answers, weights):
         ))
         
         fig.update_layout(
-            title="Avaliação Comparativa das DLTs",
+            title="Comparação Detalhada das DLTs",
             xaxis_title="Métricas",
             yaxis_title="DLTs",
-            height=400
+            height=400,
+            margin=dict(l=60, r=30, t=100, b=50)
         )
         
         st.plotly_chart(fig, use_container_width=True)
-
-    # Save recommendation button
+    
+    # Save recommendation option
     if st.button("Salvar Recomendação"):
         if st.session_state.get('username'):
             save_recommendation(
@@ -203,7 +217,6 @@ def show_interactive_decision_tree():
 
     st.title("Framework de Seleção de DLT")
     
-    # Restored all previous questions
     questions = [
         {
             "id": "privacy",
@@ -274,12 +287,13 @@ def show_interactive_decision_tree():
     current_phase = next((q["phase"] for q in questions if q["id"] not in st.session_state.answers), "Completo")
     progress = len(st.session_state.answers) / len(questions)
     
-    st.progress(progress)
-    st.markdown(f"**Fase Atual:** {current_phase}")
+    # Show progress animation
+    progress_fig = create_progress_animation(current_phase, st.session_state.answers, questions)
+    st.plotly_chart(progress_fig, use_container_width=True)
     
-    # Add decision flow visualization
-    fig = create_decision_flow_viz(current_phase, st.session_state.answers, questions)
-    st.plotly_chart(fig, use_container_width=True)
+    # Show current phase details
+    st.markdown(f"### Fase Atual: {current_phase}")
+    st.progress(progress)
 
     current_question = None
     for q in questions:
@@ -289,10 +303,10 @@ def show_interactive_decision_tree():
 
     if current_question:
         st.subheader(f"Característica: {current_question['characteristic']}")
+        st.info(f"Dica: {current_question['tooltip']}")
         response = st.radio(
             current_question["text"],
-            current_question["options"],
-            help=current_question["tooltip"]
+            current_question["options"]
         )
 
         if st.button("Próxima Pergunta"):
