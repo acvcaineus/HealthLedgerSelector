@@ -63,25 +63,46 @@ def get_questions():
         }
     ]
 
+def display_decision_flow(answers, current_question):
+    # Create columns for visualization
+    flow_col1, flow_col2 = st.columns([3,1])
+    
+    with flow_col1:
+        st.markdown("### Fluxo de Decisão")
+        
+        # Show previous answers with checkmarks
+        for q in get_questions():
+            if q["id"] in answers:
+                st.markdown(f"✅ **{q['characteristic']}**: {answers[q['id']]}")
+            elif q == current_question:
+                st.markdown(f"👉 **{q['characteristic']}**")
+            else:
+                st.markdown(f"⭕ {q['characteristic']}")
+
 def show_recommendation(answers, weights):
     recommendation = get_recommendation(answers, weights)
     
-    st.header("Recomendação")
+    st.header("Recomendação Final")
     
     # Display recommendation and confidence side by side
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        st.write(f"**DLT Recomendada:** {recommendation['dlt']}")
-        st.write(f"**Grupo de Consenso:** {recommendation['consensus_group']}")
-        st.write(f"**Algoritmo de Consenso:** {recommendation['consensus']}")
+        st.markdown(f"""
+        <div style='background-color: #f0f2f6; padding: 20px; border-radius: 10px;'>
+            <h3 style='color: #1f77b4;'>{recommendation['dlt']}</h3>
+            <p><strong>Grupo de Consenso:</strong> {recommendation['consensus_group']}</p>
+            <p><strong>Algoritmo:</strong> {recommendation['consensus']}</p>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col2:
         confidence_score = recommendation.get('confidence', False)
         st.metric(
             label="Índice de Confiança",
-            value="Alto" if confidence_score else "Médio",
-            delta="↑" if confidence_score else "→"
+            value=f"{'Alto' if confidence_score else 'Médio'}",
+            delta=f"{'↑' if confidence_score else '→'}",
+            help="Baseado na diferença entre o score máximo e a média dos scores"
         )
     
     # Display academic validation if available
@@ -113,36 +134,25 @@ def show_interactive_decision_tree():
     
     st.title("Framework de Seleção de DLT")
     
-    # Show progress visualization with diamonds
     questions = get_questions()
-    current_phase = len(st.session_state.answers) + 1
-    
-    # Show interactive progress
-    total_questions = len(questions)
-    answered_questions = len(st.session_state.answers)
-    
-    st.progress(answered_questions / total_questions)
-    st.markdown(f"**Progresso:** {answered_questions}/{total_questions} perguntas respondidas")
-    
-    # Create visual flow with diamond shapes
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        st.markdown(f"### Fase {current_phase} de {len(questions)}")
-    
     current_question = next((q for q in questions if q["id"] not in st.session_state.answers), None)
     
+    # Show progress
+    progress = len(st.session_state.answers) / len(questions)
+    st.progress(progress)
+    
     if current_question:
-        # Show diamond shape question box
-        st.markdown(f'''
-        <div style="border: 2px solid #1f77b4; padding: 20px; border-radius: 10px; margin: 10px 0;">
-            <p style="color: #1f77b4; font-weight: bold;">{current_question["text"]}</p>
-            <p style="color: #666; font-size: 0.9em;">{current_question["tooltip"]}</p>
-        </div>
-        ''', unsafe_allow_html=True)
+        # Show current phase
+        st.subheader(f"Fase {len(st.session_state.answers) + 1}/{len(questions)}")
         
-        response = st.radio("", current_question["options"])
+        # Show decision flow visualization
+        display_decision_flow(st.session_state.answers, current_question)
         
-        if st.button("Próxima Pergunta"):
+        # Show question in a cleaner format
+        st.markdown(f"### {current_question['characteristic']}")
+        response = st.radio(current_question["text"], current_question["options"], help=current_question["tooltip"])
+        
+        if st.button("Próxima", help="Ir para próxima pergunta"):
             st.session_state.answers[current_question["id"]] = response
             st.experimental_rerun()
 
