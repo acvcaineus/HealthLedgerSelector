@@ -9,6 +9,99 @@ from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_dec
                     calcular_pruning, calcular_confiabilidade_recomendacao, get_metric_explanation)
 from utils import init_session_state
 
+def show_metrics():
+    st.header("Métricas Técnicas do Processo de Decisão")
+    
+    if 'recommendation' not in st.session_state:
+        st.warning("Complete o processo de seleção primeiro para ver as métricas detalhadas.")
+        return
+
+    try:
+        # Technical Metrics Section
+        with st.expander("🔍 Métricas de Classificação", expanded=True):
+            st.subheader("1. Índice de Gini")
+            st.markdown("""
+            O Índice de Gini mede a impureza de um conjunto de dados, indicando quão bem as 
+            características distinguem entre diferentes DLTs.
+            """)
+            
+            if 'evaluation_matrix' in st.session_state.recommendation:
+                classes = {k: float(v['score']) for k, v in st.session_state.recommendation['evaluation_matrix'].items()}
+                gini = calcular_gini(classes)
+                st.metric(
+                    label="Índice de Gini Atual",
+                    value=f"{gini:.3f}",
+                    help="Quanto menor, melhor a separação entre as classes"
+                )
+                
+                if gini < 0.3:
+                    st.success("✅ Excelente separação entre as classes!")
+                elif gini < 0.6:
+                    st.info("ℹ️ Boa separação entre as classes")
+                else:
+                    st.warning("⚠️ Separação moderada entre as classes")
+
+        # Entropy Analysis
+        with st.expander("🎯 Análise de Entropia", expanded=True):
+            st.subheader("2. Entropia")
+            st.markdown("""
+            A Entropia mede a aleatoriedade ou incerteza nas decisões. Uma menor entropia 
+            indica decisões mais consistentes e confiáveis.
+            """)
+            
+            entropy = calcular_entropia(classes)
+            st.metric(
+                label="Entropia do Sistema",
+                value=f"{entropy:.3f} bits",
+                help="Quanto menor, mais certeza na decisão"
+            )
+
+        # Evaluation Matrix
+        with st.expander("📊 Matriz de Avaliação Detalhada", expanded=True):
+            st.subheader("3. Matriz de Avaliação")
+            if 'evaluation_matrix' in st.session_state.recommendation:
+                matrix_data = []
+                y_labels = []
+                
+                for dlt, data in st.session_state.recommendation['evaluation_matrix'].items():
+                    y_labels.append(dlt)
+                    row = []
+                    for metric, value in data['metrics'].items():
+                        if metric != "academic_validation":
+                            try:
+                                row.append(float(value))
+                            except (ValueError, TypeError):
+                                row.append(0.0)
+                    matrix_data.append(row)
+                
+                metrics = [m for m in st.session_state.recommendation['evaluation_matrix'][y_labels[0]]['metrics'].keys() 
+                          if m != "academic_validation"]
+                
+                fig = go.Figure(data=go.Heatmap(
+                    z=matrix_data,
+                    x=metrics,
+                    y=y_labels,
+                    colorscale=[
+                        [0, "#ff0000"],    # Red for low values
+                        [0.4, "#ffff00"],  # Yellow for medium values
+                        [0.7, "#00ff00"]   # Green for high values
+                    ],
+                    hoverongaps=False
+                ))
+                
+                fig.update_layout(
+                    title="Matriz de Avaliação Comparativa",
+                    xaxis_title="Métricas",
+                    yaxis_title="DLTs",
+                    height=400
+                )
+                
+                st.plotly_chart(fig, use_container_width=True)
+
+    except Exception as e:
+        st.error(f"Erro ao calcular métricas: {str(e)}")
+        st.warning("Por favor, reinicie o processo de seleção.")
+
 def show_reference_table():
     dlt_data = pd.DataFrame({
         'DLT': [
@@ -33,6 +126,18 @@ def show_reference_table():
             'Alta Segurança e Descentralização',
             'Alta Segurança e Descentralização',
             'Escalabilidade e Governança Flexível'
+        ],
+        'Algoritmo de Consenso': [
+            'PBFT',
+            'RAFT',
+            'RAFT/IBFT',
+            'PoA',
+            'Tangle',
+            'Ripple Consensus Protocol',
+            'Stellar Consensus Protocol',
+            'PoW',
+            'PoW',
+            'PoS'
         ]
     })
     st.table(dlt_data)

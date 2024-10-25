@@ -7,7 +7,6 @@ def get_questions():
     return [
         {
             "id": "privacy",
-            "phase": "Aplicação",
             "characteristic": "Privacidade",
             "text": "A privacidade dos dados do paciente é crítica?",
             "options": ["Sim", "Não"],
@@ -15,7 +14,6 @@ def get_questions():
         },
         {
             "id": "integration",
-            "phase": "Aplicação",
             "characteristic": "Integração",
             "text": "É necessária integração com outros sistemas de saúde?",
             "options": ["Sim", "Não"],
@@ -23,7 +21,6 @@ def get_questions():
         },
         {
             "id": "data_volume",
-            "phase": "Infraestrutura",
             "characteristic": "Volume de Dados",
             "text": "O sistema precisa lidar com grandes volumes de registros?",
             "options": ["Sim", "Não"],
@@ -31,7 +28,6 @@ def get_questions():
         },
         {
             "id": "energy_efficiency",
-            "phase": "Infraestrutura",
             "characteristic": "Eficiência Energética",
             "text": "A eficiência energética é uma preocupação importante?",
             "options": ["Sim", "Não"],
@@ -39,7 +35,6 @@ def get_questions():
         },
         {
             "id": "network_security",
-            "phase": "Consenso",
             "characteristic": "Segurança",
             "text": "É necessário alto nível de segurança na rede?",
             "options": ["Sim", "Não"],
@@ -47,7 +42,6 @@ def get_questions():
         },
         {
             "id": "scalability",
-            "phase": "Consenso",
             "characteristic": "Escalabilidade",
             "text": "A escalabilidade é uma característica chave?",
             "options": ["Sim", "Não"],
@@ -55,7 +49,6 @@ def get_questions():
         },
         {
             "id": "governance_flexibility",
-            "phase": "Internet",
             "characteristic": "Governança",
             "text": "A governança do sistema precisa ser flexível?",
             "options": ["Sim", "Não"],
@@ -63,7 +56,6 @@ def get_questions():
         },
         {
             "id": "interoperability",
-            "phase": "Internet",
             "characteristic": "Interoperabilidade",
             "text": "A interoperabilidade com outros sistemas é importante?",
             "options": ["Sim", "Não"],
@@ -76,40 +68,16 @@ def show_recommendation(answers, weights):
     
     # Show decision path
     st.header("Seu Caminho de Decisão")
-    phases = {
-        "Aplicação": ["privacy", "integration"],
-        "Consenso": ["network_security", "scalability"],
-        "Infraestrutura": ["data_volume", "energy_efficiency"],
-        "Internet": ["governance_flexibility", "interoperability"]
-    }
-
-    # Visual decision path with phase colors
-    for phase, questions in phases.items():
-        phase_color = {
-            "Aplicação": "#2ecc71",
-            "Consenso": "#3498db",
-            "Infraestrutura": "#e74c3c",
-            "Internet": "#f1c40f"
-        }.get(phase, "#95a5a6")
-
-        with st.expander(f"📋 Fase: {phase}", expanded=True):
+    st.markdown("Abaixo estão suas respostas que levaram à recomendação:")
+    
+    questions = get_questions()
+    for q in questions:
+        if q["id"] in answers:
             st.markdown(f"""
-                <div style='background-color: {phase_color}; padding: 10px; border-radius: 5px; color: white;'>
-                    <h4>{phase}</h4>
-                </div>
-            """, unsafe_allow_html=True)
-            
-            answered = sum(1 for q in questions if q in answers)
-            total = len(questions)
-            st.progress(answered / total)
-            
-            for q_id in questions:
-                if q_id in answers:
-                    question_text = next((q["text"] for q in get_questions() if q["id"] == q_id), q_id)
-                    st.markdown(f"❓ **Pergunta:** {question_text}")
-                    st.markdown(f"✅ **Sua resposta:** {answers[q_id]}")
-                    st.markdown("---")
-
+            ❓ **{q['text']}**  
+            ✅ Sua resposta: **{answers[q['id']]}**
+            """)
+    
     # Show final recommendation
     st.header("Recomendação Final")
     col1, col2 = st.columns([2, 1])
@@ -146,55 +114,23 @@ def show_recommendation(answers, weights):
 
     return recommendation
 
-def show_metrics():
-    st.header("Métricas de Avaliação")
-    if 'recommendation' in st.session_state:
-        rec = st.session_state.recommendation
-        if 'evaluation_matrix' in rec:
-            for dlt, data in rec['evaluation_matrix'].items():
-                with st.expander(f"📊 {dlt}", expanded=True):
-                    for metric, value in data['metrics'].items():
-                        st.metric(
-                            label=metric.title(),
-                            value=f"{value:.2f}",
-                            delta=f"{'↑' if value > 3 else '↓'}"
-                        )
-
 def show_interactive_decision_tree():
     if 'answers' not in st.session_state:
         st.session_state.answers = {}
 
-    st.title("Framework de Seleção de DLT")
+    st.title("Seleção de DLT para Saúde")
     questions = get_questions()
     
-    current_phase = next((q["phase"] for q in questions if q["id"] not in st.session_state.answers), "Completo")
+    # Simple progress visualization
     progress = len(st.session_state.answers) / len(questions)
-    
-    # Phase progress visualization
-    phase_colors = {
-        "Aplicação": "#2ecc71",
-        "Consenso": "#3498db",
-        "Infraestrutura": "#e74c3c",
-        "Internet": "#f1c40f"
-    }
-    
-    st.markdown(f"""
-        <div style='background-color: {phase_colors.get(current_phase, "#95a5a6")}; 
-             padding: 10px; border-radius: 5px; color: white;'>
-            <h3>Fase Atual: {current_phase}</h3>
-            <p>Progresso: {int(progress * 100)}%</p>
-        </div>
-    """, unsafe_allow_html=True)
-    
     st.progress(progress)
+    st.write(f"Progresso: {int(progress * 100)}%")
 
     current_question = next((q for q in questions if q["id"] not in st.session_state.answers), None)
 
     if current_question:
-        with st.expander("💡 Detalhes da Característica", expanded=True):
-            st.subheader(f"Avaliando: {current_question['characteristic']}")
-            st.markdown(f"**Fase:** {current_question['phase']}")
-            st.markdown(f"**Descrição:** {current_question['tooltip']}")
+        st.subheader(f"Característica: {current_question['characteristic']}")
+        st.info(current_question['tooltip'])
         
         response = st.radio(
             current_question["text"],
@@ -214,7 +150,6 @@ def show_interactive_decision_tree():
             "governance": float(0.15)
         }
         st.session_state.recommendation = show_recommendation(st.session_state.answers, weights)
-        show_metrics()
 
 def restart_decision_tree():
     if st.button("Reiniciar Processo", help="Clique para começar um novo processo de seleção"):
