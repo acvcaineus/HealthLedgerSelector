@@ -6,6 +6,89 @@ import networkx as nx
 from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_decisoria, 
                     calcular_pruning, calcular_confiabilidade_recomendacao)
 
+def create_decision_flow_viz(current_phase, answers, questions):
+    phases = ['Aplicação', 'Consenso', 'Infraestrutura', 'Internet']
+    
+    # Collect characteristics and questions for tooltips
+    phase_characteristics = {}
+    phase_questions = {}
+    for q in questions:
+        if q['phase'] not in phase_characteristics:
+            phase_characteristics[q['phase']] = []
+            phase_questions[q['phase']] = []
+        phase_characteristics[q['phase']].append(q['characteristic'])
+        phase_questions[q['phase']].append(q['text'])
+    
+    fig = go.Figure()
+    
+    # Add nodes and edges for each phase
+    for i, phase in enumerate(phases):
+        # Determine if phase is completed, current, or pending
+        completed = all(q['phase'] == phase and q['id'] in answers for q in questions if q['phase'] == phase)
+        is_current = phase == current_phase
+        
+        # Set color based on phase status
+        if completed:
+            color = '#2ecc71'  # Green for completed
+        elif is_current:
+            color = '#3498db'  # Blue for current
+        else:
+            color = '#bdc3c7'  # Gray for pending
+        
+        # Create tooltip text with characteristics and questions
+        tooltip = f"<b>{phase}</b><br>"
+        if phase in phase_characteristics:
+            tooltip += "<br>Características:<br>"
+            tooltip += "<br>".join([f"- {char}" for char in phase_characteristics[phase]])
+            tooltip += "<br><br>Perguntas:<br>"
+            tooltip += "<br>".join([f"- {q}" for q in phase_questions[phase]])
+        
+        # Add node
+        fig.add_trace(go.Scatter(
+            x=[i], y=[0],
+            mode='markers+text',
+            name=phase,
+            text=[phase],
+            textposition="bottom center",
+            marker=dict(
+                size=40,
+                color=color,
+                line=dict(color='white', width=2)
+            ),
+            hovertext=[tooltip],
+            hoverinfo='text'
+        ))
+        
+        # Add connecting line to next phase
+        if i < len(phases) - 1:
+            fig.add_trace(go.Scatter(
+                x=[i, i+1], y=[0, 0],
+                mode='lines',
+                line=dict(color='gray', width=2, dash='dot'),
+                showlegend=False
+            ))
+    
+    fig.update_layout(
+        showlegend=False,
+        height=150,
+        margin=dict(l=20, r=20, t=20, b=20),
+        plot_bgcolor='white',
+        xaxis=dict(
+            showgrid=False,
+            zeroline=False,
+            showticklabels=False,
+            range=[-0.5, len(phases)-0.5]
+        ),
+        yaxis=dict(
+            showgrid=False,
+            zeroline=False,
+            showticklabels=False,
+            range=[-0.5, 0.5]
+        )
+    )
+    
+    return fig
+
 def show_recommendation(answers, weights):
     recommendation = get_recommendation(answers, weights)
     
@@ -193,6 +276,10 @@ def show_interactive_decision_tree():
     
     st.progress(progress)
     st.markdown(f"**Fase Atual:** {current_phase}")
+    
+    # Add decision flow visualization
+    fig = create_decision_flow_viz(current_phase, st.session_state.answers, questions)
+    st.plotly_chart(fig, use_container_width=True)
 
     current_question = None
     for q in questions:
