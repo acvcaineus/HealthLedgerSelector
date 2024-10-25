@@ -6,104 +6,98 @@ from decision_tree import run_decision_tree
 from decision_logic import compare_algorithms, consensus_algorithms
 from database import get_user_recommendations
 from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_decisoria, 
-                    calcular_pruning, calcular_confiabilidade_recomendacao, get_metric_explanation)
+                    calcular_pruning, calcular_confiabilidade_recomendacao)
 from utils import init_session_state
 
 def show_metrics():
     st.header("Métricas Técnicas do Processo de Decisão")
     
-    if 'recommendation' not in st.session_state:
-        st.warning("Complete o processo de seleção primeiro para ver as métricas detalhadas.")
-        return
-
-    try:
-        # Technical Metrics Section
-        with st.expander("🔍 Métricas de Classificação", expanded=True):
-            st.subheader("1. Índice de Gini")
-            st.markdown("""
-            O Índice de Gini mede a impureza de um conjunto de dados, indicando quão bem as 
-            características distinguem entre diferentes DLTs.
-            """)
+    # Gini Index Section
+    st.subheader("1. Índice de Gini")
+    st.markdown("""
+    O Índice de Gini mede a impureza de um conjunto de dados. Em nossa árvore de decisão, 
+    ele indica quão bem as características distinguem entre diferentes DLTs.
+    """)
+    
+    # LaTeX formula for Gini Index
+    st.latex(r"Gini = 1 - \sum_{i=1}^{n} p_i^2")
+    
+    st.markdown("""
+    Onde:
+    - $p_i$ é a proporção de cada classe no conjunto
+    - Valores próximos a 0 indicam melhor separação
+    - Valores próximos a 1 indicam maior mistura
+    """)
+    
+    # Example calculation
+    if 'recommendation' in st.session_state:
+        rec = st.session_state.recommendation
+        if 'evaluation_matrix' in rec:
+            classes = {k: v['score'] for k, v in rec['evaluation_matrix'].items()}
+            gini = calcular_gini(classes)
             
-            if 'evaluation_matrix' in st.session_state.recommendation:
-                classes = {k: float(v['score']) for k, v in st.session_state.recommendation['evaluation_matrix'].items()}
-                gini = calcular_gini(classes)
-                st.metric(
-                    label="Índice de Gini Atual",
-                    value=f"{gini:.3f}",
-                    help="Quanto menor, melhor a separação entre as classes"
-                )
-                
-                if gini < 0.3:
-                    st.success("✅ Excelente separação entre as classes!")
-                elif gini < 0.6:
-                    st.info("ℹ️ Boa separação entre as classes")
-                else:
-                    st.warning("⚠️ Separação moderada entre as classes")
-
-        # Entropy Analysis
-        with st.expander("🎯 Análise de Entropia", expanded=True):
-            st.subheader("2. Entropia")
-            st.markdown("""
-            A Entropia mede a aleatoriedade ou incerteza nas decisões. Uma menor entropia 
-            indica decisões mais consistentes e confiáveis.
-            """)
-            
-            entropy = calcular_entropia(classes)
             st.metric(
-                label="Entropia do Sistema",
+                label="Índice de Gini Atual",
+                value=f"{gini:.3f}",
+                help="Quanto menor, melhor a separação entre as classes"
+            )
+    
+    # Entropy Section
+    st.subheader("2. Entropia")
+    st.markdown("""
+    A Entropia mede a aleatoriedade ou incerteza em nosso conjunto de decisões.
+    Uma menor entropia indica decisões mais consistentes e confiáveis.
+    """)
+    
+    # LaTeX formula for Entropy
+    st.latex(r"Entropia = -\sum_{i=1}^{n} p_i \log_2(p_i)")
+    
+    st.markdown("""
+    Onde:
+    - $p_i$ é a probabilidade de cada classe
+    - Logaritmo na base 2 é usado para medir em bits
+    - Menor entropia indica maior certeza na decisão
+    """)
+    
+    if 'recommendation' in st.session_state:
+        rec = st.session_state.recommendation
+        if 'evaluation_matrix' in rec:
+            classes = {k: v['score'] for k, v in rec['evaluation_matrix'].items()}
+            entropy = calcular_entropia(classes)
+            
+            st.metric(
+                label="Entropia Atual",
                 value=f"{entropy:.3f} bits",
                 help="Quanto menor, mais certeza na decisão"
             )
-
-        # Evaluation Matrix
-        with st.expander("📊 Matriz de Avaliação Detalhada", expanded=True):
-            st.subheader("3. Matriz de Avaliação")
-            if 'evaluation_matrix' in st.session_state.recommendation:
-                matrix_data = []
-                y_labels = []
-                
-                for dlt, data in st.session_state.recommendation['evaluation_matrix'].items():
-                    y_labels.append(dlt)
-                    row = []
-                    for metric, value in data['metrics'].items():
-                        if metric != "academic_validation":
-                            try:
-                                row.append(float(value))
-                            except (ValueError, TypeError):
-                                row.append(0.0)
-                    matrix_data.append(row)
-                
-                metrics = [m for m in st.session_state.recommendation['evaluation_matrix'][y_labels[0]]['metrics'].keys() 
-                          if m != "academic_validation"]
-                
-                fig = go.Figure(data=go.Heatmap(
-                    z=matrix_data,
-                    x=metrics,
-                    y=y_labels,
-                    colorscale=[
-                        [0, "#ff0000"],    # Red for low values
-                        [0.4, "#ffff00"],  # Yellow for medium values
-                        [0.7, "#00ff00"]   # Green for high values
-                    ],
-                    hoverongaps=False
-                ))
-                
-                fig.update_layout(
-                    title="Matriz de Avaliação Comparativa",
-                    xaxis_title="Métricas",
-                    yaxis_title="DLTs",
-                    height=400
-                )
-                
-                st.plotly_chart(fig, use_container_width=True)
-
-    except Exception as e:
-        st.error(f"Erro ao calcular métricas: {str(e)}")
-        st.warning("Por favor, reinicie o processo de seleção.")
+    
+    # Decision Tree Metrics
+    st.subheader("3. Métricas da Árvore de Decisão")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if 'answers' in st.session_state:
+            depth = calcular_profundidade_decisoria(list(range(len(st.session_state.answers))))
+            st.metric(
+                label="Profundidade da Árvore",
+                value=f"{depth:.1f}",
+                help="Número médio de decisões necessárias"
+            )
+    
+    with col2:
+        if 'recommendation' in st.session_state:
+            total_nos = len(st.session_state.answers) * 2 + 1
+            nos_podados = total_nos - len(st.session_state.answers) - 1
+            pruning_ratio = calcular_pruning(total_nos, nos_podados)
+            st.metric(
+                label="Taxa de Poda",
+                value=f"{pruning_ratio:.2%}",
+                help="Porcentagem de nós removidos para simplificação"
+            )
 
 def show_reference_table():
-    dlt_data = pd.DataFrame({
+    # Updated table structure with data from the provided file
+    dlt_data = {
         'DLT': [
             'Hyperledger Fabric', 'Corda', 'Quorum', 'VeChain', 'IOTA',
             'Ripple (XRP Ledger)', 'Stellar', 'Bitcoin', 'Ethereum (PoW)',
@@ -116,31 +110,49 @@ def show_reference_table():
             'DLT Pública Permissionless'
         ],
         'Grupo de Algoritmo': [
-            'Alta Segurança e Controle',
-            'Alta Segurança e Controle',
+            'Alta Segurança e Controle dos dados sensíveis',
+            'Alta Segurança e Controle dos dados sensíveis',
             'Escalabilidade e Governança Flexível',
-            'Alta Eficiência Operacional',
+            'Alta Eficiência Operacional em redes locais',
             'Alta Escalabilidade em Redes IoT',
-            'Alta Eficiência Operacional',
-            'Alta Eficiência Operacional',
-            'Alta Segurança e Descentralização',
-            'Alta Segurança e Descentralização',
+            'Alta Eficiência Operacional em redes locais',
+            'Alta Eficiência Operacional em redes locais',
+            'Alta Segurança e Descentralização de dados críticos',
+            'Alta Segurança e Descentralização de dados críticos',
             'Escalabilidade e Governança Flexível'
         ],
         'Algoritmo de Consenso': [
-            'PBFT',
-            'RAFT',
-            'RAFT/IBFT',
-            'PoA',
-            'Tangle',
-            'Ripple Consensus Protocol',
-            'Stellar Consensus Protocol',
-            'PoW',
-            'PoW',
-            'PoS'
+            'RAFT/IBFT', 'RAFT', 'RAFT/IBFT', 'PoA', 'Tangle',
+            'Ripple Consensus Algorithm', 'SCP', 'PoW', 'PoW', 'PoS'
+        ],
+        'Principais Características': [
+            'Alta tolerância a falhas, consenso rápido em ambientes permissionados',
+            'Consenso baseado em líderes, adequado para redes privadas',
+            'Flexibilidade de governança, consenso eficiente para redes híbridas',
+            'Alta eficiência, baixa latência, consenso delegado a validadores autorizados',
+            'Escalabilidade alta, arquitetura sem blocos, adequada para IoT',
+            'Consenso rápido, baixa latência, baseado em validadores confiáveis',
+            'Consenso baseado em quórum, alta eficiência, tolerância a falhas',
+            'Segurança alta, descentralização, consumo elevado de energia',
+            'Segurança alta, descentralização, escalabilidade limitada, alto custo',
+            'Eficiência energética, incentivo à participação, redução da centralização'
+        ],
+        'Estudos de Uso': [
+            'Guardtime: Aplicado em sistemas de saúde da Estônia',
+            'ProCredEx: Validação de credenciais de profissionais de saúde nos EUA',
+            'Chronicled (Mediledger Project): Rastreamento de medicamentos',
+            'FarmaTrust: Rastreamento de medicamentos e combate à falsificação',
+            'Patientory: Compartilhamento de dados de pacientes via IoT',
+            'Change Healthcare: Gestão de ciclo de receita',
+            'MedicalChain: Controle de dados e consultas telemédicas',
+            'Guardtime: Rastreamento de dados de saúde em redes públicas',
+            'Embleema: Desenvolvimento de medicamentos e ensaios clínicos',
+            'MTBC: Gestão de registros eletrônicos de saúde (EHR)'
         ]
-    })
-    st.table(dlt_data)
+    }
+    
+    df = pd.DataFrame(dlt_data)
+    st.table(df)
 
 def show_home_page():
     st.title("SeletorDLTSaude - Sistema de Seleção de DLT para Saúde")
@@ -152,7 +164,7 @@ def show_home_page():
 
     st.markdown("---")
     st.subheader("Iniciar o Processo de Seleção de DLT")
-    if st.button("Iniciar Questionário", help="Clique aqui para começar o processo de seleção de DLT"):
+    if st.button("Iniciar Questionário", key="start_questionnaire", help="Clique aqui para começar o processo de seleção de DLT"):
         st.session_state.page = "Framework Proposto"
         st.experimental_rerun()
 
