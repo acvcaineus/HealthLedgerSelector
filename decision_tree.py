@@ -122,7 +122,7 @@ def show_recommendation(answers, weights):
     
     st.header("Recomendação Final")
     
-    # Enhanced recommendation display
+    # Main recommendation display
     col1, col2 = st.columns([2, 1])
     
     with col1:
@@ -132,16 +132,28 @@ def show_recommendation(answers, weights):
             <h3 style='color: #1f77b4;'>{recommendation['dlt']}</h3>
             <p><strong>Grupo de Consenso:</strong> {recommendation['consensus_group']}</p>
             <p><strong>Algoritmo:</strong> {recommendation['consensus']}</p>
-            <div style='margin-top: 10px; padding: 10px; background-color: #e8f4f8; border-radius: 5px;'>
-                <p><strong>Validação Acadêmica:</strong></p>
-                <ul>
-                    <li>Score: {recommendation['academic_validation'].get('score', 'N/A')}/5.0</li>
-                    <li>Citações: {recommendation['academic_validation'].get('citations', 'N/A')}</li>
-                    <li>Referência: {recommendation['academic_validation'].get('reference', 'N/A')}</li>
-                </ul>
-            </div>
         </div>
         """, unsafe_allow_html=True)
+        
+        # Add collapsible explanations
+        with st.expander("Ver Explicação da DLT Recomendada"):
+            st.write(f"### Por que {recommendation['dlt']}?")
+            st.write("Esta DLT foi selecionada com base em suas respostas:")
+            for question_id, answer in answers.items():
+                for q in questions:
+                    if q['id'] == question_id:
+                        st.write(f"- {q['text']}: **{answer}**")
+            st.write("\n### Principais Características:")
+            for metric, value in recommendation['evaluation_matrix'][recommendation['dlt']]['metrics'].items():
+                if metric != 'academic_validation':
+                    st.write(f"- **{metric}**: {float(value):.2f}")
+    
+        with st.expander("Ver Explicação do Algoritmo de Consenso"):
+            st.write(f"### Por que {recommendation['consensus']}?")
+            st.write("Este algoritmo de consenso foi selecionado pelos seguintes motivos:")
+            if recommendation['consensus'] in consensus_algorithms:
+                for metric, value in consensus_algorithms[recommendation['consensus']].items():
+                    st.write(f"- **{metric}**: {float(value):.2f}")
     
     with col2:
         st.subheader("Métricas")
@@ -153,7 +165,7 @@ def show_recommendation(answers, weights):
             help="Baseado na diferença entre o score máximo e a média dos scores"
         )
     
-    # Enhanced evaluation matrix
+    # Enhanced evaluation matrix display
     st.subheader("Matriz de Avaliação Detalhada")
     if 'evaluation_matrix' in recommendation:
         matrix_data = []
@@ -163,13 +175,15 @@ def show_recommendation(answers, weights):
             y_labels.append(dlt)
             row = []
             for metric, value in data['metrics'].items():
-                try:
-                    row.append(float(value))
-                except (ValueError, TypeError):
-                    row.append(0.0)
+                if metric != 'academic_validation':  # Skip academic validation
+                    try:
+                        row.append(float(value))
+                    except (ValueError, TypeError):
+                        row.append(0.0)
             matrix_data.append(row)
         
-        metrics = list(recommendation['evaluation_matrix'][y_labels[0]]['metrics'].keys())
+        metrics = [m for m in recommendation['evaluation_matrix'][y_labels[0]]['metrics'].keys() 
+                  if m != 'academic_validation']
         
         fig = go.Figure(data=go.Heatmap(
             z=matrix_data,
