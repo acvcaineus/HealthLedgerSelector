@@ -66,39 +66,32 @@ def get_questions():
 def show_recommendation(answers, weights):
     recommendation = get_recommendation(answers, weights)
     
-    # Show decision path
-    st.header("Seu Caminho de Decisão")
-    st.markdown("Abaixo estão suas respostas que levaram à recomendação:")
+    st.header("Recomendação")
     
-    questions = get_questions()
-    for q in questions:
-        if q["id"] in answers:
-            st.markdown(f"""
-            ❓ **{q['text']}**  
-            ✅ Sua resposta: **{answers[q['id']]}**
-            """)
-    
-    # Show final recommendation
-    st.header("Recomendação Final")
+    # Display recommendation and confidence side by side
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        st.markdown(f"""
-        <div style='background-color: #f0f2f6; padding: 20px; border-radius: 10px;'>
-            <h3 style='color: #1f77b4;'>{recommendation['dlt']}</h3>
-            <p><strong>Grupo de Consenso:</strong> {recommendation['consensus_group']}</p>
-            <p><strong>Algoritmo:</strong> {recommendation['consensus']}</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.write(f"**DLT Recomendada:** {recommendation['dlt']}")
+        st.write(f"**Grupo de Consenso:** {recommendation['consensus_group']}")
+        st.write(f"**Algoritmo de Consenso:** {recommendation['consensus']}")
     
     with col2:
         confidence_score = recommendation.get('confidence', False)
         st.metric(
             label="Índice de Confiança",
-            value=f"{'Alto' if confidence_score else 'Médio'}",
-            delta=f"{'↑' if confidence_score else '→'}",
-            help="Baseado na diferença entre o score máximo e a média dos scores"
+            value="Alto" if confidence_score else "Médio",
+            delta="↑" if confidence_score else "→"
         )
+    
+    # Display academic validation if available
+    if 'academic_validation' in recommendation and recommendation['academic_validation']:
+        st.markdown("### Validação Acadêmica")
+        validation = recommendation['academic_validation']
+        st.write(f"**Score Acadêmico:** {validation.get('score', 'N/A')}")
+        st.write(f"**Citações:** {validation.get('citations', 'N/A')}")
+        st.write(f"**Referência:** {validation.get('reference', 'N/A')}")
+        st.write(f"**Validação:** {validation.get('validation', 'N/A')}")
 
     # Save recommendation button
     if st.button("Salvar Recomendação"):
@@ -117,27 +110,38 @@ def show_recommendation(answers, weights):
 def show_interactive_decision_tree():
     if 'answers' not in st.session_state:
         st.session_state.answers = {}
-
-    st.title("Seleção de DLT para Saúde")
-    questions = get_questions()
     
-    # Simple progress visualization
-    progress = len(st.session_state.answers) / len(questions)
-    st.progress(progress)
-    st.write(f"Progresso: {int(progress * 100)}%")
-
+    st.title("Framework de Seleção de DLT")
+    
+    # Show progress visualization with diamonds
+    questions = get_questions()
+    current_phase = len(st.session_state.answers) + 1
+    
+    # Show interactive progress
+    total_questions = len(questions)
+    answered_questions = len(st.session_state.answers)
+    
+    st.progress(answered_questions / total_questions)
+    st.markdown(f"**Progresso:** {answered_questions}/{total_questions} perguntas respondidas")
+    
+    # Create visual flow with diamond shapes
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.markdown(f"### Fase {current_phase} de {len(questions)}")
+    
     current_question = next((q for q in questions if q["id"] not in st.session_state.answers), None)
-
+    
     if current_question:
-        st.subheader(f"Característica: {current_question['characteristic']}")
-        st.info(current_question['tooltip'])
+        # Show diamond shape question box
+        st.markdown(f'''
+        <div style="border: 2px solid #1f77b4; padding: 20px; border-radius: 10px; margin: 10px 0;">
+            <p style="color: #1f77b4; font-weight: bold;">{current_question["text"]}</p>
+            <p style="color: #666; font-size: 0.9em;">{current_question["tooltip"]}</p>
+        </div>
+        ''', unsafe_allow_html=True)
         
-        response = st.radio(
-            current_question["text"],
-            current_question["options"],
-            help=current_question["tooltip"]
-        )
-
+        response = st.radio("", current_question["options"])
+        
         if st.button("Próxima Pergunta"):
             st.session_state.answers[current_question["id"]] = response
             st.experimental_rerun()
