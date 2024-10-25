@@ -42,31 +42,14 @@ def create_progress_animation(current_phase, answers, questions):
         tooltip += "<br>Características:<br>"
         tooltip += "<br>".join([f"- {char}" for char in phase_characteristics[phase]])
         
-        # Add pulsing animation for current phase
-        if phase == current_phase:
-            fig.add_trace(go.Scatter(
-                x=[i], y=[0],
-                mode='markers',
-                marker=dict(
-                    size=size,
-                    color=color,
-                    line=dict(color='white', width=2),
-                    symbol='circle',
-                    opacity=0.7
-                ),
-                hovertext=tooltip,
-                hoverinfo='text',
-                showlegend=False
-            ))
-        
-        # Add main node
         fig.add_trace(go.Scatter(
             x=[i], y=[0],
             mode='markers',
             marker=dict(
                 size=size,
                 color=color,
-                line=dict(color='white', width=2)
+                line=dict(color='white', width=2),
+                symbol='circle'
             ),
             hovertext=tooltip,
             hoverinfo='text',
@@ -147,6 +130,59 @@ def show_recommendation(answers, weights, questions):
             for metric, value in recommendation['evaluation_matrix'][recommendation['dlt']]['metrics'].items():
                 if metric != 'academic_validation':
                     st.write(f"- **{metric}**: {float(value):.2f}")
+        
+        # Add use cases section
+        with st.expander("Ver Casos de Uso Recomendados"):
+            st.write("### Aplicações Recomendadas")
+            use_cases = {
+                "DLT Permissionada Privada": [
+                    "Prontuários Eletrônicos (EMR)",
+                    "Integração de Dados Sensíveis",
+                    "Sistemas de Pagamento Descentralizados"
+                ],
+                "DLT Pública Permissionless": [
+                    "Sistemas de Pagamento Descentralizados",
+                    "Dados Críticos de Saúde Pública",
+                    "Rastreamento de Medicamentos"
+                ],
+                "DLT Permissionada Simples": [
+                    "Sistemas Locais de Saúde",
+                    "Agendamento de Pacientes",
+                    "Redes Locais de Hospitais"
+                ],
+                "DLT Híbrida": [
+                    "Monitoramento de Saúde Pública",
+                    "Redes Regionais de Saúde",
+                    "Integração de EHRs"
+                ],
+                "DLT com Consenso Delegado": [
+                    "Monitoramento de Saúde Pública",
+                    "Redes Regionais de Saúde",
+                    "Integração de EHRs"
+                ],
+                "DLT Pública": [
+                    "Monitoramento IoT em Saúde",
+                    "Dados em Tempo Real",
+                    "Rastreamento de Dispositivos Médicos"
+                ]
+            }
+            
+            recommended_uses = use_cases.get(recommendation['dlt'], [])
+            for use_case in recommended_uses:
+                st.write(f"- {use_case}")
+            
+            st.write("\n### Exemplos de Implementação")
+            implementation_examples = {
+                "DLT Permissionada Privada": "Guardtime: Aplicado em sistemas de saúde da Estônia",
+                "DLT Pública Permissionless": "MTBC: Gestão de registros eletrônicos de saúde (EHR)",
+                "DLT Permissionada Simples": "ProCredEx: Validação de credenciais de profissionais de saúde",
+                "DLT Híbrida": "Chronicled (Mediledger Project): Rastreamento de medicamentos",
+                "DLT com Consenso Delegado": "Change Healthcare: Gestão de ciclo de receita",
+                "DLT Pública": "Patientory: Compartilhamento de dados via IoT"
+            }
+            
+            if recommendation['dlt'] in implementation_examples:
+                st.write(f"**Exemplo Real:** {implementation_examples[recommendation['dlt']]}") 
     
         with st.expander("Ver Explicação do Algoritmo de Consenso"):
             st.write(f"### Por que {recommendation['consensus']}?")
@@ -158,11 +194,30 @@ def show_recommendation(answers, weights, questions):
     with col2:
         st.subheader("Métricas")
         confidence_score = recommendation.get('confidence', False)
+        confidence_value = recommendation.get('confidence_value', 0.0)
         st.metric(
             label="Índice de Confiança",
-            value=f"{'Alto' if confidence_score else 'Médio'}",
-            delta=f"{'↑' if confidence_score else '→'}",
+            value=f"{confidence_value:.2%}",
+            delta=f"{'Alto' if confidence_score else 'Médio'}",
             help="Baseado na diferença entre o score máximo e a média dos scores"
+        )
+        
+    # Add confidence index explanation
+    with st.expander("Ver Explicação do Índice de Confiança"):
+        st.write("### Como o Índice de Confiança é Calculado")
+        st.write("""O índice de confiança é calculado usando os seguintes parâmetros:
+        1. **Diferença entre Scores**: A diferença entre o score mais alto e a média dos scores
+        2. **Consistência das Respostas**: Avaliação da coerência entre as respostas fornecidas
+        3. **Threshold de Confiança**: 0.7 (70%) - valor mínimo para alta confiança
+        
+        Fórmula: `Confiabilidade = (max_score - mean_score) / max_score`
+        """)
+        
+        value = recommendation.get('confidence_value', 0.0)
+        st.metric(
+            "Valor do Índice de Confiança",
+            f"{value:.2%}",
+            help="Valores acima de 70% indicam alta confiabilidade"
         )
     
     # Enhanced evaluation matrix display
@@ -225,7 +280,7 @@ def show_recommendation(answers, weights, questions):
 
     return recommendation
 
-def show_interactive_decision_tree():
+def run_decision_tree():
     if 'answers' not in st.session_state:
         st.session_state.answers = {}
 
@@ -340,8 +395,3 @@ def restart_decision_tree():
     if st.button("Reiniciar Processo", help="Clique para começar um novo processo de seleção"):
         st.session_state.answers = {}
         st.experimental_rerun()
-
-def run_decision_tree():
-    show_interactive_decision_tree()
-    st.markdown("---")
-    restart_decision_tree()

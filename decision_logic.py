@@ -1,5 +1,5 @@
 from dlt_data import questions, dlt_classes, consensus_algorithms
-from metrics import calcular_gini, calcular_entropia, calcular_confiabilidade_recomendacao
+from metrics import calcular_gini, calcular_entropia, calcular_profundidade_decisoria, calcular_pruning, calcular_confiabilidade_recomendacao
 
 consensus_groups = {
     'Alta Segurança e Controle': ['Practical Byzantine Fault Tolerance (PBFT)', 'Proof of Work (PoW)'],
@@ -159,9 +159,10 @@ def get_recommendation(answers, weights):
 
     recommended_group = group_mapping.get(recommended_dlt, "Alta Segurança e Controle")
     
-    # Calculate confidence score
+    # Calculate confidence score and value
     confidence_scores = [float(score) for score in weighted_scores.values()]
-    is_reliable = calcular_confiabilidade_recomendacao(confidence_scores)
+    confidence_value = max(confidence_scores) - (sum(confidence_scores) / len(confidence_scores))
+    is_reliable = confidence_value > 0.7
 
     return {
         "dlt": recommended_dlt,
@@ -170,6 +171,7 @@ def get_recommendation(answers, weights):
         "algorithms": consensus_groups[recommended_group],
         "evaluation_matrix": evaluation_matrix,
         "confidence": is_reliable,
+        "confidence_value": confidence_value,
         "academic_validation": academic_scores.get(recommended_dlt, {})
     }
 
