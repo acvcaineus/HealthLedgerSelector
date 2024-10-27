@@ -27,18 +27,74 @@ def init_session_state():
         st.error(f"Error initializing session state: {str(e)}")
         st.session_state.error = str(e)
 
+
+def main():
+    st.set_page_config(page_title="SeletorDLTSaude", page_icon="🏥", layout="wide")
+    init_session_state()
+
+    if not is_authenticated():
+        st.title("SeletorDLTSaude - Login")
+        tab1, tab2 = st.tabs(["Login", "Registrar"])
+        with tab1:
+            login()
+        with tab2:
+            register()
+    else:
+        with st.sidebar:
+            st.title("Menu")
+            menu_options = [
+                'Início', 'Framework Proposto', 'Métricas', 'Comparações Benchs',
+                'Perfil', 'Logout'
+            ]
+
+            try:
+                menu_option = st.selectbox(
+                    "Escolha uma opção",
+                    menu_options,
+                    index=menu_options.index(st.session_state.page) if st.session_state.page in menu_options else 0
+                )
+                st.session_state.page = menu_option
+            except Exception as e:
+                st.error(f"Error in navigation: {str(e)}")
+                menu_option = 'Início'
+
+            if menu_option == 'Início':
+                show_home_page()
+            elif menu_option == 'Framework Proposto':
+                run_decision_tree()
+            elif menu_option == 'Métricas':
+                show_metrics()
+            elif menu_option == 'Comparações Benchs':
+                show_bench_comparisons()
+            elif menu_option == 'Perfil':
+                st.header(f"Perfil do Usuário: {st.session_state.username}")
+                recommendations = get_user_recommendations(st.session_state.username)
+                if recommendations:
+                    st.subheader("Últimas Recomendações")
+                    for rec in recommendations:
+                        st.write(f"DLT: {rec['dlt']}")
+                        st.write(f"Consenso: {rec['consensus']}")
+                        st.write(f"Data: {rec['timestamp']}")
+                        st.markdown("---")
+            elif menu_option == 'Logout':
+                logout()
+                st.session_state.page = 'Início'
+                st.experimental_rerun()
+
+if __name__ == "__main__":
+    main()
 def show_home_page():
     """Display home page with framework explanation and reference table"""
     st.title("SeletorDLTSaude")
     st.write("Bem-vindo ao sistema de seleção de DLT para saúde.")
-    
+
     # Framework explanation section
     st.header("Objetivo do Framework")
     st.markdown('''
         O SeletorDLTSaude é uma aplicação interativa desenvolvida para ajudar profissionais 
         e pesquisadores a escolherem a melhor solução de Distributed Ledger Technology (DLT) 
         e o algoritmo de consenso mais adequado para projetos de saúde.
-        
+
         A aplicação guia o usuário através de um processo estruturado em quatro fases:
         - **Fase de Aplicação**: Avalia requisitos de privacidade e integração
         - **Fase de Consenso**: Analisa necessidades de segurança e eficiência
@@ -152,63 +208,7 @@ def show_home_page():
         }
         </style>
     """, unsafe_allow_html=True)
-    
+
     if st.button("Iniciar Seleção de DLT", type="primary"):
         st.session_state.page = 'Framework Proposto'
         st.experimental_rerun()
-
-def main():
-    st.set_page_config(page_title="SeletorDLTSaude", page_icon="🏥", layout="wide")
-    init_session_state()
-
-    if not is_authenticated():
-        st.title("SeletorDLTSaude - Login")
-        tab1, tab2 = st.tabs(["Login", "Registrar"])
-        with tab1:
-            login()
-        with tab2:
-            register()
-    else:
-        with st.sidebar:
-            st.title("Menu")
-            menu_options = [
-                'Início', 'Framework Proposto', 'Métricas', 'Comparações Benchs',
-                'Perfil', 'Logout'
-            ]
-
-            try:
-                menu_option = st.selectbox(
-                    "Escolha uma opção",
-                    menu_options,
-                    index=menu_options.index(st.session_state.page) if st.session_state.page in menu_options else 0
-                )
-                st.session_state.page = menu_option
-            except Exception as e:
-                st.error(f"Error in navigation: {str(e)}")
-                menu_option = 'Início'
-
-            if menu_option == 'Início':
-                show_home_page()
-            elif menu_option == 'Framework Proposto':
-                run_decision_tree()
-            elif menu_option == 'Métricas':
-                show_metrics()
-            elif menu_option == 'Comparações Benchs':
-                show_bench_comparisons()
-            elif menu_option == 'Perfil':
-                st.header(f"Perfil do Usuário: {st.session_state.username}")
-                recommendations = get_user_recommendations(st.session_state.username)
-                if recommendations:
-                    st.subheader("Últimas Recomendações")
-                    for rec in recommendations:
-                        st.write(f"DLT: {rec['dlt']}")
-                        st.write(f"Consenso: {rec['consensus']}")
-                        st.write(f"Data: {rec['timestamp']}")
-                        st.markdown("---")
-            elif menu_option == 'Logout':
-                logout()
-                st.session_state.page = 'Início'
-                st.experimental_rerun()
-
-if __name__ == "__main__":
-    main()
