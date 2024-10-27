@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 import plotly.graph_objects as go
 from decision_logic import get_recommendation, consensus_algorithms
 from database import save_recommendation
@@ -85,127 +86,141 @@ def create_progress_animation(current_phase, answers, questions):
 
 def show_recommendation(answers, weights, questions):
     """Enhanced recommendation display with detailed metrics and explanations"""
-    recommendation = get_recommendation(answers, weights)
-    
-    st.header("Recomendação Final")
-    
-    # Main recommendation display with enhanced visuals
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        st.markdown(f"""
-        <div style='background-color: #f0f2f6; padding: 20px; border-radius: 10px;'>
-            <h3 style='color: #1f77b4;'>{recommendation['dlt']}</h3>
-            <p><strong>Grupo:</strong> {recommendation['consensus_group']}</p>
-            <p><strong>Algoritmo:</strong> {recommendation['consensus']}</p>
-            <p><strong>Validação Acadêmica:</strong> {recommendation['academic_validation'].get('score', 'N/A')}/5.0</p>
-        </div>
-        """, unsafe_allow_html=True)
+    try:
+        recommendation = get_recommendation(answers, weights)
         
-        # Detailed explanations in expandable sections
-        with st.expander("🔍 Ver Explicação Detalhada da DLT"):
-            st.markdown(f"""
-            ### Por que {recommendation['dlt']}?
-            
-            {recommendation['characteristics']}
-            
-            #### Casos de Uso Recomendados:
-            {recommendation['use_cases']}
-            
-            #### Validação Acadêmica:
-            - **Score:** {recommendation['academic_validation'].get('score', 'N/A')}/5.0
-            - **Citações:** {recommendation['academic_validation'].get('citations', 'N/A')}
-            - **Referência:** {recommendation['academic_validation'].get('reference', 'N/A')}
-            - **Validação:** {recommendation['academic_validation'].get('validation', 'N/A')}
-            """)
+        # Save recommendation if user is authenticated
+        if st.session_state.get('authenticated'):
+            save_recommendation(st.session_state.username, 'Framework Selection', recommendation)
         
-        with st.expander("⚙️ Ver Detalhes do Algoritmo de Consenso"):
+        st.header("Recomendação Final")
+        
+        # Main recommendation display with enhanced visuals
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
             st.markdown(f"""
-            ### Por que {recommendation['consensus']}?
+            <div style='background-color: #f0f2f6; padding: 20px; border-radius: 10px;'>
+                <h3 style='color: #1f77b4;'>{recommendation['dlt']}</h3>
+                <p><strong>Grupo:</strong> {recommendation['consensus_group']}</p>
+                <p><strong>Algoritmo:</strong> {recommendation['consensus']}</p>
+                <p><strong>Validação Acadêmica:</strong> {recommendation['academic_validation'].get('score', 'N/A')}/5.0</p>
+            </div>
+            """, unsafe_allow_html=True)
             
-            Este algoritmo foi selecionado com base nos seguintes critérios:
-            """)
+            # Detailed explanations in expandable sections
+            with st.expander("🔍 Ver Explicação Detalhada da DLT"):
+                st.markdown(f"""
+                ### Por que {recommendation['dlt']}?
+                
+                {recommendation['characteristics']}
+                
+                #### Casos de Uso Recomendados:
+                {recommendation['use_cases']}
+                
+                #### Validação Acadêmica:
+                - **Score:** {recommendation['academic_validation'].get('score', 'N/A')}/5.0
+                - **Citações:** {recommendation['academic_validation'].get('citations', 'N/A')}
+                - **Referência:** {recommendation['academic_validation'].get('reference', 'N/A')}
+                - **Validação:** {recommendation['academic_validation'].get('validation', 'N/A')}
+                """)
             
-            # Create metrics visualization for consensus algorithm
-            metrics = consensus_algorithms[recommendation['consensus']]
-            metrics_df = pd.DataFrame({
-                'Métrica': ['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança'],
-                'Valor': [metrics['security'], metrics['scalability'], 
-                         metrics['energy_efficiency'], metrics['governance']]
-            })
+            with st.expander("⚙️ Ver Detalhes do Algoritmo de Consenso"):
+                st.markdown(f"""
+                ### Por que {recommendation['consensus']}?
+                
+                Este algoritmo foi selecionado com base nos seguintes critérios:
+                """)
+                
+                # Create metrics visualization for consensus algorithm
+                metrics = consensus_algorithms[recommendation['consensus']]
+                metrics_df = pd.DataFrame({
+                    'Métrica': ['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança'],
+                    'Valor': [metrics['security'], metrics['scalability'], 
+                             metrics['energy_efficiency'], metrics['governance']]
+                })
+                
+                fig = go.Figure(data=[
+                    go.Bar(x=metrics_df['Métrica'], y=metrics_df['Valor'],
+                          marker_color=['#ff9999', '#99ff99', '#99ccff', '#ffcc99'])
+                ])
+                
+                fig.update_layout(
+                    title="Métricas do Algoritmo de Consenso",
+                    yaxis_title="Pontuação",
+                    yaxis=dict(range=[0, 5])
+                )
+                
+                st.plotly_chart(fig)
+        
+        with col2:
+            st.subheader("📊 Métricas de Confiança")
+            confidence_score = recommendation.get('confidence', False)
+            confidence_value = recommendation.get('confidence_value', 0.0)
             
-            fig = go.Figure(data=[
-                go.Bar(x=metrics_df['Métrica'], y=metrics_df['Valor'],
-                      marker_color=['#ff9999', '#99ff99', '#99ccff', '#ffcc99'])
-            ])
+            # Enhanced confidence metrics display
+            st.markdown(f"""
+            <div style='background-color: {'#d4edda' if confidence_score else '#fff3cd'}; 
+                        padding: 15px; border-radius: 5px;'>
+                <h4 style='margin: 0;'>Índice de Confiança</h4>
+                <h2 style='margin: 10px 0;'>{confidence_value:.1%}</h2>
+                <p style='margin: 0;'>{'Alta Confiança' if confidence_score else 'Confiança Moderada'}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            with st.expander("ℹ️ Como é calculado?"):
+                st.markdown("""
+                O índice de confiança é calculado considerando:
+                1. **Diferença de Scores**: Entre o maior score e a média
+                2. **Consistência**: Das respostas fornecidas
+                3. **Validação Acadêmica**: Pontuação baseada em estudos
+                
+                Um valor acima de 70% indica alta confiabilidade na recomendação.
+                """)
+        
+        # Enhanced evaluation matrix visualization
+        st.subheader("🎯 Matriz de Avaliação Detalhada")
+        if 'evaluation_matrix' in recommendation:
+            matrix_data = []
+            metrics = ['security', 'scalability', 'energy_efficiency', 'governance']
+            
+            for dlt, data in recommendation['evaluation_matrix'].items():
+                row = [dlt] + [float(data['metrics'][m]) for m in metrics]
+                matrix_data.append(row)
+            
+            df = pd.DataFrame(matrix_data, 
+                            columns=['DLT', 'Segurança', 'Escalabilidade', 
+                                    'Eficiência Energética', 'Governança'])
+            
+            # Create heatmap
+            fig = go.Figure(data=go.Heatmap(
+                z=df.iloc[:, 1:].values,
+                x=df.columns[1:],
+                y=df['DLT'],
+                colorscale='Viridis',
+                hoverongaps=False
+            ))
             
             fig.update_layout(
-                title="Métricas do Algoritmo de Consenso",
-                yaxis_title="Pontuação",
-                yaxis=dict(range=[0, 5])
+                title="Comparação de Métricas entre DLTs",
+                height=400
             )
             
             st.plotly_chart(fig)
-    
-    with col2:
-        st.subheader("📊 Métricas de Confiança")
-        confidence_score = recommendation.get('confidence', False)
-        confidence_value = recommendation.get('confidence_value', 0.0)
-        
-        # Enhanced confidence metrics display
-        st.markdown(f"""
-        <div style='background-color: {'#d4edda' if confidence_score else '#fff3cd'}; 
-                    padding: 15px; border-radius: 5px;'>
-            <h4 style='margin: 0;'>Índice de Confiança</h4>
-            <h2 style='margin: 10px 0;'>{confidence_value:.1%}</h2>
-            <p style='margin: 0;'>{'Alta Confiança' if confidence_score else 'Confiança Moderada'}</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        with st.expander("ℹ️ Como é calculado?"):
-            st.markdown("""
-            O índice de confiança é calculado considerando:
-            1. **Diferença de Scores**: Entre o maior score e a média
-            2. **Consistência**: Das respostas fornecidas
-            3. **Validação Acadêmica**: Pontuação baseada em estudos
             
-            Um valor acima de 70% indica alta confiabilidade na recomendação.
-            """)
-    
-    # Enhanced evaluation matrix visualization
-    st.subheader("🎯 Matriz de Avaliação Detalhada")
-    if 'evaluation_matrix' in recommendation:
-        matrix_data = []
-        metrics = ['security', 'scalability', 'energy_efficiency', 'governance']
+            with st.expander("📋 Ver Tabela Completa"):
+                st.table(df)
         
-        for dlt, data in recommendation['evaluation_matrix'].items():
-            row = [dlt] + [float(data['metrics'][m]) for m in metrics]
-            matrix_data.append(row)
+        # Add navigation button to metrics page
+        if st.button("Ver Métricas Detalhadas"):
+            st.session_state.page = 'Métricas'
+            st.rerun()
         
-        df = pd.DataFrame(matrix_data, 
-                         columns=['DLT', 'Segurança', 'Escalabilidade', 
-                                 'Eficiência Energética', 'Governança'])
+        return recommendation
         
-        # Create heatmap
-        fig = go.Figure(data=go.Heatmap(
-            z=df.iloc[:, 1:].values,
-            x=df.columns[1:],
-            y=df['DLT'],
-            colorscale='Viridis',
-            hoverongaps=False
-        ))
-        
-        fig.update_layout(
-            title="Comparação de Métricas entre DLTs",
-            height=400
-        )
-        
-        st.plotly_chart(fig)
-        
-        with st.expander("📋 Ver Tabela Completa"):
-            st.table(df)
-    
-    return recommendation
+    except Exception as e:
+        st.error(f"Erro ao gerar recomendação: {str(e)}")
+        return None
 
 def run_decision_tree():
     """Run the decision tree with enhanced UI and explanations"""
@@ -330,7 +345,11 @@ def run_decision_tree():
             "energy_efficiency": float(0.20),
             "governance": float(0.15)
         }
-        st.session_state.recommendation = show_recommendation(st.session_state.answers, weights, questions)
+        try:
+            st.session_state.recommendation = show_recommendation(st.session_state.answers, weights, questions)
+        except Exception as e:
+            st.error(f"Erro ao processar recomendação: {str(e)}")
+            st.session_state.recommendation = None
 
 def restart_decision_tree():
     """Reset the decision tree state"""
