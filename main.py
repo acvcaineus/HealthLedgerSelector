@@ -139,34 +139,245 @@ def show_metrics():
                     gini = calcular_gini(classes)
                     entropy = calcular_entropia(classes)
                     
-                    # Show Gini Index Visualization
-                    st.subheader("1. Índice de Gini")
-                    gini_fig = create_gini_radar(gini)
-                    if gini_fig:
-                        st.plotly_chart(gini_fig, use_container_width=True)
+                    # Gini Index Section with Explanation
+                    with st.expander("1. Índice de Gini - Detalhes e Interpretação"):
+                        st.markdown("""
+                        ### Fórmula do Índice de Gini
+                        $Gini = 1 - \sum_{i=1}^{n} p_i^2$
+                        
+                        Onde:
+                        - $p_i$ é a proporção de cada classe no conjunto
+                        - Valores próximos a 0 indicam melhor separação
+                        - Valores próximos a 1 indicam maior mistura
+                        
+                        #### Interpretação:
+                        - 0.0 - 0.3: Excelente separação entre classes
+                        - 0.3 - 0.6: Separação moderada
+                        - 0.6 - 1.0: Alta mistura entre classes
+                        """)
+                        gini_fig = create_gini_radar(gini)
+                        if gini_fig:
+                            st.plotly_chart(gini_fig, use_container_width=True)
                     
-                    # Show Entropy Evolution
-                    st.subheader("2. Evolução da Entropia")
-                    entropy_fig = create_entropy_graph(st.session_state.answers)
-                    if entropy_fig:
-                        st.plotly_chart(entropy_fig, use_container_width=True)
+                    # Entropy Section with Explanation
+                    with st.expander("2. Entropia - Detalhes e Interpretação"):
+                        st.markdown("""
+                        ### Fórmula da Entropia
+                        $Entropia = -\sum_{i=1}^{n} p_i \log_2(p_i)$
+                        
+                        Onde:
+                        - $p_i$ é a probabilidade de cada classe
+                        - Logaritmo na base 2 é usado para medir em bits
+                        - Menor entropia indica maior certeza na decisão
+                        
+                        #### Interpretação:
+                        - 0.0 - 1.0: Alta certeza na decisão
+                        - 1.0 - 2.0: Certeza moderada
+                        - > 2.0: Alta incerteza na decisão
+                        """)
+                        entropy_fig = create_entropy_graph(st.session_state.answers)
+                        if entropy_fig:
+                            st.plotly_chart(entropy_fig, use_container_width=True)
                     
-                    # Show Decision Tree Metrics Dashboard
-                    st.subheader("3. Dashboard de Métricas")
-                    depth = calcular_profundidade_decisoria(list(range(len(st.session_state.answers))))
-                    total_nos = len(st.session_state.answers) * 2 + 1
-                    nos_podados = total_nos - len(st.session_state.answers) - 1
-                    pruning_ratio = calcular_pruning(total_nos, nos_podados)
-                    confidence = rec.get('confidence_value', 0.0)
-                    
-                    metrics_fig = create_metrics_dashboard(depth, pruning_ratio, confidence)
-                    if metrics_fig:
-                        st.plotly_chart(metrics_fig, use_container_width=True)
+                    # Decision Tree Metrics Dashboard with Explanation
+                    with st.expander("3. Métricas da Árvore de Decisão - Detalhes e Interpretação"):
+                        st.markdown("""
+                        ### Profundidade da Árvore
+                        $Profundidade = \frac{\sum_{i=1}^{n} nivel_i}{n}$
+                        - Mede a complexidade média do processo decisório
+                        - Valores menores indicam processo mais simples
+                        
+                        ### Taxa de Poda
+                        $Taxa_{poda} = \frac{nos_{total} - nos_{podados}}{nos_{total}}$
+                        - Indica eficiência na simplificação do modelo
+                        - Maior taxa indica modelo mais otimizado
+                        
+                        ### Índice de Confiança
+                        $Confianca = \frac{max_{score} - mean_{score}}{max_{score}}$
+                        - Mede a confiabilidade da recomendação
+                        - Valores > 0.7 indicam alta confiabilidade
+                        """)
+                        
+                        depth = calcular_profundidade_decisoria(list(range(len(st.session_state.answers))))
+                        total_nos = len(st.session_state.answers) * 2 + 1
+                        nos_podados = total_nos - len(st.session_state.answers) - 1
+                        pruning_ratio = calcular_pruning(total_nos, nos_podados)
+                        confidence = rec.get('confidence_value', 0.0)
+                        
+                        metrics_fig = create_metrics_dashboard(depth, pruning_ratio, confidence)
+                        if metrics_fig:
+                            st.plotly_chart(metrics_fig, use_container_width=True)
         else:
             st.info("Complete o processo de seleção para ver as métricas.")
     except Exception as e:
         st.error(f"Error displaying metrics: {str(e)}")
         st.code(traceback.format_exc())
+
+def show_home_page():
+    """Display home page with reference table"""
+    st.title("SeletorDLTSaude - Sistema de Seleção de DLT para Saúde")
+    st.write("Bem-vindo ao sistema de seleção de DLT para projetos de saúde.")
+    
+    st.markdown("## Referência de DLTs e Algoritmos")
+    
+    # Load and display reference table
+    reference_data = {
+        'DLT': [
+            'Hyperledger Fabric', 'Corda', 'Quorum', 'VeChain', 'IOTA',
+            'Ripple (XRP Ledger)', 'Stellar', 'Bitcoin', 'Ethereum (PoW)',
+            'Ethereum 2.0 (PoS)'
+        ],
+        'Tipo de DLT': [
+            'DLT Permissionada Privada', 'DLT Permissionada Simples', 'DLT Híbrida',
+            'DLT Híbrida', 'DLT com Consenso Delegado', 'DLT com Consenso Delegado',
+            'DLT com Consenso Delegado', 'DLT Pública', 'DLT Pública',
+            'DLT Pública Permissionless'
+        ],
+        'Grupo de Algoritmo': [
+            'Alta Segurança e Controle dos dados sensíveis',
+            'Alta Segurança e Controle dos dados sensíveis',
+            'Escalabilidade e Governança Flexível',
+            'Alta Eficiência Operacional em redes locais',
+            'Alta Escalabilidade em Redes IoT',
+            'Alta Eficiência Operacional em redes locais',
+            'Alta Eficiência Operacional em redes locais',
+            'Alta Segurança e Descentralização de dados críticos',
+            'Alta Segurança e Descentralização de dados críticos',
+            'Escalabilidade e Governança Flexível'
+        ],
+        'Algoritmo de Consenso': [
+            'RAFT/IBFT', 'RAFT', 'RAFT/IBFT', 'PoA', 'Tangle',
+            'Ripple Consensus Algorithm', 'SCP', 'PoW', 'PoW', 'PoS'
+        ],
+        'Principais Características': [
+            'Alta tolerância a falhas, consenso rápido em ambientes permissionados',
+            'Consenso baseado em líderes, adequado para redes privadas',
+            'Flexibilidade de governança, consenso eficiente para redes híbridas',
+            'Alta eficiência, baixa latência, consenso delegado a validadores autorizados',
+            'Escalabilidade alta, arquitetura sem blocos, adequada para IoT',
+            'Consenso rápido, baixa latência, baseado em validadores confiáveis',
+            'Consenso baseado em quórum, alta eficiência, tolerância a falhas',
+            'Segurança alta, descentralização, consumo elevado de energia',
+            'Segurança alta, descentralização, escalabilidade limitada, alto custo',
+            'Eficiência energética, incentivo à participação, redução da centralização'
+        ],
+        'Estudos de Uso': [
+            'Guardtime: Aplicado em sistemas de saúde da Estônia',
+            'ProCredEx: Validação de credenciais de profissionais de saúde nos EUA',
+            'Chronicled (Mediledger Project): Rastreamento de medicamentos',
+            'FarmaTrust: Rastreamento de medicamentos e combate à falsificação',
+            'Patientory: Compartilhamento de dados de pacientes via IoT',
+            'Change Healthcare: Gestão de ciclo de receita',
+            'MedicalChain: Controle de dados e consultas telemédicas',
+            'Guardtime: Rastreamento de dados de saúde em redes públicas',
+            'Embleema: Desenvolvimento de medicamentos e ensaios clínicos',
+            'MTBC: Gestão de registros eletrônicos de saúde (EHR)'
+        ]
+    }
+    
+    df = pd.DataFrame(reference_data)
+    
+    # Display table with individual rows for better readability
+    for _, row in df.iterrows():
+        with st.expander(f"{row['DLT']} ({row['Tipo de DLT']})"):
+            st.markdown(f"""
+            **Grupo de Algoritmo:** {row['Grupo de Algoritmo']}  
+            **Algoritmo de Consenso:** {row['Algoritmo de Consenso']}  
+            **Principais Características:** {row['Principais Características']}  
+            **Estudo de Uso:** {row['Estudos de Uso']}
+            """)
+
+def show_benchmarks():
+    """Display benchmarks comparison page"""
+    st.title("Comparação de Benchmarks")
+    
+    # Performance Metrics Comparison
+    st.header("1. Métricas de Desempenho")
+    performance_metrics = {
+        'DLT': ['Hyperledger Fabric', 'Bitcoin', 'Ethereum', 'Quorum', 'VeChain', 'IOTA'],
+        'TPS': [3000, 7, 15, 1000, 2000, 1000],
+        'Latência (s)': [1, 600, 15, 2, 10, 60],
+        'Consumo Energético': ['Baixo', 'Muito Alto', 'Alto', 'Baixo', 'Baixo', 'Muito Baixo'],
+        'Escalabilidade': ['Alta', 'Baixa', 'Média', 'Alta', 'Alta', 'Muito Alta']
+    }
+    
+    df_performance = pd.DataFrame(performance_metrics)
+    
+    # Create performance visualization
+    fig_performance = go.Figure(data=[
+        go.Bar(name='TPS', x=df_performance['DLT'], y=df_performance['TPS']),
+        go.Bar(name='Latência', x=df_performance['DLT'], y=df_performance['Latência (s)'])
+    ])
+    
+    fig_performance.update_layout(
+        title="Comparação de Desempenho",
+        barmode='group'
+    )
+    
+    st.plotly_chart(fig_performance)
+    
+    # Use Cases Comparison
+    st.header("2. Comparação de Casos de Uso")
+    with st.expander("Registros Médicos Eletrônicos (EMR)"):
+        st.markdown("""
+        - **Hyperledger Fabric**: Ideal para EMR devido à privacidade e controle de acesso
+        - **Ethereum 2.0**: Bom para interoperabilidade entre diferentes sistemas
+        - **Quorum**: Excelente para consórcios de hospitais
+        """)
+    
+    with st.expander("Cadeia de Suprimentos Farmacêutica"):
+        st.markdown("""
+        - **VeChain**: Especializada em rastreamento de medicamentos
+        - **Hyperledger Fabric**: Forte em gestão de cadeia de suprimentos
+        - **IOTA**: Ótima para integração com IoT
+        """)
+    
+    with st.expander("Compartilhamento de Dados de Pesquisa"):
+        st.markdown("""
+        - **Ethereum 2.0**: Bom para compartilhamento público de dados
+        - **Quorum**: Ideal para consórcios de pesquisa
+        - **Stellar**: Eficiente para transações entre instituições
+        """)
+    
+    # Implementation Examples
+    st.header("3. Exemplos de Implementação")
+    implementation_data = {
+        'Projeto': ['Guardtime', 'MedicalChain', 'FarmaTrust', 'Patientory'],
+        'DLT': ['Hyperledger Fabric', 'Ethereum', 'VeChain', 'IOTA'],
+        'País': ['Estônia', 'Reino Unido', 'Global', 'EUA'],
+        'Escala': ['Nacional', 'Regional', 'Global', 'Regional'],
+        'Status': ['Produção', 'Piloto', 'Produção', 'Produção']
+    }
+    
+    df_implementation = pd.DataFrame(implementation_data)
+    st.dataframe(df_implementation)
+    
+    # Academic Validation Scores
+    st.header("4. Validação Acadêmica")
+    academic_scores = {
+        'DLT': ['Hyperledger Fabric', 'Ethereum 2.0', 'IOTA', 'VeChain'],
+        'Score Acadêmico': [4.5, 4.2, 4.3, 4.0],
+        'Citações': [128, 95, 89, 76],
+        'Estudos Validados': [15, 12, 10, 8]
+    }
+    
+    df_academic = pd.DataFrame(academic_scores)
+    
+    fig_academic = go.Figure(data=[
+        go.Scatter(
+            x=df_academic['DLT'],
+            y=df_academic['Score Acadêmico'],
+            mode='lines+markers',
+            name='Score Acadêmico'
+        )
+    ])
+    
+    fig_academic.update_layout(
+        title="Scores de Validação Acadêmica",
+        yaxis_range=[0, 5]
+    )
+    
+    st.plotly_chart(fig_academic)
 
 def show_fallback_ui():
     """Display fallback UI when main content fails to load"""
@@ -194,7 +405,7 @@ def main():
         else:
             with st.sidebar:
                 st.title("Menu")
-                menu_options = ['Início', 'Framework Proposto', 'Métricas', 'Perfil', 'Logout']
+                menu_options = ['Início', 'Framework Proposto', 'Métricas', 'Comparação de Benchs', 'Perfil', 'Logout']
                 
                 try:
                     menu_option = st.selectbox(
@@ -210,14 +421,16 @@ def main():
             try:
                 if menu_option == 'Início':
                     with st.spinner('Carregando página inicial...'):
-                        st.title("SeletorDLTSaude")
-                        st.write("Bem-vindo ao sistema de seleção de DLT para saúde.")
+                        show_home_page()
                 elif menu_option == 'Framework Proposto':
                     with st.spinner('Carregando framework...'):
                         run_decision_tree()
                 elif menu_option == 'Métricas':
                     with st.spinner('Carregando métricas...'):
                         show_metrics()
+                elif menu_option == 'Comparação de Benchs':
+                    with st.spinner('Carregando comparações...'):
+                        show_benchmarks()
                 elif menu_option == 'Perfil':
                     with st.spinner('Carregando perfil...'):
                         st.header(f"Perfil do Usuário: {st.session_state.username}")
