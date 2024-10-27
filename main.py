@@ -151,32 +151,75 @@ def show_home_page():
     ''')
 
     st.subheader("Tabela de Referência de DLTs e Algoritmos")
+
     data = {
         'Grupo': [
-            'Alta Segurança e Controle', 'Alta Segurança e Controle',
-            'Alta Eficiência Operacional', 'Alta Eficiência Operacional',
-            'Escalabilidade e Governança Flexível', 'Alta Escalabilidade em Redes IoT'
+            'Alta Segurança e Controle', 'Alta Segurança e Descentralização', 
+            'Alta Segurança e Descentralização', 'Alta Eficiência Operacional', 
+            'Alta Eficiência Operacional', 'Alta Eficiência Operacional', 
+            'Escalabilidade e Governança Flexível', 'Escalabilidade e Governança Flexível', 
+            'Alta Escalabilidade em Redes IoT'
         ],
         'Tipo DLT': [
-            'DLT Permissionada Privada', 'DLT Pública Permissionless',
-            'DLT Permissionada Simples', 'DLT Híbrida',
-            'DLT com Consenso Delegado', 'DLT Pública'
+            'DLT Permissionada Privada', 'DLT Pública Permissionless', 
+            'DLT Pública Permissionless', 'DLT Permissionada Simples', 
+            'DLT Permissionada Simples', 'DLT Permissionada Simples', 
+            'DLT Híbrida', 'DLT com Consenso Delegado', 'DLT Pública'
         ],
         'Nome DLT': [
-            'Hyperledger Fabric', 'Bitcoin', 'Quorum', 'Ethereum 2.0', 'EOS', 'IOTA'
+            'Hyperledger Fabric', 'Bitcoin', 'Ethereum', 'Quorum', 
+            'Quorum', 'VeChain', 'Ethereum 2.0', 'EOS', 'IOTA'
         ],
         'Algoritmo de Consenso': [
-            'PBFT', 'PoW', 'RAFT/PoA', 'PoS', 'DPoS', 'Tangle'
+            'PBFT', 'PoW', 'PoS (em transição)', 'RAFT', 
+            'PoA', 'PoA', 'PoS', 'DPoS', 'Tangle'
         ],
-        'Principais Características': [
-            'Alta segurança e resiliência contra falhas bizantinas', 
-            'Alta segurança e descentralização total',
-            'Simplicidade e eficiência em redes locais',
-            'Alta escalabilidade e eficiência energética',
-            'Governança flexível e alta performance',
-            'Escalabilidade para IoT e dados em tempo real'
+        'Características': [
+            'Segurança elevada e resiliência contra falhas bizantinas; ideal para ambientes permissionados.',
+            'Segurança máxima e descentralização, ideal para redes abertas.',
+            'Transição para PoS, com alta segurança e eficiência energética.',
+            'Consenso rápido e ideal para redes permissionadas pequenas.',
+            'Consenso baseado em autoridade para redes empresariais.',
+            'Controle simplificado para rastreabilidade de cadeias de suprimento.',
+            'Escalabilidade e eficiência energética para redes regionais.',
+            'Governança flexível e alta performance em redes semi-descentralizadas.',
+            'Escalabilidade e dados em tempo real para redes IoT de saúde.'
+        ],
+        'Estudo de Uso no Setor de Saúde': [
+            'Prontuários eletrônicos e integração de dados sensíveis.',
+            'Pagamentos descentralizados e dados críticos de saúde pública.',
+            'Armazenamento seguro de dados de pacientes.',
+            'Redes locais de hospitais e agendamento de pacientes.',
+            'Rastreamento de medicamentos e gestão de insumos hospitalares.',
+            'Rastreamento de medicamentos e gestão de insumos hospitalares.',
+            'Monitoramento de saúde pública e integração de EHRs.',
+            'Telemedicina e redes colaborativas de pesquisa.',
+            'Monitoramento IoT de dispositivos médicos.'
+        ],
+        'Casos Reais': [
+            'MyClinic. Disponível em: https://www.myclinic.com',
+            'MediLedger. Disponível em: https://www.mediledger.com',
+            'Patientory. Disponível em: https://www.patientory.com',
+            'PharmaLedger. Disponível em: https://www.pharmaledger.eu',
+            'PharmaLedger. Disponível em: https://www.pharmaledger.eu',
+            'VeChain ToolChain. Disponível em: https://www.vechain.com',
+            'Ethereum-based Health Chain. Disponível em: https://ethereum.org',
+            'Telos Blockchain. Disponível em: https://www.telos.net',
+            'IOTA Healthcare IoT. Disponível em: https://www.iota.org'
+        ],
+        'Referência ABNT': [
+            'MEHMOOD, F.; KHAN, A. Y.; WANG, H.; et al. BLPCA-ledger: A lightweight plenum consensus protocols for consortium blockchain based on the hyperledger indy. Computer Standards & Interfaces, 2025. DOI: 10.1016/j.csi.2024.103876',
+            'POPOOLA, O.; RODRIGUES, M.; MARCHANG, J.; et al. A critical literature review of security and privacy in smart home healthcare schemes adopting IoT & blockchain: Problems, challenges and solutions. Blockchain: Research and Applications, 2024. DOI: 10.1016/j.bcra.2023.100178',
+            'AKOH ATADOGA, et al. Blockchain in healthcare: A comprehensive review of applications and security concerns. International Journal of Science and Research Archive, 2024. DOI: 10.30574/ijsra.2024.11.1.0244',
+            'DHINGRA, S.; RAUT, R.; NAIK, K.; et al. Blockchain Technology Applications in Healthcare Supply Chains - A Review. IEEE Access, 2024. DOI: 10.1109/ACCESS.2023.3348813',
+            'DHINGRA, S.; RAUT, R.; NAIK, K.; et al. Blockchain Technology Applications in Healthcare Supply Chains - A Review. IEEE Access, 2024. DOI: 10.1109/ACCESS.2023.3348813',
+            'AL-NBHANY, W. A. N. A.; ZAHARY, A. T.; AL-SHARGABI, A. A. Blockchain-IoT Healthcare Applications and Trends: A Review. IEEE Access, 2024. DOI: 10.1109/ACCESS.2023.3349187',
+            'LI, K.; SAI, A. R.; UROVI, V. Do you need a blockchain in healthcare data sharing? A tertiary review. Exploration of Digital Health Technologies, 2024. DOI: 10.37349/edht.2024.00014',
+            'ALGHAMDI, T.; KHALID, R.; JAVAID, N. A Survey of Blockchain based Systems: Scalability Issues and Solutions, Applications and Future Challenges. IEEE Access, 2024. DOI: 10.1109/ACCESS.2024.3408868',
+            'AL-NBHANY, W. A. N. A.; ZAHARY, A. T.; AL-SHARGABI, A. A. Blockchain-IoT Healthcare Applications and Trends: A Review. IEEE Access, 2024. DOI: 10.1109/ACCESS.2023.3349187'
         ]
     }
+
     df = pd.DataFrame(data)
     st.table(df)
 
