@@ -93,6 +93,87 @@ def create_progress_animation(current_phase, answers, questions):
     
     return fig
 
+def get_confidence_level(value):
+    """Get confidence level and description based on value"""
+    if value >= 0.7:
+        return "Alto", "Forte indicação de que esta é a melhor escolha"
+    elif value >= 0.4:
+        return "Médio", "Recomendação adequada, mas existem alternativas próximas"
+    else:
+        return "Baixo", "Recomendação com reservas, considere analisar alternativas"
+
+def create_gini_visualization(value):
+    """Create a visualization for Gini index"""
+    fig = go.Figure(go.Indicator(
+        mode = "gauge+number",
+        value = value,
+        domain = {'x': [0, 1], 'y': [0, 1]},
+        gauge = {
+            'axis': {'range': [0, 1]},
+            'bar': {'color': "darkblue"},
+            'steps': [
+                {'range': [0, 0.3], 'color': "lightgreen"},
+                {'range': [0.3, 0.6], 'color': "yellow"},
+                {'range': [0.6, 1], 'color': "red"}
+            ],
+        }
+    ))
+    fig.update_layout(height=300)
+    return fig
+
+def show_metrics_explanation():
+    """Display enhanced metrics explanations with interactive visualizations"""
+    st.header("Análise das Métricas do Processo Decisório")
+    
+    answers = st.session_state.get('answers', {})
+    if not answers:
+        st.warning("Complete o processo de seleção para ver as métricas detalhadas.")
+        return
+        
+    weights = {"security": 0.4, "scalability": 0.25, "energy_efficiency": 0.2, "governance": 0.15}
+    recommendation = get_recommendation(answers, weights)
+    classes = {k: v['score'] for k, v in recommendation['evaluation_matrix'].items()}
+    
+    gini_value = calcular_gini(classes)
+    entropy_value = calcular_entropia(classes)
+    depth = calcular_profundidade_decisoria(list(range(len(answers))))
+    
+    # Gini Index Analysis
+    with st.expander("Análise do Índice de Gini"):
+        st.write("### Índice de Gini da Classificação")
+        gini_fig = create_gini_visualization(gini_value)
+        st.plotly_chart(gini_fig)
+        st.write(f"\n**Análise**: O índice de Gini de {gini_value:.3f} indica " +
+                ("uma boa separação entre as classes." if gini_value < 0.3 else
+                 "uma separação moderada entre as classes." if gini_value < 0.6 else
+                 "uma alta mistura entre as classes."))
+    
+    # Entropy Analysis
+    with st.expander("Análise da Entropia"):
+        st.write("### Entropia da Classificação")
+        st.write("""
+        A entropia mede a incerteza ou aleatoriedade na distribuição das classes. 
+        Quanto menor a entropia, mais certeza temos na classificação.
+        """)
+        st.metric("Entropia", f"{entropy_value:.3f}")
+        st.write(f"\n**Análise**: O valor de entropia {entropy_value:.3f} indica " +
+                ("baixa incerteza na classificação." if entropy_value < 1 else
+                 "incerteza moderada na classificação." if entropy_value < 2 else
+                 "alta incerteza na classificação."))
+    
+    # Decision Tree Depth Analysis
+    with st.expander("Análise da Profundidade Decisória"):
+        st.write("### Profundidade da Árvore de Decisão")
+        st.write("""
+        A profundidade da árvore indica a complexidade do processo decisório.
+        Uma menor profundidade geralmente indica um processo mais direto e interpretável.
+        """)
+        st.metric("Profundidade Média", f"{depth:.2f}")
+        st.write(f"\n**Análise**: A profundidade média de {depth:.2f} indica " +
+                ("um processo decisório simples." if depth < 3 else
+                 "um processo decisório de complexidade moderada." if depth < 5 else
+                 "um processo decisório complexo."))
+
 def show_recommendation(answers, weights, questions):
     """Display the final recommendation with enhanced visualizations"""
     recommendation = get_recommendation(answers, weights)
@@ -112,19 +193,78 @@ def show_recommendation(answers, weights, questions):
         </div>
         """, unsafe_allow_html=True)
         
-        # Evaluation Matrix with explanation
-        with st.expander("Ver Matriz de Avaliação das DLTs", expanded=True):
+        # Metrics translation dictionary
+        metrics_pt = {
+            "security": "Segurança",
+            "scalability": "Escalabilidade",
+            "energy_efficiency": "Eficiência Energética",
+            "governance": "Governança"
+        }
+        
+        # Detailed Justification
+        with st.expander("Ver Justificativa da Recomendação"):
+            st.write("### Por que esta DLT foi recomendada?")
+            st.write(f"A {recommendation['dlt']} foi selecionada pelos seguintes motivos:")
+            for metric, value in recommendation['evaluation_matrix'][recommendation['dlt']]['metrics'].items():
+                st.write(f"- **{metrics_pt[metric]}**: {float(value):.2f}")
+            
+            st.write("\n### Por que outras DLTs não foram selecionadas:")
+            for dlt, data in recommendation['evaluation_matrix'].items():
+                if dlt != recommendation['dlt']:
+                    st.write(f"\n**{dlt}**:")
+                    differences = []
+                    for metric, value in data['metrics'].items():
+                        ref_value = recommendation['evaluation_matrix'][recommendation['dlt']]['metrics'][metric]
+                        if float(value) < float(ref_value):
+                            differences.append(f"{metrics_pt[metric]} ({float(value):.2f} vs {float(ref_value):.2f})")
+                    st.write("Pontuação inferior em: " + ", ".join(differences))
+        
+        # Application Scenarios
+        with st.expander("Ver Cenários de Aplicação"):
+            st.write("### Cenários Recomendados de Uso")
+            scenarios = {
+                "DLT Permissionada Privada": [
+                    "Prontuários Eletrônicos (EMR)",
+                    "Integração de Dados Sensíveis",
+                    "Sistemas de Pagamento Descentralizados"
+                ],
+                "DLT Pública Permissionless": [
+                    "Dados Públicos de Saúde",
+                    "Registro de Pesquisas Clínicas",
+                    "Rastreamento de Medicamentos"
+                ],
+                "DLT Permissionada Simples": [
+                    "Sistemas Locais de Saúde",
+                    "Agendamento de Pacientes",
+                    "Redes Locais de Hospitais"
+                ],
+                "DLT Híbrida": [
+                    "Integração de Sistemas de Saúde",
+                    "Compartilhamento Controlado de Dados",
+                    "Redes Regionais de Saúde"
+                ],
+                "DLT com Consenso Delegado": [
+                    "Gestão de Credenciais Médicas",
+                    "Autorização de Procedimentos",
+                    "Validação de Documentos"
+                ],
+                "DLT Pública": [
+                    "Monitoramento IoT em Saúde",
+                    "Dados em Tempo Real",
+                    "Pesquisa Colaborativa"
+                ]
+            }
+            
+            if recommendation['dlt'] in scenarios:
+                for scenario in scenarios[recommendation['dlt']]:
+                    st.write(f"- {scenario}")
+        
+        # Evaluation Matrix
+        with st.expander("Ver Matriz de Avaliação das DLTs"):
             st.write("Esta matriz mostra a comparação das diferentes DLTs baseada nas métricas principais.")
             
             matrix_data = []
             y_labels = []
-            
-            metrics_pt = {
-                "security": "Segurança",
-                "scalability": "Escalabilidade",
-                "energy_efficiency": "Eficiência Energética",
-                "governance": "Governança"
-            }
             
             for dlt, data in recommendation['evaluation_matrix'].items():
                 y_labels.append(dlt)
@@ -165,80 +305,17 @@ def show_recommendation(answers, weights, questions):
             )
             
             st.plotly_chart(fig, use_container_width=True)
-
-        # Algorithm Analysis Matrix
-        with st.expander("Ver Matriz de Análise dos Algoritmos"):
-            st.write("### Matriz de Avaliação dos Algoritmos de Consenso")
-            st.write("Esta matriz compara os diferentes algoritmos de consenso baseados nas métricas principais.")
-            
-            alg_comparison = compare_algorithms(recommendation['consensus_group'])
-            alg_matrix = []
-            metrics = ["Segurança", "Escalabilidade", "Eficiência Energética", "Governança"]
-            
-            for alg in recommendation['algorithms']:
-                row = []
-                for metric in metrics:
-                    value = alg_comparison[metric][alg]
-                    row.append(value)
-                alg_matrix.append(row)
-            
-            fig_alg = go.Figure(data=go.Heatmap(
-                z=alg_matrix,
-                x=metrics,
-                y=recommendation['algorithms'],
-                colorscale='Viridis',
-                hoverongaps=False,
-                hovertemplate="<b>Algoritmo:</b> %{y}<br>" +
-                             "<b>Métrica:</b> %{x}<br>" +
-                             "<b>Valor:</b> %{z:.2f}<br>" +
-                             "<extra></extra>"
-            ))
-            
-            fig_alg.update_layout(
-                title="Comparação dos Algoritmos de Consenso",
-                height=350,
-                margin=dict(l=50, r=30, t=80, b=50),
-                autosize=True
-            )
-            
-            st.plotly_chart(fig_alg, use_container_width=True)
-
-        # DLT-Algorithm Compatibility Matrix
-        with st.expander("Ver Matriz de Compatibilidade DLT-Algoritmo"):
-            st.write("### Matriz de Compatibilidade entre DLTs e Algoritmos")
-            st.write("Esta matriz mostra a compatibilidade entre as DLTs recomendadas e os algoritmos de consenso.")
-            
-            combined_scores = calculate_compatibility_scores(recommendation)
-            
-            fig_compat = go.Figure(data=go.Heatmap(
-                z=combined_scores['matrix'],
-                x=combined_scores['algorithms'],
-                y=combined_scores['dlts'],
-                colorscale='RdYlGn',
-                hoverongaps=False,
-                hovertemplate="<b>DLT:</b> %{y}<br>" +
-                             "<b>Algoritmo:</b> %{x}<br>" +
-                             "<b>Compatibilidade:</b> %{z:.2f}<br>" +
-                             "<extra></extra>"
-            ))
-            
-            fig_compat.update_layout(
-                title="Matriz de Compatibilidade",
-                height=350,
-                margin=dict(l=50, r=30, t=80, b=50),
-                autosize=True
-            )
-            
-            st.plotly_chart(fig_compat, use_container_width=True)
     
     with col2:
         st.subheader("Métricas de Confiança")
         confidence_value = recommendation.get('confidence_value', 0.0)
+        level, description = get_confidence_level(confidence_value)
+        
         st.metric(
             label="Índice de Confiança",
             value=f"{confidence_value:.2%}",
-            delta=f"{'Alto' if confidence_value > 0.7 else 'Médio'}",
-            help="Baseado na diferença entre o score máximo e a média dos scores"
+            delta=level,
+            help=f"{description}\n\nParâmetros:\n- Alto: ≥ 70%\n- Médio: 40-69%\n- Baixo: < 40%"
         )
         
         # Technical Metrics Details
