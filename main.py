@@ -62,7 +62,7 @@ def show_home_page():
     
     if st.button("Iniciar Seleção de DLT", type="primary"):
         st.session_state.page = 'Framework Proposto'
-        st.experimental_rerun()
+        st.rerun()
 
 def show_metrics():
     """Exibe métricas do processo de decisão com explicações aprimoradas"""
@@ -208,7 +208,7 @@ def main():
             menu_option = st.selectbox("Escolha uma opção", menu_options)
             if st.button("Logout"):
                 logout()
-                st.experimental_rerun()
+                st.rerun()
         
         if menu_option == 'Início':
             show_home_page()
