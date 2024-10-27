@@ -10,8 +10,8 @@ def create_radar_chart(data, title):
     """Create a radar chart for metrics visualization"""
     categories = list(data.keys())
     values = list(data.values())
-    values.append(values[0])  # Complete the loop
-    categories.append(categories[0])  # Complete the loop
+    values.append(values[0])
+    categories.append(categories[0])
     
     fig = go.Figure(data=go.Scatterpolar(
         r=values,
@@ -30,6 +30,31 @@ def create_radar_chart(data, title):
         title=title,
         height=400
     )
+    return fig
+
+def create_tree_depth_visualization(depth, max_depth=10):
+    """Create a visualization for decision tree depth"""
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=depth,
+        domain={'x': [0, 1], 'y': [0, 1]},
+        gauge={
+            'axis': {'range': [0, max_depth]},
+            'steps': [
+                {'range': [0, 3], 'color': "lightgreen"},
+                {'range': [3, 6], 'color': "yellow"},
+                {'range': [6, max_depth], 'color': "red"}
+            ],
+            'threshold': {
+                'line': {'color': "red", 'width': 4},
+                'thickness': 0.75,
+                'value': depth
+            }
+        },
+        title={'text': "Profundidade da Árvore"}
+    ))
+    
+    fig.update_layout(height=300)
     return fig
 
 def create_entropy_evolution(entropy_values):
@@ -51,64 +76,47 @@ def create_entropy_evolution(entropy_values):
     )
     return fig
 
-def show_metrics_explanation():
-    """Display enhanced metrics explanations with interactive visualizations"""
-    st.header("Análise das Métricas do Processo Decisório")
+def show_detailed_comparisons(recommendation):
+    """Show detailed comparisons between DLTs and algorithms"""
+    st.header("Comparações Detalhadas")
     
-    answers = st.session_state.get('answers', {})
-    if not answers:
-        st.warning("Complete o processo de seleção para ver as métricas detalhadas.")
-        return
-        
-    weights = {"security": 0.4, "scalability": 0.25, "energy_efficiency": 0.2, "governance": 0.15}
-    recommendation = get_recommendation(answers, weights)
-    classes = {k: v['score'] for k, v in recommendation['evaluation_matrix'].items()}
+    # Algorithm Evaluation Matrix
+    st.subheader("Matriz de Avaliação de Algoritmos")
+    algorithms_data = compare_algorithms(recommendation['consensus_group'])
     
-    # Calculate metrics
-    gini_value = calcular_gini(classes)
-    entropy_value = calcular_entropia(classes)
-    depth = calcular_profundidade_decisorio(list(range(len(answers))))
+    fig = go.Figure(data=go.Heatmap(
+        z=[[v[alg] for alg in recommendation['algorithms']] for v in algorithms_data.values()],
+        x=recommendation['algorithms'],
+        y=list(algorithms_data.keys()),
+        colorscale='RdYlGn',
+        hoverongaps=False
+    ))
     
-    # Metrics Dashboard
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric(
-            "Índice de Gini",
-            f"{gini_value:.3f}",
-            help="Medida de pureza da classificação (0-1)"
-        )
-    with col2:
-        st.metric(
-            "Entropia",
-            f"{entropy_value:.3f}",
-            help="Medida de incerteza na decisão"
-        )
-    with col3:
-        st.metric(
-            "Profundidade",
-            f"{depth:.1f}",
-            help="Complexidade do processo decisório"
-        )
+    fig.update_layout(
+        title="Comparação de Algoritmos de Consenso",
+        height=400
+    )
     
-    # Gini Index Analysis with Radar Chart
-    with st.expander("Análise do Índice de Gini", expanded=True):
-        st.write("""
-        ### Índice de Gini da Classificação
-        
-        O índice de Gini mede a pureza da classificação, indicando quão bem definidas estão as classes.
-        - **Valores próximos a 0**: Indicam boa separação entre as classes
-        - **Valores próximos a 1**: Indicam maior mistura entre as classes
-        """)
-        
-        gini_data = {
-            "Segurança": float(recommendation['evaluation_matrix'][recommendation['dlt']]['metrics']['security']),
-            "Escalabilidade": float(recommendation['evaluation_matrix'][recommendation['dlt']]['metrics']['scalability']),
-            "Eficiência": float(recommendation['evaluation_matrix'][recommendation['dlt']]['metrics']['energy_efficiency']),
-            "Governança": float(recommendation['evaluation_matrix'][recommendation['dlt']]['metrics']['governance'])
-        }
-        
-        gini_fig = create_radar_chart(gini_data, "Distribuição de Métricas")
-        st.plotly_chart(gini_fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # DLT-Algorithm Compatibility Matrix
+    st.subheader("Matriz de Compatibilidade DLT-Algoritmo")
+    compatibility = calculate_compatibility_scores(recommendation)
+    
+    fig = go.Figure(data=go.Heatmap(
+        z=compatibility['matrix'],
+        x=compatibility['algorithms'],
+        y=compatibility['dlts'],
+        colorscale='RdYlGn',
+        hoverongaps=False
+    ))
+    
+    fig.update_layout(
+        title="Compatibilidade entre DLTs e Algoritmos",
+        height=400
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
 
 def show_recommendation(answers, weights, questions):
     """Display the final recommendation with enhanced visualizations"""
@@ -129,24 +137,63 @@ def show_recommendation(answers, weights, questions):
         </div>
         """, unsafe_allow_html=True)
         
-        # Detailed Justification
-        with st.expander("Ver Justificativa da Recomendação"):
-            st.write("### Por que esta DLT foi recomendada?")
-            st.write(f"A {recommendation['dlt']} foi selecionada pelos seguintes motivos:")
+        # User Answers Impact
+        with st.expander("Impacto das Respostas"):
+            st.write("### Como suas respostas influenciaram a decisão")
+            for q in questions:
+                if q["id"] in answers:
+                    impact = "Alto" if answers[q["id"]] == "Sim" else "Baixo"
+                    st.write(f"**{q['text']}**")
+                    st.write(f"Sua resposta: {answers[q['id']]} (Impacto: {impact})")
+        
+        # Consensus Algorithm Characteristics
+        with st.expander("Características do Algoritmo de Consenso"):
+            st.write("### Pesos das Características")
+            for metric, weight in weights.items():
+                st.write(f"**{metric.replace('_', ' ').title()}**: {weight*100:.0f}%")
+        
+        # Application Scenarios
+        with st.expander("Cenários de Aplicação"):
+            scenarios = {
+                "DLT Permissionada Privada": [
+                    "Prontuários Eletrônicos (EMR)",
+                    "Integração de Dados Sensíveis",
+                    "Sistemas de Pagamento Descentralizados"
+                ],
+                "DLT Pública": [
+                    "Dados Públicos de Saúde",
+                    "Registro de Pesquisas Clínicas",
+                    "Rastreamento de Medicamentos"
+                ],
+                "DLT Permissionada Simples": [
+                    "Sistemas Locais de Saúde",
+                    "Agendamento de Pacientes",
+                    "Redes Locais de Hospitais"
+                ],
+                "DLT Híbrida": [
+                    "Integração de Sistemas de Saúde",
+                    "Compartilhamento Controlado de Dados",
+                    "Redes Regionais de Saúde"
+                ]
+            }
+            
+            st.write("### Cenários Recomendados de Uso")
+            if recommendation['dlt'] in scenarios:
+                for scenario in scenarios[recommendation['dlt']]:
+                    st.write(f"- {scenario}")
+        
+        # Evaluation Matrix
+        with st.expander("Matriz de Avaliação"):
+            st.write("### Matriz de Avaliação Comparativa")
+            matrix_data = []
+            y_labels = []
+            
             metrics_pt = {
                 "security": "Segurança",
                 "scalability": "Escalabilidade",
                 "energy_efficiency": "Eficiência Energética",
                 "governance": "Governança"
             }
-            for metric, value in recommendation['evaluation_matrix'][recommendation['dlt']]['metrics'].items():
-                st.write(f"- **{metrics_pt[metric]}**: {float(value):.2f}")
-        
-        # Evaluation Matrix
-        with st.expander("Ver Matriz de Avaliação"):
-            st.write("### Matriz de Avaliação Comparativa")
-            matrix_data = []
-            y_labels = []
             
             for dlt, data in recommendation['evaluation_matrix'].items():
                 y_labels.append(dlt)
