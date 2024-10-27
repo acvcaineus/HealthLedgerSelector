@@ -31,7 +31,8 @@ def show_home_page():
     """Display home page with framework explanation and reference table"""
     st.title("SeletorDLTSaude")
     st.write("Bem-vindo ao sistema de seleção de DLT para saúde.")
-
+    
+    # Framework explanation section
     st.header("Objetivo do Framework")
     st.markdown('''
         O SeletorDLTSaude é uma aplicação interativa desenvolvida para ajudar profissionais 
@@ -45,6 +46,7 @@ def show_home_page():
         - **Fase de Internet**: Avalia governança e interoperabilidade
     ''')
 
+    # Reference table section
     st.subheader("Tabela de Referência de DLTs e Algoritmos")
     data = {
         'Grupo': [
@@ -111,6 +113,7 @@ def show_home_page():
     df = pd.DataFrame(data)
     st.table(df)
 
+    # Implementation details section
     with st.expander("Ver Detalhes de Implementação e Referências"):
         st.markdown('''
             ### Casos de Implementação Real
@@ -131,238 +134,32 @@ def show_home_page():
             - AL-NBHANY et al. (2024) - Blockchain-IoT Healthcare Applications and Trends
         ''')
 
+    # Navigation button with enhanced styling
+    st.markdown("""
+        <style>
+        div.stButton > button:first-child {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            border: none;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
     if st.button("Iniciar Seleção de DLT", type="primary"):
         st.session_state.page = 'Framework Proposto'
         st.experimental_rerun()
 
-def show_bench_comparisons():
-    st.title("Comparação de Benchmarks de DLT em Saúde")
-    
-    # 1. Security Radar Chart
-    st.header("1. Métricas Técnicas de Validação")
-    with st.expander("Segurança (40%)"):
-        st.markdown("""
-        ### Análise de Segurança
-        A segurança é um aspecto crítico para DLTs na área de saúde, representando 40% do peso total na avaliação.
-        
-        #### Componentes Avaliados:
-        - Proteção de dados
-        - Privacidade
-        - Resistência a ataques
-        - Conformidade com regulamentações
-        """)
-        
-        security_data = {
-            'MedRec': 4.5,
-            'HealthBlock': 4.2,
-            'MedChain': 4.0,
-            'Framework BR': 4.3,
-            'HealthChain': 4.1
-        }
-        fig_security = create_radar_chart(security_data, "Análise de Segurança dos Benchmarks", "Nível de Segurança")
-        st.plotly_chart(fig_security)
-        st.markdown("""
-        #### Interpretação dos Resultados:
-        - **5.0**: Excelente - Máxima segurança e conformidade
-        - **4.0-4.9**: Muito Bom - Alta segurança com pequenas melhorias possíveis
-        - **3.0-3.9**: Bom - Segurança adequada com áreas para melhoria
-        - **< 3.0**: Necessita Atenção - Melhorias significativas necessárias
-        """)
-    
-    # 2. Interoperability Analysis
-    with st.expander("Interoperabilidade (20%)"):
-        st.markdown("""
-        ### Análise de Interoperabilidade
-        A capacidade de integração com outros sistemas representa 20% da avaliação total.
-        
-        #### Aspectos Avaliados:
-        - Compatibilidade com APIs
-        - Suporte a padrões de interoperabilidade
-        - Facilidade de integração
-        """)
-        
-        interop_data = {
-            'MedRec': {'APIs': 5, 'Standards': 4, 'Integration': 4},
-            'HealthBlock': {'APIs': 4, 'Standards': 4, 'Integration': 3},
-            'MedChain': {'APIs': 3, 'Standards': 4, 'Integration': 4},
-            'Framework BR': {'APIs': 4, 'Standards': 5, 'Integration': 4},
-            'HealthChain': {'APIs': 4, 'Standards': 3, 'Integration': 4}
-        }
-        fig_interop = create_interop_chart(interop_data)
-        st.plotly_chart(fig_interop)
-        st.markdown("""
-        #### Métricas de Avaliação:
-        - **APIs**: Qualidade e disponibilidade de APIs
-        - **Standards**: Conformidade com padrões da indústria
-        - **Integration**: Facilidade de implementação
-        """)
-    
-    # 3. Scalability Bar Chart
-    with st.expander("Escalabilidade (20%)"):
-        st.markdown("""
-        ### Análise de Escalabilidade
-        Capacidade de crescimento e gerenciamento de carga representa 20% da avaliação.
-        
-        #### Métricas Avaliadas:
-        - Transações por segundo (TPS)
-        - Latência de rede
-        - Capacidade de armazenamento
-        """)
-        
-        scalability_data = {
-            'MedRec': 850,
-            'HealthBlock': 1200,
-            'MedChain': 950,
-            'Framework BR': 1100,
-            'HealthChain': 900
-        }
-        fig_scale = create_scalability_chart(scalability_data)
-        st.plotly_chart(fig_scale)
-        st.markdown("""
-        #### Interpretação:
-        - **> 1000 TPS**: Excelente escalabilidade
-        - **500-1000 TPS**: Boa escalabilidade
-        - **< 500 TPS**: Limitada
-        """)
-    
-    # 4. Energy Efficiency
-    with st.expander("Eficiência Energética (10%)"):
-        st.markdown("""
-        ### Análise de Eficiência Energética
-        O consumo de energia representa 10% da avaliação total.
-        
-        #### Aspectos Avaliados:
-        - Consumo de energia por transação
-        - Sustentabilidade do algoritmo de consenso
-        - Impacto ambiental
-        """)
-        
-        energy_data = {
-            'PoA': {'tps': 1000, 'energy': 0.1},
-            'PBFT': {'tps': 3000, 'energy': 0.3},
-            'DPoS': {'tps': 2000, 'energy': 0.2}
-        }
-        fig_energy = create_energy_chart(energy_data)
-        st.plotly_chart(fig_energy)
-        st.markdown("""
-        #### Classificação de Eficiência:
-        - **< 0.1 kWh/tx**: Altamente eficiente
-        - **0.1-0.3 kWh/tx**: Eficiente
-        - **> 0.3 kWh/tx**: Necessita otimização
-        """)
-    
-    # 5. Governance Score Table
-    with st.expander("Governança (10%)"):
-        st.markdown("""
-        ### Análise de Governança
-        A estrutura de governança representa 10% da avaliação total.
-        
-        #### Critérios Avaliados:
-        - Controle de acesso
-        - Auditoria
-        - Conformidade regulatória
-        """)
-        
-        governance_data = {
-            'MedRec': {'Controle': 5, 'Auditoria': 4, 'Compliance': 5},
-            'HealthBlock': {'Controle': 4, 'Auditoria': 5, 'Compliance': 4},
-            'MedChain': {'Controle': 4, 'Auditoria': 4, 'Compliance': 4},
-            'Framework BR': {'Controle': 5, 'Auditoria': 5, 'Compliance': 5},
-            'HealthChain': {'Controle': 4, 'Auditoria': 4, 'Compliance': 4}
-        }
-        st.table(pd.DataFrame(governance_data))
-        st.markdown("""
-        #### Escala de Avaliação:
-        - **5**: Excelente
-        - **4**: Muito Bom
-        - **3**: Bom
-        - **2**: Regular
-        - **1**: Necessita Melhorias
-        """)
-    
-    # Final Comparative Analysis
-    st.header("Análise Comparativa Final")
-    final_scores = {
-        'MedRec': {
-            'Segurança': 4.5,
-            'Interoperabilidade': 4.2,
-            'Escalabilidade': 4.0,
-            'Eficiência': 4.3,
-            'Governança': 4.4
-        },
-        'HealthBlock': {
-            'Segurança': 4.2,
-            'Interoperabilidade': 4.0,
-            'Escalabilidade': 4.5,
-            'Eficiência': 4.1,
-            'Governança': 4.2
-        },
-        'Framework Proposto': {
-            'Segurança': 4.8,
-            'Interoperabilidade': 4.5,
-            'Escalabilidade': 4.3,
-            'Eficiência': 4.4,
-            'Governança': 4.6
-        }
-    }
-    
-    fig_final = create_final_radar(final_scores)
-    st.plotly_chart(fig_final)
-    
-    # Conclusions and Recommendations
-    st.header("Conclusões e Recomendações")
-    conclusions = calculate_conclusions(final_scores)
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        st.subheader("Pontos Fortes")
-        for strength in conclusions['strengths']:
-            st.success(f"✓ {strength}")
-    
-    with col2:
-        st.subheader("Oportunidades de Melhoria")
-        for improvement in conclusions['improvements']:
-            st.warning(f"⚠ {improvement}")
-    
-    # Detailed Metrics Explanation
-    st.header("Explicação Detalhada das Métricas")
-    with st.expander("Ver Fórmulas e Cálculos"):
-        st.markdown("""
-        ### Cálculo de Métricas Principais
-        
-        1. **Índice de Segurança Normalizado (ISN)**
-        ```python
-        ISN = (S_weight * S_score + P_weight * P_score) / (S_weight + P_weight)
-        ```
-        Onde:
-        - S_weight: Peso da segurança (0.4)
-        - S_score: Pontuação de segurança
-        - P_weight: Peso da privacidade (0.3)
-        - P_score: Pontuação de privacidade
-        
-        2. **Índice de Interoperabilidade (II)**
-        ```python
-        II = (API_score + STD_score + INT_score) / 3
-        ```
-        
-        3. **Índice de Escalabilidade Ponderada (IEP)**
-        ```python
-        IEP = (TPS * 0.5) + (Latency * 0.3) + (Storage * 0.2)
-        ```
-        
-        4. **Eficiência Energética Normalizada (EEN)**
-        ```python
-        EEN = 1 - (Energy_consumption / Max_energy_consumption)
-        ```
-        """)
-
 def main():
     st.set_page_config(page_title="SeletorDLTSaude", page_icon="🏥", layout="wide")
     init_session_state()
-
-    if st.session_state.error:
-        show_fallback_ui()
-        return
 
     if not is_authenticated():
         st.title("SeletorDLTSaude - Login")
@@ -376,8 +173,7 @@ def main():
             st.title("Menu")
             menu_options = [
                 'Início', 'Framework Proposto', 'Métricas', 'Comparações Benchs',
-                'Métricas Técnicas', 'Comparação de Características', 
-                'Pontuação Comparativa', 'Discussão e Conclusão', 'Perfil', 'Logout'
+                'Perfil', 'Logout'
             ]
 
             try:
@@ -392,28 +188,23 @@ def main():
                 menu_option = 'Início'
 
             if menu_option == 'Início':
-                with st.spinner('Carregando página inicial...'):
-                    show_home_page()
+                show_home_page()
             elif menu_option == 'Framework Proposto':
-                with st.spinner('Carregando framework...'):
-                    run_decision_tree()
+                run_decision_tree()
             elif menu_option == 'Métricas':
-                with st.spinner('Carregando métricas...'):
-                    show_metrics()
+                show_metrics()
             elif menu_option == 'Comparações Benchs':
-                with st.spinner('Carregando comparações de benchmarks...'):
-                    show_bench_comparisons()
+                show_bench_comparisons()
             elif menu_option == 'Perfil':
-                with st.spinner('Carregando perfil...'):
-                    st.header(f"Perfil do Usuário: {st.session_state.username}")
-                    recommendations = get_user_recommendations(st.session_state.username)
-                    if recommendations:
-                        st.subheader("Últimas Recomendações")
-                        for rec in recommendations:
-                            st.write(f"DLT: {rec['dlt']}")
-                            st.write(f"Consenso: {rec['consensus']}")
-                            st.write(f"Data: {rec['timestamp']}")
-                            st.markdown("---")
+                st.header(f"Perfil do Usuário: {st.session_state.username}")
+                recommendations = get_user_recommendations(st.session_state.username)
+                if recommendations:
+                    st.subheader("Últimas Recomendações")
+                    for rec in recommendations:
+                        st.write(f"DLT: {rec['dlt']}")
+                        st.write(f"Consenso: {rec['consensus']}")
+                        st.write(f"Data: {rec['timestamp']}")
+                        st.markdown("---")
             elif menu_option == 'Logout':
                 logout()
                 st.session_state.page = 'Início'
