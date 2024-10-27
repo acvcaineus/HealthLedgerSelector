@@ -1,8 +1,9 @@
 import streamlit as st
 import bcrypt
-from database import create_user, get_user
+from database import create_user, get_user  # Certifique-se de que estas funções estão implementadas no módulo database.
 
 def register():
+    """Função de registro de um novo usuário."""
     st.subheader("Criar uma Conta")
     new_username = st.text_input("Nome de Usuário", key="register_username")
     new_password = st.text_input("Senha", type="password", key="register_password")
@@ -23,6 +24,7 @@ def register():
                 st.error("Nome de usuário já existe. Por favor, escolha um nome de usuário diferente.")
 
 def login():
+    """Função de login para autenticar um usuário existente."""
     st.subheader("Login")
     username = st.text_input("Nome de Usuário", key="login_username")
     password = st.text_input("Senha", type="password", key="login_password")
@@ -31,21 +33,20 @@ def login():
         user = get_user(username)
         # Verificação de nome de usuário e senha
         if user and bcrypt.checkpw(password.encode('utf-8'), user['password']):
-            # Armazenando o estado de autenticação na sessão
             st.session_state.authenticated = True
             st.session_state.username = username
+            st.session_state.page = 'Início'  # Redireciona para a página inicial
             st.success("Login realizado com sucesso!")
-            st.experimental_rerun()
         else:
             st.error("Nome de usuário ou senha inválidos")
 
 def is_authenticated():
+    """Verifica se o usuário está autenticado com base no session_state."""
     return st.session_state.get('authenticated', False)
 
 def logout():
-    if 'authenticated' in st.session_state:
-        del st.session_state['authenticated']
-    if 'username' in st.session_state:
-        del st.session_state['username']
+    """Realiza o logout removendo o estado de autenticação e o nome do usuário do session_state."""
+    st.session_state.authenticated = False
+    st.session_state.username = None
+    st.session_state.page = "Login"  # Redireciona para a página de login
     st.success("Logout realizado com sucesso!")
-    st.experimental_rerun()
