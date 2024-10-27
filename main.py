@@ -23,6 +23,47 @@ def init_session_state():
             'recommendation': None
         })
 
+def show_home_page():
+    st.title("SeletorDLTSaude")
+    st.write("Bem-vindo ao sistema de seleção de DLT para saúde.")
+    
+    st.header("Objetivo do Framework")
+    st.markdown('''
+        O SeletorDLTSaude é uma aplicação interativa desenvolvida para ajudar profissionais 
+        e pesquisadores a escolherem a melhor solução de Distributed Ledger Technology (DLT) 
+        e o algoritmo de consenso mais adequado para projetos de saúde. 
+        
+        A aplicação guia o usuário através de um processo estruturado em quatro fases:
+        - **Fase de Aplicação**: Avalia requisitos de privacidade e integração
+        - **Fase de Consenso**: Analisa necessidades de segurança e eficiência
+        - **Fase de Infraestrutura**: Considera escalabilidade e performance
+        - **Fase de Internet**: Avalia governança e interoperabilidade
+    ''')
+    
+    # Reference table
+    st.header("Referência de DLTs e Algoritmos")
+    data = {
+        'Grupo': ['Alta Segurança e Controle', 'Alta Segurança e Controle', 'Alta Eficiência Operacional',
+                 'Alta Eficiência Operacional', 'Escalabilidade e Governança Flexível', 'Alta Escalabilidade em Redes IoT'],
+        'Tipo DLT': ['DLT Permissionada Privada', 'DLT Pública Permissionless', 'DLT Permissionada Simples',
+                     'DLT Híbrida', 'DLT com Consenso Delegado', 'DLT Pública'],
+        'Nome DLT': ['Hyperledger Fabric', 'Bitcoin', 'Quorum', 'Ethereum 2.0', 'EOS', 'IOTA'],
+        'Algoritmo de Consenso': ['PBFT', 'PoW', 'RAFT/PoA', 'PoS', 'DPoS', 'Tangle'],
+        'Principais Características': [
+            'Alta segurança e resiliência contra falhas bizantinas',
+            'Alta segurança e descentralização total',
+            'Simplicidade e eficiência em redes locais',
+            'Alta escalabilidade e eficiência energética',
+            'Governança flexível e alta performance',
+            'Escalabilidade para IoT e dados em tempo real'
+        ]
+    }
+    st.dataframe(pd.DataFrame(data))
+    
+    if st.button("Iniciar Seleção de DLT", type="primary"):
+        st.session_state.page = 'Framework Proposto'
+        st.experimental_rerun()
+
 def show_metrics():
     """Exibe métricas do processo de decisão com explicações aprimoradas"""
     st.header("Métricas Técnicas do Processo de Decisão")
@@ -170,11 +211,7 @@ def main():
                 st.experimental_rerun()
         
         if menu_option == 'Início':
-            st.title("SeletorDLTSaude")
-            st.write("Bem-vindo ao sistema de seleção de DLT para saúde.")
-            if st.button("Iniciar Seleção"):
-                st.session_state.page = 'Framework Proposto'
-                st.experimental_rerun()
+            show_home_page()
         elif menu_option == 'Framework Proposto':
             run_decision_tree()
         elif menu_option == 'Métricas':

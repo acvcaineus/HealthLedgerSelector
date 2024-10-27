@@ -362,6 +362,12 @@ def show_recommendation(answers, weights, questions):
             st.success("Recomendação salva com sucesso!")
         else:
             st.warning("Faça login para salvar a recomendação.")
+            
+    # Add navigation button to metrics
+    st.markdown("---")
+    if st.button("Ver Métricas Detalhadas"):
+        st.session_state.page = 'Métricas'
+        st.experimental_rerun()
     
     return recommendation
 
