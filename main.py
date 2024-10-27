@@ -25,165 +25,6 @@ def init_session_state():
         st.error(f"Error initializing session state: {str(e)}")
         st.session_state.error = str(e)
 
-def create_gini_radar(gini):
-    """Create radar chart for Gini index visualization"""
-    try:
-        categories = ['Separação de Classes', 'Pureza dos Dados', 'Consistência', 'Precisão']
-        fig = go.Figure()
-        
-        # Add trace for Gini index
-        fig.add_trace(go.Scatterpolar(
-            r=[1-gini, gini, 1-gini, gini],
-            theta=categories,
-            fill='toself',
-            name='Índice de Gini',
-            line=dict(color='#1f77b4')
-        ))
-        
-        # Update layout
-        fig.update_layout(
-            polar=dict(
-                radialaxis=dict(
-                    visible=True,
-                    range=[0, 1],
-                    tickfont=dict(size=10),
-                    tickangle=45
-                ),
-                angularaxis=dict(
-                    tickfont=dict(size=10)
-                )
-            ),
-            showlegend=True,
-            title={
-                'text': "Análise do Índice de Gini",
-                'y':0.95,
-                'x':0.5,
-                'xanchor': 'center',
-                'yanchor': 'top'
-            },
-            margin=dict(t=100, b=50)
-        )
-        return fig
-    except Exception as e:
-        st.error(f"Error creating Gini radar: {str(e)}")
-        return None
-
-def create_entropy_graph(answers):
-    """Create entropy evolution graph"""
-    try:
-        entropy_values = []
-        weights = {
-            "security": float(0.4),
-            "scalability": float(0.25),
-            "energy_efficiency": float(0.20),
-            "governance": float(0.15)
-        }
-        
-        for i in range(len(answers)):
-            partial_answers = dict(list(answers.items())[:i+1])
-            recommendation = get_recommendation(partial_answers, weights)
-            classes = {k: v['score'] for k, v in recommendation['evaluation_matrix'].items()}
-            entropy_values.append(calcular_entropia(classes))
-        
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=list(range(1, len(entropy_values) + 1)),
-            y=entropy_values,
-            mode='lines+markers',
-            name='Evolução da Entropia',
-            line=dict(color='#2ecc71', width=2),
-            marker=dict(size=8)
-        ))
-        
-        fig.update_layout(
-            title={
-                'text': "Evolução da Entropia Durante o Processo Decisório",
-                'y':0.95,
-                'x':0.5,
-                'xanchor': 'center',
-                'yanchor': 'top'
-            },
-            xaxis_title="Número de Perguntas Respondidas",
-            yaxis_title="Entropia (bits)",
-            margin=dict(t=100, b=50)
-        )
-        return fig
-    except Exception as e:
-        st.error(f"Error creating entropy graph: {str(e)}")
-        return None
-
-def create_metrics_dashboard(depth, pruning_ratio, confidence):
-    """Create metrics dashboard with gauges"""
-    try:
-        fig = go.Figure()
-        
-        # Add depth gauge
-        fig.add_trace(go.Indicator(
-            mode="gauge+number",
-            value=depth,
-            title={'text': "Profundidade da Árvore"},
-            gauge={
-                'axis': {'range': [0, 10]},
-                'bar': {'color': "#1f77b4"},
-                'steps': [
-                    {'range': [0, 3], 'color': "#c8e6c9"},
-                    {'range': [3, 7], 'color': "#a5d6a7"},
-                    {'range': [7, 10], 'color': "#81c784"}
-                ]
-            },
-            domain={'row': 0, 'column': 0}
-        ))
-        
-        # Add pruning ratio gauge
-        fig.add_trace(go.Indicator(
-            mode="gauge+number",
-            value=pruning_ratio * 100,
-            title={'text': "Taxa de Poda (%)"},
-            gauge={
-                'axis': {'range': [0, 100]},
-                'bar': {'color': "#2ecc71"},
-                'steps': [
-                    {'range': [0, 30], 'color': "#ffccbc"},
-                    {'range': [30, 70], 'color': "#ffab91"},
-                    {'range': [70, 100], 'color': "#ff8a65"}
-                ]
-            },
-            domain={'row': 0, 'column': 1}
-        ))
-        
-        # Add confidence gauge
-        fig.add_trace(go.Indicator(
-            mode="gauge+number",
-            value=confidence * 100,
-            title={'text': "Confiança (%)"},
-            gauge={
-                'axis': {'range': [0, 100]},
-                'bar': {'color': "#e74c3c"},
-                'steps': [
-                    {'range': [0, 30], 'color': "#b3e5fc"},
-                    {'range': [30, 70], 'color': "#81d4fa"},
-                    {'range': [70, 100], 'color': "#4fc3f7"}
-                ]
-            },
-            domain={'row': 0, 'column': 2}
-        ))
-        
-        fig.update_layout(
-            grid={'rows': 1, 'columns': 3, 'pattern': "independent"},
-            title={
-                'text': "Dashboard de Métricas da Árvore de Decisão",
-                'y':0.95,
-                'x':0.5,
-                'xanchor': 'center',
-                'yanchor': 'top'
-            },
-            margin=dict(t=100, b=50, l=50, r=50)
-        )
-        return fig
-    except Exception as e:
-        st.error(f"Error creating metrics dashboard: {str(e)}")
-        return None
-
 def show_home_page():
     """Display home page with reference table and start button"""
     st.title("SeletorDLTSaude - Sistema de Seleção de DLT para Saúde")
@@ -215,26 +56,28 @@ def show_home_page():
     
     st.markdown("## Tabela de Referência DLT")
     
-    # Load reference data
+    # Complete DLT reference data
     dlt_data = [
         ['Hyperledger Fabric', 'DLT Permissionada Privada', 'Alta Segurança e Controle dos dados sensíveis', 'RAFT/IBFT', 
-         'Alta tolerância a falhas, consenso rápido em ambientes permissionados', 'Guardtime: Aplicado em sistemas de saúde da Estônia'],
+         'Alta tolerância a falhas, consenso rápido em ambientes permissionados', 'Guardtime: Aplicado em sistemas de saúde da Estônia para proteger a integridade e a privacidade dos registros médicos'],
         ['Corda', 'DLT Permissionada Simples', 'Alta Segurança e Controle dos dados sensíveis', 'RAFT',
-         'Consenso baseado em líderes, adequado para redes privadas', 'ProCredEx: Validação de credenciais de profissionais de saúde nos EUA'],
+         'Consenso baseado em líderes, adequado para redes privadas', 'ProCredEx: Usado para validação de credenciais de profissionais de saúde nos EUA, assegurando qualidade e rastreabilidade'],
         ['Quorum', 'DLT Híbrida', 'Escalabilidade e Governança Flexível', 'RAFT/IBFT',
-         'Flexibilidade de governança, consenso eficiente para redes híbridas', 'Chronicled (Mediledger Project): Rastreamento de medicamentos'],
+         'Flexibilidade de governança, consenso eficiente para redes híbridas', 'Chronicled (Mediledger Project): Garantia de rastreamento de medicamentos na cadeia de suprimentos farmacêutica'],
         ['VeChain', 'DLT Híbrida', 'Alta Eficiência Operacional em redes locais', 'PoA',
-         'Alta eficiência, baixa latência, consenso delegado a validadores autorizados', 'FarmaTrust: Rastreamento de medicamentos'],
+         'Alta eficiência, baixa latência, consenso delegado a validadores autorizados', 'FarmaTrust: Rastreia medicamentos e combate falsificação na cadeia de suprimentos farmacêutica'],
         ['IOTA', 'DLT com Consenso Delegado', 'Alta Escalabilidade em Redes IoT', 'Tangle',
-         'Escalabilidade alta, arquitetura sem blocos, adequada para IoT', 'Patientory: Compartilhamento de dados via IoT'],
-        ['Ripple', 'DLT com Consenso Delegado', 'Alta Eficiência Operacional em redes locais', 'Ripple Consensus Algorithm',
-         'Consenso rápido, baixa latência, baseado em validadores confiáveis', 'Change Healthcare: Gestão de ciclo de receita'],
+         'Escalabilidade alta, arquitetura sem blocos, adequada para IoT', 'Patientory: Aplicado para compartilhamento seguro de dados de pacientes em tempo real via IoT'],
+        ['Ripple (XRP Ledger)', 'DLT com Consenso Delegado', 'Alta Eficiência Operacional em redes locais', 'Ripple Consensus Algorithm',
+         'Consenso rápido, baixa latência, baseado em validadores confiáveis', 'Change Healthcare: Usado para simplificação de gestão de ciclo de receita e processamento de transações na saúde'],
         ['Stellar', 'DLT com Consenso Delegado', 'Alta Eficiência Operacional em redes locais', 'SCP',
-         'Consenso baseado em quórum, alta eficiência, tolerância a falhas', 'MedicalChain: Controle de dados e telemedicina'],
+         'Consenso baseado em quórum, alta eficiência, tolerância a falhas', 'MedicalChain: Oferece controle de dados de pacientes e consultas telemédicas seguras'],
         ['Bitcoin', 'DLT Pública', 'Alta Segurança e Descentralização de dados críticos', 'PoW',
-         'Segurança alta, descentralização, consumo elevado de energia', 'Guardtime: Rastreamento de dados de saúde'],
-        ['Ethereum 2.0', 'DLT Pública Permissionless', 'Escalabilidade e Governança Flexível', 'PoS',
-         'Eficiência energética, incentivo à participação, redução da centralização', 'MTBC: Gestão de registros eletrônicos']
+         'Segurança alta, descentralização, consumo elevado de energia', 'Guardtime: Utiliza a blockchain para rastreamento de dados de saúde em redes públicas com alta segurança'],
+        ['Ethereum (PoW)', 'DLT Pública', 'Alta Segurança e Descentralização de dados críticos', 'PoW',
+         'Segurança alta, descentralização, escalabilidade limitada, alto custo', 'Embleema: Blockchain usada para acelerar o desenvolvimento de medicamentos e ensaios clínicos'],
+        ['Ethereum 2.0 (PoS)', 'DLT Pública Permissionless', 'Escalabilidade e Governança Flexível', 'PoS',
+         'Eficiência energética, incentivo à participação, redução da centralização', 'MTBC: Utiliza Ethereum para a gestão de registros eletrônicos de saúde (EHR) nos EUA']
     ]
     
     # Create DataFrame
@@ -244,29 +87,47 @@ def show_home_page():
         'Estudos de Uso'
     ])
     
-    # Display styled table
+    # Enhanced table styling
     st.markdown("""
         <style>
         .dataframe {
             font-size: 14px !important;
+            width: 100% !important;
         }
         .dataframe th {
             background-color: #4CAF50 !important;
             color: white !important;
             font-weight: bold !important;
             text-align: center !important;
+            padding: 12px 8px !important;
+            white-space: normal !important;
         }
         .dataframe td {
             text-align: left !important;
-            padding: 8px !important;
+            padding: 10px 8px !important;
+            white-space: normal !important;
+            vertical-align: top !important;
         }
         .dataframe tr:nth-child(even) {
             background-color: #f2f2f2 !important;
         }
+        .dataframe tr:hover {
+            background-color: #ddd !important;
+        }
         </style>
     """, unsafe_allow_html=True)
     
-    st.dataframe(df, height=400, use_container_width=True)
+    # Display the table with improved height and width settings
+    st.dataframe(
+        df.style.set_properties(**{
+            'white-space': 'normal',
+            'height': 'auto',
+            'text-align': 'left',
+            'vertical-align': 'top'
+        }),
+        height=600,
+        use_container_width=True
+    )
 
 def show_metrics():
     """Display metrics with improved layout and concise explanations"""
@@ -281,10 +142,10 @@ def show_metrics():
                     gini = calcular_gini(classes)
                     entropy = calcular_entropia(classes)
                     
-                    # Add spacing between sections
+                    # Metrics Sections with enhanced explanations
                     st.markdown("<br>", unsafe_allow_html=True)
                     
-                    # 1. Gini Index with improved layout
+                    # 1. Gini Index with improved visualization
                     with st.expander("1. Índice de Gini"):
                         col1, col2 = st.columns([1, 1])
                         with col1:
@@ -294,15 +155,23 @@ def show_metrics():
                                 - 🟢 0.0-0.3: Excelente separação
                                 - 🟡 0.3-0.6: Separação moderada
                                 - 🔴 0.6-1.0: Alta mistura
+                                
+                                **Significado:**
+                                O índice de Gini mede a pureza da classificação. 
+                                Quanto menor o valor, melhor a separação entre as classes.
                             """)
                         with col2:
-                            gini_fig = create_gini_radar(gini)
-                            if gini_fig:
-                                st.plotly_chart(gini_fig, use_container_width=True)
+                            st.metric(
+                                "Valor do Índice de Gini",
+                                f"{gini:.3f}",
+                                delta=("Boa separação" if gini < 0.3 else 
+                                      "Separação moderada" if gini < 0.6 else 
+                                      "Alta mistura")
+                            )
                     
                     st.markdown("<br>", unsafe_allow_html=True)
                     
-                    # 2. Entropy with improved layout
+                    # 2. Entropy with enhanced explanation
                     with st.expander("2. Entropia"):
                         col1, col2 = st.columns([1, 1])
                         with col1:
@@ -312,29 +181,39 @@ def show_metrics():
                                 - 🟢 <1.0: Alta certeza
                                 - 🟡 1.0-2.0: Certeza moderada
                                 - 🔴 >2.0: Alta incerteza
+                                
+                                **Significado:**
+                                A entropia mede a incerteza na decisão.
+                                Valores menores indicam maior confiança na recomendação.
                             """)
                         with col2:
-                            entropy_fig = create_entropy_graph(st.session_state.answers)
-                            if entropy_fig:
-                                st.plotly_chart(entropy_fig, use_container_width=True)
+                            st.metric(
+                                "Valor da Entropia",
+                                f"{entropy:.3f}",
+                                delta=("Alta certeza" if entropy < 1.0 else 
+                                      "Certeza moderada" if entropy < 2.0 else 
+                                      "Alta incerteza")
+                            )
                     
                     st.markdown("<br>", unsafe_allow_html=True)
                     
-                    # 3. Tree Metrics with improved layout
+                    # 3. Tree Metrics with enhanced visualization
                     with st.expander("3. Métricas da Árvore"):
                         col1, col2 = st.columns([1, 1])
                         with col1:
                             st.markdown("""
-                                **Fórmulas:**
-                            """)
-                            st.latex(r"Profundidade = \frac{\sum_{i=1}^{n} nivel_i}{n}")
-                            st.latex(r"Taxa_{poda} = \frac{nos_{total} - nos_{podados}}{nos_{total}}")
-                            st.latex(r"Confianca = \frac{max_{score} - mean_{score}}{max_{score}}")
-                            st.markdown("""
-                                **Significado:**
-                                - Profundidade: Complexidade da árvore
-                                - Taxa de Poda: Eficiência da simplificação
-                                - Confiança: Certeza da recomendação
+                                **Métricas Principais:**
+                                1. **Profundidade da Árvore**
+                                - Mede a complexidade do processo decisório
+                                - Valores menores indicam processo mais simples
+                                
+                                2. **Taxa de Poda**
+                                - Indica a eficiência da simplificação
+                                - Valores maiores indicam melhor otimização
+                                
+                                3. **Índice de Confiança**
+                                - Mede a confiabilidade da recomendação
+                                - Valores > 0.7 indicam alta confiabilidade
                             """)
                         with col2:
                             depth = calcular_profundidade_decisoria(list(range(len(st.session_state.answers))))
@@ -343,9 +222,13 @@ def show_metrics():
                             pruning_ratio = calcular_pruning(total_nos, nos_podados)
                             confidence = rec.get('confidence_value', 0.0)
                             
-                            metrics_fig = create_metrics_dashboard(depth, pruning_ratio, confidence)
-                            if metrics_fig:
-                                st.plotly_chart(metrics_fig, use_container_width=True)
+                            # Display metrics with improved formatting
+                            st.metric("Profundidade", f"{depth:.2f}", 
+                                    delta="Baixa" if depth < 3 else "Média" if depth < 5 else "Alta")
+                            st.metric("Taxa de Poda", f"{pruning_ratio:.2%}", 
+                                    delta="Boa" if pruning_ratio > 0.5 else "Regular")
+                            st.metric("Confiança", f"{confidence:.2%}", 
+                                    delta="Alta" if confidence > 0.7 else "Média")
         else:
             st.info("Complete o processo de seleção para ver as métricas.")
     except Exception as e:
