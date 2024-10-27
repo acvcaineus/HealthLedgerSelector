@@ -25,18 +25,43 @@ def init_session_state():
         st.error(f"Error initializing session state: {str(e)}")
         st.session_state.error = str(e)
 
-def show_reference_table():
-    """Display reference table of DLT types and algorithms"""
+def reset_session_state():
+    """Reset session state on errors"""
+    try:
+        st.session_state.answers = {}
+        st.session_state.error = None
+        st.session_state.loading = False
+        st.session_state.recommendation = None
+    except Exception as e:
+        st.error(f"Error resetting session state: {str(e)}")
+
+def show_home_page():
+    """Display home page with framework explanation and reference table"""
+    st.title("SeletorDLTSaude")
+    st.write("Bem-vindo ao sistema de seleção de DLT para saúde.")
+
+    st.header("Objetivo do Framework")
+    st.markdown('''
+        O SeletorDLTSaude é uma aplicação interativa desenvolvida para ajudar profissionais 
+        e pesquisadores a escolherem a melhor solução de Distributed Ledger Technology (DLT) 
+        e o algoritmo de consenso mais adequado para projetos de saúde. 
+        
+        A aplicação guia o usuário através de um processo estruturado em quatro fases:
+        - **Fase de Aplicação**: Avalia requisitos de privacidade e integração
+        - **Fase de Consenso**: Analisa necessidades de segurança e eficiência
+        - **Fase de Infraestrutura**: Considera escalabilidade e performance
+        - **Fase de Internet**: Avalia governança e interoperabilidade
+    ''')
+
     st.subheader("Tabela de Referência de DLTs e Algoritmos")
-    
     data = {
         'Grupo': [
             'Alta Segurança e Controle',
             'Alta Segurança e Controle',
             'Alta Eficiência Operacional',
+            'Alta Eficiência Operacional',
             'Escalabilidade e Governança Flexível',
-            'Alta Escalabilidade em Redes IoT',
-            'Alta Segurança e Descentralização'
+            'Alta Escalabilidade em Redes IoT'
         ],
         'Tipo DLT': [
             'DLT Permissionada Privada',
@@ -46,54 +71,113 @@ def show_reference_table():
             'DLT com Consenso Delegado',
             'DLT Pública'
         ],
-        'Exemplo': [
+        'Nome DLT': [
             'Hyperledger Fabric',
             'Bitcoin',
             'Quorum',
             'Ethereum 2.0',
-            'IOTA',
-            'Ethereum'
+            'EOS',
+            'IOTA'
         ],
         'Algoritmo de Consenso': [
             'PBFT',
             'PoW',
             'RAFT/PoA',
             'PoS',
-            'Tangle',
-            'PoW/PoS'
+            'DPoS',
+            'Tangle'
         ],
-        'Caso de Uso em Saúde': [
-            'Prontuários Eletrônicos',
-            'Dados Críticos de Saúde',
-            'Sistemas Locais',
-            'Redes Regionais',
-            'IoT Médico',
-            'Ensaios Clínicos'
+        'Principais Características': [
+            'Alta segurança e resiliência contra falhas bizantinas',
+            'Alta segurança e descentralização total',
+            'Simplicidade e eficiência em redes locais',
+            'Alta escalabilidade e eficiência energética',
+            'Governança flexível e alta performance',
+            'Escalabilidade para IoT e dados em tempo real'
         ]
     }
     
     df = pd.DataFrame(data)
     st.table(df)
 
-def create_gini_radar(gini):
-    """Create Gini index radar visualization with error handling"""
+    if st.button("Iniciar Seleção de DLT", type="primary"):
+        st.session_state.page = 'Framework Proposto'
+        st.experimental_rerun()
+
+def show_fallback_ui():
+    """Display fallback UI when main content fails to load"""
+    st.error("Ocorreu um erro ao carregar o conteúdo")
+    if st.button("Tentar Novamente"):
+        st.experimental_rerun()
+
+def create_entropy_graph(answers):
+    """Create entropy evolution graph with error handling"""
     try:
-        categories = ['Separação de Classes', 'Pureza dos Dados', 'Consistência', 'Precisão']
+        with st.spinner('Calculando evolução da entropia...'):
+            entropy_values = []
+            weights = {
+                "security": float(0.4),
+                "scalability": float(0.25),
+                "energy_efficiency": float(0.20),
+                "governance": float(0.15)
+            }
+            for i in range(len(answers)):
+                partial_answers = dict(list(answers.items())[:i+1])
+                classes = {k: v['score'] for k, v in get_recommendation(partial_answers, weights)['evaluation_matrix'].items()}
+                entropy_values.append(calcular_entropia(classes))
+            
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=list(range(1, len(entropy_values) + 1)),
+                y=entropy_values,
+                mode='lines+markers',
+                name='Evolução da Entropia'
+            ))
+            fig.update_layout(
+                title="Evolução da Entropia Durante o Processo Decisório",
+                xaxis_title="Número de Perguntas Respondidas",
+                yaxis_title="Entropia (bits)"
+            )
+            return fig
+    except Exception as e:
+        st.error(f"Error creating entropy graph: {str(e)}")
+        return None
+
+def create_metrics_dashboard(depth, pruning_ratio, confidence):
+    """Create metrics dashboard with error handling"""
+    try:
         fig = go.Figure()
-        fig.add_trace(go.Scatterpolar(
-            r=[1-gini, gini, 1-gini, gini],
-            theta=categories,
-            fill='toself',
-            name='Índice de Gini'
+        fig.add_trace(go.Indicator(
+            mode="gauge+number",
+            value=depth,
+            title={'text': "Profundidade da Árvore"},
+            gauge={'axis': {'range': [0, 10]},
+                   'bar': {'color': "darkblue"}},
+            domain={'row': 0, 'column': 0}
+        ))
+        fig.add_trace(go.Indicator(
+            mode="gauge+number",
+            value=pruning_ratio * 100,
+            title={'text': "Taxa de Poda (%)"},
+            gauge={'axis': {'range': [0, 100]},
+                   'bar': {'color': "darkgreen"}},
+            domain={'row': 0, 'column': 1}
+        ))
+        fig.add_trace(go.Indicator(
+            mode="gauge+number",
+            value=confidence * 100,
+            title={'text': "Confiança (%)"},
+            gauge={'axis': {'range': [0, 100]},
+                   'bar': {'color': "darkred"}},
+            domain={'row': 0, 'column': 2}
         ))
         fig.update_layout(
-            polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
-            showlegend=True,
-            title="Análise do Índice de Gini"
+            grid={'rows': 1, 'columns': 3, 'pattern': "independent"},
+            title="Dashboard de Métricas da Árvore de Decisão"
         )
         return fig
     except Exception as e:
-        st.error(f"Error creating Gini radar: {str(e)}")
+        st.error(f"Error creating metrics dashboard: {str(e)}")
         return None
 
 def show_metrics():
@@ -230,9 +314,7 @@ def main():
             try:
                 if menu_option == 'Início':
                     with st.spinner('Carregando página inicial...'):
-                        st.title("SeletorDLTSaude")
-                        st.write("Bem-vindo ao sistema de seleção de DLT para saúde.")
-                        show_reference_table()
+                        show_home_page()
                 elif menu_option == 'Framework Proposto':
                     with st.spinner('Carregando framework...'):
                         run_decision_tree()
