@@ -74,8 +74,7 @@ def create_progress_animation(current_phase, answers, questions):
     # Update layout with responsive height
     fig.update_layout(
         showlegend=False,
-        height=int(st.get_option('theme.plotly_chart_height', 400)),
-        autosize=True,
+        height=250,
         margin=dict(l=20, r=20, t=40, b=20),
         plot_bgcolor='white',
         xaxis=dict(
@@ -158,42 +157,6 @@ def show_recommendation(answers, weights, questions):
             )
             
             st.plotly_chart(fig, use_container_width=True)
-            
-            # Algorithm comparison matrix
-            with st.expander("Ver Matriz de Avaliação dos Algoritmos"):
-                st.write("### Matriz de Avaliação dos Algoritmos de Consenso")
-                
-                alg_matrix_data = []
-                alg_labels = []
-                
-                for alg in recommendation['algorithms']:
-                    alg_labels.append(alg)
-                    row = []
-                    for metric in ['security', 'scalability', 'energy_efficiency', 'governance']:
-                        value = consensus_algorithms[alg][metric]
-                        row.append(float(value))
-                    alg_matrix_data.append(row)
-                
-                fig_alg = go.Figure(data=go.Heatmap(
-                    z=alg_matrix_data,
-                    x=['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança'],
-                    y=alg_labels,
-                    colorscale='Viridis',
-                    hoverongaps=False,
-                    hovertemplate="<b>Algoritmo:</b> %{y}<br>" +
-                                 "<b>Métrica:</b> %{x}<br>" +
-                                 "<b>Valor:</b> %{z:.2f}<br>" +
-                                 "<extra></extra>"
-                ))
-                
-                fig_alg.update_layout(
-                    title="Comparação dos Algoritmos de Consenso",
-                    height=350,
-                    margin=dict(l=50, r=30, t=80, b=50),
-                    autosize=True
-                )
-                
-                st.plotly_chart(fig_alg, use_container_width=True)
     
     with col2:
         st.subheader("Métricas de Confiança")
@@ -214,13 +177,13 @@ def show_recommendation(answers, weights, questions):
                 st.write(f"**Citações:** {academic.get('citations', 'N/A')}")
                 st.write(f"**Referência:** {academic.get('reference', 'N/A')}")
                 st.write(f"**Validação:** {academic.get('validation', 'N/A')}")
+    
+    return recommendation
 
-def run_decision_tree():
-    """Run the interactive decision tree process"""
+def show_interactive_decision_tree():
+    """Interactive decision tree with enhanced state management"""
     if 'answers' not in st.session_state:
         st.session_state.answers = {}
-
-    st.title("Framework de Seleção de DLT")
     
     questions = [
         {
@@ -290,34 +253,23 @@ def run_decision_tree():
     ]
 
     current_phase = next((q["phase"] for q in questions if q["id"] not in st.session_state.answers), "Completo")
-    progress = len(st.session_state.answers) / len(questions)
     
     # Show progress animation
     progress_fig = create_progress_animation(current_phase, st.session_state.answers, questions)
     st.plotly_chart(progress_fig, use_container_width=True)
     
-    # Show current phase details
-    st.markdown(f"### Fase Atual: {current_phase}")
-    st.progress(progress)
-
-    current_question = None
-    for q in questions:
-        if q["id"] not in st.session_state.answers:
-            current_question = q
-            break
-
+    # Show current question
+    current_question = next((q for q in questions if q["id"] not in st.session_state.answers), None)
     if current_question:
-        st.subheader(f"Característica: {current_question['characteristic']}")
+        st.markdown(f"**Fase Atual:** {current_phase}")
+        st.markdown(f"**Característica:** {current_question['characteristic']}")
         st.info(f"Dica: {current_question['tooltip']}")
-        response = st.radio(
-            current_question["text"],
-            current_question["options"]
-        )
-
+        
+        response = st.radio(current_question["text"], current_question["options"])
         if st.button("Próxima Pergunta"):
             st.session_state.answers[current_question["id"]] = response
             st.experimental_rerun()
-
+    
     if len(st.session_state.answers) == len(questions):
         weights = {
             "security": float(0.4),
@@ -332,3 +284,8 @@ def restart_decision_tree():
     if st.button("Reiniciar Processo", help="Clique para começar um novo processo de seleção"):
         st.session_state.answers = {}
         st.experimental_rerun()
+
+def run_decision_tree():
+    """Main entry point for the decision tree framework"""
+    st.title("Framework de Seleção de DLT")
+    show_interactive_decision_tree()
