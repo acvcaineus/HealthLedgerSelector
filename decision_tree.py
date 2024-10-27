@@ -1,6 +1,6 @@
 import streamlit as st
 import plotly.graph_objects as go
-from decision_logic import get_recommendation, consensus_algorithms
+from decision_logic import get_recommendation, compare_algorithms, calculate_compatibility_scores
 from database import save_recommendation
 import networkx as nx
 from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_decisoria, 
@@ -112,24 +112,32 @@ def show_recommendation(answers, weights, questions):
         </div>
         """, unsafe_allow_html=True)
         
-        # Evaluation Matrix
-        if 'evaluation_matrix' in recommendation:
+        # Evaluation Matrix with explanation
+        with st.expander("Ver Matriz de Avaliação das DLTs", expanded=True):
+            st.write("Esta matriz mostra a comparação das diferentes DLTs baseada nas métricas principais.")
+            
             matrix_data = []
             y_labels = []
+            
+            metrics_pt = {
+                "security": "Segurança",
+                "scalability": "Escalabilidade",
+                "energy_efficiency": "Eficiência Energética",
+                "governance": "Governança"
+            }
             
             for dlt, data in recommendation['evaluation_matrix'].items():
                 y_labels.append(dlt)
                 row = []
                 for metric, value in data['metrics'].items():
-                    if metric != 'academic_validation':
+                    if metric in metrics_pt:
                         try:
                             row.append(float(value))
                         except (ValueError, TypeError):
                             row.append(0.0)
                 matrix_data.append(row)
             
-            metrics = [m for m in recommendation['evaluation_matrix'][y_labels[0]]['metrics'].keys() 
-                      if m != 'academic_validation']
+            metrics = [metrics_pt[m] for m in metrics_pt.keys()]
             
             fig = go.Figure(data=go.Heatmap(
                 z=matrix_data,
@@ -157,26 +165,98 @@ def show_recommendation(answers, weights, questions):
             )
             
             st.plotly_chart(fig, use_container_width=True)
+
+        # Algorithm Analysis Matrix
+        with st.expander("Ver Matriz de Análise dos Algoritmos"):
+            st.write("### Matriz de Avaliação dos Algoritmos de Consenso")
+            st.write("Esta matriz compara os diferentes algoritmos de consenso baseados nas métricas principais.")
+            
+            alg_comparison = compare_algorithms(recommendation['consensus_group'])
+            alg_matrix = []
+            metrics = ["Segurança", "Escalabilidade", "Eficiência Energética", "Governança"]
+            
+            for alg in recommendation['algorithms']:
+                row = []
+                for metric in metrics:
+                    value = alg_comparison[metric][alg]
+                    row.append(value)
+                alg_matrix.append(row)
+            
+            fig_alg = go.Figure(data=go.Heatmap(
+                z=alg_matrix,
+                x=metrics,
+                y=recommendation['algorithms'],
+                colorscale='Viridis',
+                hoverongaps=False,
+                hovertemplate="<b>Algoritmo:</b> %{y}<br>" +
+                             "<b>Métrica:</b> %{x}<br>" +
+                             "<b>Valor:</b> %{z:.2f}<br>" +
+                             "<extra></extra>"
+            ))
+            
+            fig_alg.update_layout(
+                title="Comparação dos Algoritmos de Consenso",
+                height=350,
+                margin=dict(l=50, r=30, t=80, b=50),
+                autosize=True
+            )
+            
+            st.plotly_chart(fig_alg, use_container_width=True)
+
+        # DLT-Algorithm Compatibility Matrix
+        with st.expander("Ver Matriz de Compatibilidade DLT-Algoritmo"):
+            st.write("### Matriz de Compatibilidade entre DLTs e Algoritmos")
+            st.write("Esta matriz mostra a compatibilidade entre as DLTs recomendadas e os algoritmos de consenso.")
+            
+            combined_scores = calculate_compatibility_scores(recommendation)
+            
+            fig_compat = go.Figure(data=go.Heatmap(
+                z=combined_scores['matrix'],
+                x=combined_scores['algorithms'],
+                y=combined_scores['dlts'],
+                colorscale='RdYlGn',
+                hoverongaps=False,
+                hovertemplate="<b>DLT:</b> %{y}<br>" +
+                             "<b>Algoritmo:</b> %{x}<br>" +
+                             "<b>Compatibilidade:</b> %{z:.2f}<br>" +
+                             "<extra></extra>"
+            ))
+            
+            fig_compat.update_layout(
+                title="Matriz de Compatibilidade",
+                height=350,
+                margin=dict(l=50, r=30, t=80, b=50),
+                autosize=True
+            )
+            
+            st.plotly_chart(fig_compat, use_container_width=True)
     
     with col2:
         st.subheader("Métricas de Confiança")
-        confidence_score = recommendation.get('confidence', False)
         confidence_value = recommendation.get('confidence_value', 0.0)
         st.metric(
             label="Índice de Confiança",
             value=f"{confidence_value:.2%}",
-            delta=f"{'Alto' if confidence_score else 'Médio'}",
+            delta=f"{'Alto' if confidence_value > 0.7 else 'Médio'}",
             help="Baseado na diferença entre o score máximo e a média dos scores"
         )
         
-        if 'academic_validation' in recommendation:
-            st.subheader("Validação Acadêmica")
-            academic = recommendation['academic_validation']
-            if academic:
-                st.write(f"**Score Acadêmico:** {academic.get('score', 'N/A')}/5.0")
-                st.write(f"**Citações:** {academic.get('citations', 'N/A')}")
-                st.write(f"**Referência:** {academic.get('reference', 'N/A')}")
-                st.write(f"**Validação:** {academic.get('validation', 'N/A')}")
+        # Technical Metrics Details
+        with st.expander("Ver Detalhes dos Cálculos"):
+            st.write("### Cálculos Detalhados das Métricas")
+            
+            gini_value = calcular_gini(
+                {dlt: data['score'] for dlt, data in recommendation['evaluation_matrix'].items()}
+            )
+            entropy_value = calcular_entropia(
+                {dlt: data['score'] for dlt, data in recommendation['evaluation_matrix'].items()}
+            )
+            
+            st.latex(r"\text{Índice de Gini} = 1 - \sum_{i=1}^{n} p_i^2")
+            st.write(f"Valor calculado: {gini_value:.3f}")
+            
+            st.latex(r"\text{Entropia} = -\sum_{i=1}^{n} p_i \log_2(p_i)")
+            st.write(f"Valor calculado: {entropy_value:.3f}")
     
     return recommendation
 
