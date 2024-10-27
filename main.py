@@ -55,48 +55,81 @@ def show_home_page():
 
     st.subheader("Tabela de Referência de DLTs e Algoritmos")
     data = {
-        'Grupo': [
-            'Alta Segurança e Controle',
-            'Alta Segurança e Controle',
-            'Alta Eficiência Operacional',
-            'Alta Eficiência Operacional',
-            'Escalabilidade e Governança Flexível',
-            'Alta Escalabilidade em Redes IoT'
+        'DLT': [
+            'Hyperledger Fabric',
+            'Hyperledger Fabric',
+            'VeChain',
+            'Quorum (Mediledger)',
+            'IOTA',
+            'Ripple (XRP Ledger)',
+            'Stellar',
+            'Bitcoin',
+            'Ethereum (PoW)',
+            'Ethereum 2.0 (PoS)'
         ],
-        'Tipo DLT': [
+        'Tipo de DLT': [
             'DLT Permissionada Privada',
-            'DLT Pública Permissionless',
+            'DLT Permissionada Privada',
             'DLT Permissionada Simples',
             'DLT Híbrida',
-            'DLT com Consenso Delegado',
+            'DLT Pública',
+            'DLT Pública Permissionless',
+            'DLT Pública Permissionless',
+            'DLT Pública',
+            'DLT Pública',
             'DLT Pública'
         ],
-        'Nome DLT': [
-            'Hyperledger Fabric',
-            'Bitcoin',
-            'Quorum',
-            'Ethereum 2.0',
-            'EOS',
-            'IOTA'
+        'Grupo de Algoritmo': [
+            'Alta Segurança e Controle dos dados',
+            'Alta Segurança e Controle dos dados',
+            'Alta Eficiência Operacional em redes locais',
+            'Escalabilidade e Governança Flexível',
+            'Alta Escalabilidade em Redes IoT',
+            'Alta Eficiência Operacional em redes locais',
+            'Alta Eficiência Operacional em redes locais',
+            'Alta Segurança e Descentralização',
+            'Alta Segurança e Descentralização',
+            'Escalabilidade e Governança Flexível'
         ],
         'Algoritmo de Consenso': [
+            'RAFT/IBFT',
             'PBFT',
-            'PoW',
-            'RAFT/PoA',
-            'PoS',
-            'DPoS',
-            'Tangle'
+            'Proof of Authority (PoA)',
+            'RAFT/IBFT',
+            'Tangle',
+            'Ripple Consensus Algorithm',
+            'Stellar Consensus Protocol (SCP)',
+            'Proof of Work (PoW)',
+            'Proof of Work (PoW)',
+            'Proof of Stake (PoS)'
         ],
-        'Principais Características': [
-            'Alta segurança e resiliência contra falhas bizantinas',
-            'Alta segurança e descentralização total',
-            'Simplicidade e eficiência em redes locais',
-            'Alta escalabilidade e eficiência energética',
-            'Governança flexível e alta performance',
-            'Escalabilidade para IoT e dados em tempo real'
+        'Caso de Uso': [
+            'Rastreabilidade de medicamentos na cadeia de suprimentos',
+            'Compartilhamento de Dados de Pesquisa e Registros de Saúde',
+            'Rastreamento de suprimentos médicos e cadeia farmacêutica',
+            'Monitoramento e rastreamento de medicamentos',
+            'Compartilhamento seguro de dados de pacientes via IoT',
+            'Processamento eficiente de transações e segurança de dados',
+            'Gerenciamento de transações de pagamentos entre provedores',
+            'Armazenamento seguro de dados médicos críticos',
+            'Contratos inteligentes e registros médicos eletrônicos',
+            'Aceleração de ensaios clínicos e compartilhamento de dados'
+        ],
+        'Referência Bibliográfica': [
+            'NASIR, S.; ALPHABLOCK. Medledger system for monitoring counterfeit drugs. 2019.',
+            'NASIR, S.; ALPHABLOCK. Permissioned health data networks for secure data sharing. 2020.',
+            "TURK, Z.; KLINC, R. FarmaTrust's VeChain for drug authenticity verification. 2019.",
+            'GIL, A. C. Mediledger transparency system for drug monitoring. 2002.',
+            'VIEIRA, S. C. V. C. A.; GIOZZA, W. F.; RODRIGUES, C. K. S. Patientory platform for real-time data sharing in IoT. 2023.',
+            "HEISKANEN, H. Ripple's fast and secure transactions in healthcare. 2020.",
+            'LI, J.; HEISKANEN, H. Stellar protocol for secure healthcare payments. 2019.',
+            'GIL, A. C. Immutable data storage in public health networks. 2002.',
+            'GIOZZA, W. F.; ALMEIDA, S. C. V. C.; RODRIGUES, C. K. S. Smart contracts for secure health records on Ethereum. 2023.',
+            'GIL, A. C. Ethereum-based clinical trial tracking system. 2002.'
         ]
     }
-    
+
+    # Update table display to show all columns
     df = pd.DataFrame(data)
     st.table(df)
 
@@ -110,173 +143,31 @@ def show_fallback_ui():
     if st.button("Tentar Novamente"):
         st.experimental_rerun()
 
-def create_entropy_graph(answers):
-    """Create entropy evolution graph with error handling"""
-    try:
-        with st.spinner('Calculando evolução da entropia...'):
-            entropy_values = []
-            weights = {
-                "security": float(0.4),
-                "scalability": float(0.25),
-                "energy_efficiency": float(0.20),
-                "governance": float(0.15)
-            }
-            for i in range(len(answers)):
-                partial_answers = dict(list(answers.items())[:i+1])
-                classes = {k: v['score'] for k, v in get_recommendation(partial_answers, weights)['evaluation_matrix'].items()}
-                entropy_values.append(calcular_entropia(classes))
-            
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(
-                x=list(range(1, len(entropy_values) + 1)),
-                y=entropy_values,
-                mode='lines+markers',
-                name='Evolução da Entropia'
-            ))
-            fig.update_layout(
-                title="Evolução da Entropia Durante o Processo Decisório",
-                xaxis_title="Número de Perguntas Respondidas",
-                yaxis_title="Entropia (bits)"
-            )
-            return fig
-    except Exception as e:
-        st.error(f"Error creating entropy graph: {str(e)}")
-        return None
-
-def create_metrics_dashboard(depth, pruning_ratio, confidence):
-    """Create metrics dashboard with error handling"""
-    try:
-        fig = go.Figure()
-        fig.add_trace(go.Indicator(
-            mode="gauge+number",
-            value=depth,
-            title={'text': "Profundidade da Árvore"},
-            gauge={'axis': {'range': [0, 10]},
-                   'bar': {'color': "darkblue"}},
-            domain={'row': 0, 'column': 0}
-        ))
-        fig.add_trace(go.Indicator(
-            mode="gauge+number",
-            value=pruning_ratio * 100,
-            title={'text': "Taxa de Poda (%)"},
-            gauge={'axis': {'range': [0, 100]},
-                   'bar': {'color': "darkgreen"}},
-            domain={'row': 0, 'column': 1}
-        ))
-        fig.add_trace(go.Indicator(
-            mode="gauge+number",
-            value=confidence * 100,
-            title={'text': "Confiança (%)"},
-            gauge={'axis': {'range': [0, 100]},
-                   'bar': {'color': "darkred"}},
-            domain={'row': 0, 'column': 2}
-        ))
-        fig.update_layout(
-            grid={'rows': 1, 'columns': 3, 'pattern': "independent"},
-            title="Dashboard de Métricas da Árvore de Decisão"
-        )
-        return fig
-    except Exception as e:
-        st.error(f"Error creating metrics dashboard: {str(e)}")
-        return None
-
-def show_metrics():
-    """Display metrics with enhanced explanations"""
-    st.header("Métricas Técnicas do Processo de Decisão")
+def show_metrics_explanation():
+    """Display enhanced metrics explanations"""
+    st.header("Métricas do Sistema")
     
-    try:
-        if 'recommendation' in st.session_state:
-            with st.spinner('Carregando métricas...'):
-                rec = st.session_state.recommendation
-                if 'evaluation_matrix' in rec:
-                    classes = {k: v['score'] for k, v in rec['evaluation_matrix'].items()}
-                    gini = calcular_gini(classes)
-                    entropy = calcular_entropia(classes)
-                    
-                    # Show Gini Index Visualization with explanation
-                    st.subheader("1. Índice de Gini")
-                    with st.expander("Ver Explicação do Índice de Gini"):
-                        st.markdown("""
-                        ### O que é o Índice de Gini?
-                        O Índice de Gini mede a pureza da classificação das DLTs. É calculado usando a fórmula:
-                        
-                        $Gini = 1 - \sum_{i=1}^{n} p_i^2$
-                        
-                        Onde:
-                        - $p_i$ é a proporção de cada classe no conjunto
-                        
-                        ### Interpretação dos Eixos:
-                        - **Separação de Classes**: Indica quão bem as DLTs são distinguidas
-                        - **Pureza dos Dados**: Medida da homogeneidade dos grupos
-                        - **Consistência**: Estabilidade da classificação
-                        - **Precisão**: Acurácia geral do modelo
-                        
-                        ### Interpretação dos Valores:
-                        - Valores próximos a 0: Melhor separação entre DLTs
-                        - Valores próximos a 1: Maior mistura entre categorias
-                        """)
-                    gini_fig = create_gini_radar(gini)
-                    if gini_fig:
-                        st.plotly_chart(gini_fig, use_container_width=True)
-                    
-                    # Show Entropy Evolution with explanation
-                    st.subheader("2. Evolução da Entropia")
-                    with st.expander("Ver Explicação da Evolução da Entropia"):
-                        st.markdown("""
-                        ### O que é a Entropia?
-                        A Entropia mede a incerteza na classificação das DLTs ao longo do processo decisório.
-                        
-                        $Entropia = -\sum_{i=1}^{n} p_i \log_2(p_i)$
-                        
-                        ### Interpretação do Gráfico:
-                        - **Eixo X**: Número de perguntas respondidas
-                        - **Eixo Y**: Valor da entropia em bits
-                        
-                        ### Tendências:
-                        - **Diminuição**: Indica maior certeza na decisão
-                        - **Aumento**: Indica maior incerteza ou complexidade
-                        - **Estabilização**: Indica convergência do processo decisório
-                        """)
-                    entropy_fig = create_entropy_graph(st.session_state.answers)
-                    if entropy_fig:
-                        st.plotly_chart(entropy_fig, use_container_width=True)
-                    
-                    # Show Decision Tree Metrics Dashboard with explanation
-                    st.subheader("3. Dashboard de Métricas")
-                    with st.expander("Ver Explicação do Dashboard de Métricas"):
-                        st.markdown("""
-                        ### Métricas do Dashboard:
-                        
-                        1. **Profundidade da Árvore**
-                        - O que é: Número médio de decisões necessárias
-                        - Cálculo: $Profundidade = \sum(níveis) / total\_decisões$
-                        - Interpretação: Valores menores indicam processo mais direto
-                        
-                        2. **Taxa de Poda**
-                        - O que é: Proporção de simplificação da árvore
-                        - Cálculo: $Taxa = (total\_nós - nós\_podados) / total\_nós$
-                        - Interpretação: Maior taxa indica melhor otimização
-                        
-                        3. **Índice de Confiança**
-                        - O que é: Medida da confiabilidade da recomendação
-                        - Cálculo: $Confiança = (max\_score - mean\_score) / max\_score$
-                        - Interpretação: Valores acima de 70% indicam alta confiabilidade
-                        """)
-                    
-                    depth = calcular_profundidade_decisoria(list(range(len(st.session_state.answers))))
-                    total_nos = len(st.session_state.answers) * 2 + 1
-                    nos_podados = total_nos - len(st.session_state.answers) - 1
-                    pruning_ratio = calcular_pruning(total_nos, nos_podados)
-                    confidence = rec.get('confidence_value', 0.0)
-                    
-                    metrics_fig = create_metrics_dashboard(depth, pruning_ratio, confidence)
-                    if metrics_fig:
-                        st.plotly_chart(metrics_fig, use_container_width=True)
-        else:
-            st.info("Complete o processo de seleção para ver as métricas.")
-    except Exception as e:
-        st.error(f"Error displaying metrics: {str(e)}")
-        st.code(traceback.format_exc())
+    with st.expander("Explicação das Métricas de Avaliação"):
+        st.markdown("""
+        ### 1. Índice de Confiança
+        Mede a confiabilidade da recomendação baseado em:
+        - Diferença entre o score mais alto e a média dos scores
+        - Consistência das respostas fornecidas
+        - Validação acadêmica das soluções
+
+        ### 2. Matriz de Avaliação
+        Apresenta uma visualização detalhada de como cada DLT se comporta em relação a:
+        - Segurança (40%)
+        - Escalabilidade (25%)
+        - Eficiência Energética (20%)
+        - Governança (15%)
+
+        ### 3. Compatibilidade DLT-Algoritmo
+        Análise da compatibilidade entre DLTs e algoritmos de consenso considerando:
+        - Características técnicas
+        - Requisitos de implementação
+        - Casos de uso validados
+        """)
 
 def main():
     """Main application with improved error handling and state management"""
@@ -313,25 +204,21 @@ def main():
 
             try:
                 if menu_option == 'Início':
-                    with st.spinner('Carregando página inicial...'):
-                        show_home_page()
+                    show_home_page()
                 elif menu_option == 'Framework Proposto':
-                    with st.spinner('Carregando framework...'):
-                        run_decision_tree()
+                    run_decision_tree()
                 elif menu_option == 'Métricas':
-                    with st.spinner('Carregando métricas...'):
-                        show_metrics()
+                    show_metrics_explanation()
                 elif menu_option == 'Perfil':
-                    with st.spinner('Carregando perfil...'):
-                        st.header(f"Perfil do Usuário: {st.session_state.username}")
-                        recommendations = get_user_recommendations(st.session_state.username)
-                        if recommendations:
-                            st.subheader("Últimas Recomendações")
-                            for rec in recommendations:
-                                st.write(f"DLT: {rec['dlt']}")
-                                st.write(f"Consenso: {rec['consensus']}")
-                                st.write(f"Data: {rec['timestamp']}")
-                                st.markdown("---")
+                    st.header(f"Perfil do Usuário: {st.session_state.username}")
+                    recommendations = get_user_recommendations(st.session_state.username)
+                    if recommendations:
+                        st.subheader("Últimas Recomendações")
+                        for rec in recommendations:
+                            st.write(f"DLT: {rec['dlt']}")
+                            st.write(f"Consenso: {rec['consensus']}")
+                            st.write(f"Data: {rec['timestamp']}")
+                            st.markdown("---")
                 elif menu_option == 'Logout':
                     logout()
                     st.session_state.page = 'Início'
