@@ -43,15 +43,8 @@ def calcular_profundidade_decisoria(decisoes):
     """
     if not decisoes:
         return 0
-    try:
-        # Convert all elements to integers and filter out non-numeric values
-        decisoes_numericas = [int(i) for i in range(len(decisoes))]
-        if not decisoes_numericas:
-            return 0
-        profundidade_total = sum(decisoes_numericas)
-        return profundidade_total / len(decisoes_numericas)
-    except (ValueError, TypeError):
-        return 0
+    profundidade_total = sum(decisoes)
+    return profundidade_total / len(decisoes)
 
 def calcular_pruning(total_nos, nos_podados):
     """
