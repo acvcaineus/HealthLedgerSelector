@@ -7,6 +7,7 @@ from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_dec
                     calcular_pruning, calcular_confiabilidade_recomendacao)
 
 def create_progress_animation(current_phase, answers, questions):
+    """Create an animated progress visualization for the decision process"""
     phases = ['Aplicação', 'Consenso', 'Infraestrutura', 'Internet']
     fig = go.Figure()
     
@@ -56,14 +57,6 @@ def create_progress_animation(current_phase, answers, questions):
             showlegend=False
         ))
         
-        # Add phase label with progress
-        fig.add_annotation(
-            x=i, y=-0.2,
-            text=f"{phase}<br>({phase_progress[phase]}/{phase_total[phase]})",
-            showarrow=False,
-            font=dict(size=12)
-        )
-        
         # Add connecting lines
         if i < len(phases) - 1:
             fig.add_trace(go.Scatter(
@@ -78,11 +71,12 @@ def create_progress_animation(current_phase, answers, questions):
                 showlegend=False
             ))
     
-    # Update layout
+    # Update layout with responsive height
     fig.update_layout(
         showlegend=False,
-        height=200,
-        margin=dict(l=20, r=20, t=20, b=40),
+        height=int(st.get_option('theme.plotly_chart_height', 400)),
+        autosize=True,
+        margin=dict(l=20, r=20, t=40, b=20),
         plot_bgcolor='white',
         xaxis=dict(
             showgrid=False,
@@ -101,6 +95,7 @@ def create_progress_animation(current_phase, answers, questions):
     return fig
 
 def show_recommendation(answers, weights, questions):
+    """Display the final recommendation with enhanced visualizations"""
     recommendation = get_recommendation(answers, weights)
     
     st.header("Recomendação Final")
@@ -118,81 +113,90 @@ def show_recommendation(answers, weights, questions):
         </div>
         """, unsafe_allow_html=True)
         
-        # Add collapsible explanations
-        with st.expander("Ver Explicação da DLT Recomendada"):
-            st.write(f"### Por que {recommendation['dlt']}?")
-            st.write("Esta DLT foi selecionada com base em suas respostas:")
-            for question_id, answer in answers.items():
-                for q in questions:
-                    if q['id'] == question_id:
-                        st.write(f"- {q['text']}: **{answer}**")
-            st.write("\n### Principais Características:")
-            for metric, value in recommendation['evaluation_matrix'][recommendation['dlt']]['metrics'].items():
-                if metric != 'academic_validation':
-                    st.write(f"- **{metric}**: {float(value):.2f}")
-        
-        # Add use cases section
-        with st.expander("Ver Casos de Uso Recomendados"):
-            st.write("### Aplicações Recomendadas")
-            use_cases = {
-                "DLT Permissionada Privada": [
-                    "Prontuários Eletrônicos (EMR)",
-                    "Integração de Dados Sensíveis",
-                    "Sistemas de Pagamento Descentralizados"
-                ],
-                "DLT Pública Permissionless": [
-                    "Sistemas de Pagamento Descentralizados",
-                    "Dados Críticos de Saúde Pública",
-                    "Rastreamento de Medicamentos"
-                ],
-                "DLT Permissionada Simples": [
-                    "Sistemas Locais de Saúde",
-                    "Agendamento de Pacientes",
-                    "Redes Locais de Hospitais"
-                ],
-                "DLT Híbrida": [
-                    "Monitoramento de Saúde Pública",
-                    "Redes Regionais de Saúde",
-                    "Integração de EHRs"
-                ],
-                "DLT com Consenso Delegado": [
-                    "Monitoramento de Saúde Pública",
-                    "Redes Regionais de Saúde",
-                    "Integração de EHRs"
-                ],
-                "DLT Pública": [
-                    "Monitoramento IoT em Saúde",
-                    "Dados em Tempo Real",
-                    "Rastreamento de Dispositivos Médicos"
-                ]
-            }
+        # Evaluation Matrix
+        if 'evaluation_matrix' in recommendation:
+            matrix_data = []
+            y_labels = []
             
-            recommended_uses = use_cases.get(recommendation['dlt'], [])
-            for use_case in recommended_uses:
-                st.write(f"- {use_case}")
+            for dlt, data in recommendation['evaluation_matrix'].items():
+                y_labels.append(dlt)
+                row = []
+                for metric, value in data['metrics'].items():
+                    if metric != 'academic_validation':
+                        try:
+                            row.append(float(value))
+                        except (ValueError, TypeError):
+                            row.append(0.0)
+                matrix_data.append(row)
             
-            st.write("\n### Exemplos de Implementação")
-            implementation_examples = {
-                "DLT Permissionada Privada": "Guardtime: Aplicado em sistemas de saúde da Estônia",
-                "DLT Pública Permissionless": "MTBC: Gestão de registros eletrônicos de saúde (EHR)",
-                "DLT Permissionada Simples": "ProCredEx: Validação de credenciais de profissionais de saúde",
-                "DLT Híbrida": "Chronicled (Mediledger Project): Rastreamento de medicamentos",
-                "DLT com Consenso Delegado": "Change Healthcare: Gestão de ciclo de receita",
-                "DLT Pública": "Patientory: Compartilhamento de dados via IoT"
-            }
+            metrics = [m for m in recommendation['evaluation_matrix'][y_labels[0]]['metrics'].keys() 
+                      if m != 'academic_validation']
             
-            if recommendation['dlt'] in implementation_examples:
-                st.write(f"**Exemplo Real:** {implementation_examples[recommendation['dlt']]}")
-    
-        with st.expander("Ver Explicação do Algoritmo de Consenso"):
-            st.write(f"### Por que {recommendation['consensus']}?")
-            st.write("Este algoritmo de consenso foi selecionado pelos seguintes motivos:")
-            if recommendation['consensus'] in consensus_algorithms:
-                for metric, value in consensus_algorithms[recommendation['consensus']].items():
-                    st.write(f"- **{metric}**: {float(value):.2f}")
+            fig = go.Figure(data=go.Heatmap(
+                z=matrix_data,
+                x=metrics,
+                y=y_labels,
+                colorscale=[
+                    [0, "#ff0000"],
+                    [0.4, "#ffff00"],
+                    [0.7, "#00ff00"]
+                ],
+                hoverongaps=False,
+                hovertemplate="<b>DLT:</b> %{y}<br>" +
+                             "<b>Métrica:</b> %{x}<br>" +
+                             "<b>Valor:</b> %{z:.2f}<br>" +
+                             "<extra></extra>"
+            ))
+            
+            fig.update_layout(
+                title="Comparação Detalhada das DLTs",
+                xaxis_title="Métricas",
+                yaxis_title="DLTs",
+                height=350,
+                margin=dict(l=50, r=30, t=80, b=50),
+                autosize=True
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Algorithm comparison matrix
+            with st.expander("Ver Matriz de Avaliação dos Algoritmos"):
+                st.write("### Matriz de Avaliação dos Algoritmos de Consenso")
+                
+                alg_matrix_data = []
+                alg_labels = []
+                
+                for alg in recommendation['algorithms']:
+                    alg_labels.append(alg)
+                    row = []
+                    for metric in ['security', 'scalability', 'energy_efficiency', 'governance']:
+                        value = consensus_algorithms[alg][metric]
+                        row.append(float(value))
+                    alg_matrix_data.append(row)
+                
+                fig_alg = go.Figure(data=go.Heatmap(
+                    z=alg_matrix_data,
+                    x=['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança'],
+                    y=alg_labels,
+                    colorscale='Viridis',
+                    hoverongaps=False,
+                    hovertemplate="<b>Algoritmo:</b> %{y}<br>" +
+                                 "<b>Métrica:</b> %{x}<br>" +
+                                 "<b>Valor:</b> %{z:.2f}<br>" +
+                                 "<extra></extra>"
+                ))
+                
+                fig_alg.update_layout(
+                    title="Comparação dos Algoritmos de Consenso",
+                    height=350,
+                    margin=dict(l=50, r=30, t=80, b=50),
+                    autosize=True
+                )
+                
+                st.plotly_chart(fig_alg, use_container_width=True)
     
     with col2:
-        st.subheader("Métricas")
+        st.subheader("Métricas de Confiança")
         confidence_score = recommendation.get('confidence', False)
         confidence_value = recommendation.get('confidence_value', 0.0)
         st.metric(
@@ -202,170 +206,17 @@ def show_recommendation(answers, weights, questions):
             help="Baseado na diferença entre o score máximo e a média dos scores"
         )
         
-    # Add confidence index explanation
-    with st.expander("Ver Explicação do Índice de Confiança"):
-        st.write("### Como o Índice de Confiança é Calculado")
-        st.write("""O índice de confiança é calculado usando os seguintes parâmetros:
-        1. **Diferença entre Scores**: A diferença entre o score mais alto e a média dos scores
-        2. **Consistência das Respostas**: Avaliação da coerência entre as respostas fornecidas
-        3. **Threshold de Confiança**: 0.7 (70%) - valor mínimo para alta confiança
-        
-        Fórmula: `Confiabilidade = (max_score - mean_score) / max_score`
-        """)
-        
-        value = recommendation.get('confidence_value', 0.0)
-        st.metric(
-            "Valor do Índice de Confiança",
-            f"{value:.2%}",
-            help="Valores acima de 70% indicam alta confiabilidade"
-        )
-    
-    # Enhanced evaluation matrix display
-    st.subheader("Matriz de Avaliação Detalhada")
-    if 'evaluation_matrix' in recommendation:
-        matrix_data = []
-        y_labels = []
-        
-        for dlt, data in recommendation['evaluation_matrix'].items():
-            y_labels.append(dlt)
-            row = []
-            for metric, value in data['metrics'].items():
-                if metric != 'academic_validation':  # Skip academic validation
-                    try:
-                        row.append(float(value))
-                    except (ValueError, TypeError):
-                        row.append(0.0)
-            matrix_data.append(row)
-        
-        metrics = [m for m in recommendation['evaluation_matrix'][y_labels[0]]['metrics'].keys() 
-                  if m != 'academic_validation']
-        
-        fig = go.Figure(data=go.Heatmap(
-            z=matrix_data,
-            x=metrics,
-            y=y_labels,
-            colorscale=[
-                [0, "#ff0000"],    # Red for low values
-                [0.4, "#ffff00"],  # Yellow for medium values
-                [0.7, "#00ff00"]   # Green for high values
-            ],
-            hoverongaps=False,
-            hovertemplate="<b>DLT:</b> %{y}<br>" +
-                         "<b>Métrica:</b> %{x}<br>" +
-                         "<b>Valor:</b> %{z:.2f}<br>" +
-                         "<extra></extra>"
-        ))
-        
-        fig.update_layout(
-            title="Comparação Detalhada das DLTs",
-            xaxis_title="Métricas",
-            yaxis_title="DLTs",
-            height=400,
-            margin=dict(l=60, r=30, t=100, b=50)
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
-    
-    # Add Algorithm Evaluation Matrix
-    with st.expander("Ver Matriz de Avaliação dos Algoritmos"):
-        st.write("### Matriz de Avaliação dos Algoritmos de Consenso")
-        
-        # Create algorithm comparison matrix
-        alg_matrix_data = []
-        alg_labels = []
-        
-        for alg in recommendation['algorithms']:
-            alg_labels.append(alg)
-            row = []
-            for metric in ['security', 'scalability', 'energy_efficiency', 'governance']:
-                value = consensus_algorithms[alg][metric]
-                row.append(float(value))
-            alg_matrix_data.append(row)
-        
-        # Plot algorithm heatmap
-        fig_alg = go.Figure(data=go.Heatmap(
-            z=alg_matrix_data,
-            x=['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança'],
-            y=alg_labels,
-            colorscale='Viridis',
-            hoverongaps=False,
-            hovertemplate="<b>Algoritmo:</b> %{y}<br>" +
-                         "<b>Métrica:</b> %{x}<br>" +
-                         "<b>Valor:</b> %{z:.2f}<br>" +
-                         "<extra></extra>"
-        ))
-        
-        fig_alg.update_layout(
-            title="Comparação dos Algoritmos de Consenso",
-            height=400
-        )
-        
-        st.plotly_chart(fig_alg, use_container_width=True)
-    
-    # Add Combined DLT-Algorithm Matrix
-    with st.expander("Ver Matriz Combinada DLT-Algoritmo"):
-        st.write("### Matriz de Compatibilidade DLT-Algoritmo")
-        
-        # Create combined matrix data
-        combined_scores = {}
-        for dlt, data in recommendation['evaluation_matrix'].items():
-            dlt_scores = {}
-            for alg in recommendation['algorithms']:
-                # Calculate compatibility score
-                score = 0
-                for metric in ['security', 'scalability', 'energy_efficiency', 'governance']:
-                    dlt_value = float(data['metrics'][metric])
-                    alg_value = float(consensus_algorithms[alg][metric])
-                    score += (dlt_value * alg_value) / 4
-                dlt_scores[alg] = score
-            combined_scores[dlt] = dlt_scores
-        
-        # Convert to matrix format
-        combined_matrix = []
-        dlt_labels = list(combined_scores.keys())
-        alg_labels = recommendation['algorithms']
-        
-        for dlt in dlt_labels:
-            row = []
-            for alg in alg_labels:
-                row.append(combined_scores[dlt][alg])
-            combined_matrix.append(row)
-        
-        # Plot combined heatmap
-        fig_combined = go.Figure(data=go.Heatmap(
-            z=combined_matrix,
-            x=alg_labels,
-            y=dlt_labels,
-            colorscale='Viridis',
-            hoverongaps=False,
-            hovertemplate="<b>DLT:</b> %{y}<br>" +
-                         "<b>Algoritmo:</b> %{x}<br>" +
-                         "<b>Score:</b> %{z:.2f}<br>" +
-                         "<extra></extra>"
-        ))
-        
-        fig_combined.update_layout(
-            title="Compatibilidade entre DLTs e Algoritmos",
-            height=400
-        )
-        
-        st.plotly_chart(fig_combined, use_container_width=True)
-    
-    # Save recommendation option
-    if st.button("Salvar Recomendação"):
-        if st.session_state.get('username'):
-            save_recommendation(
-                st.session_state.username,
-                'Healthcare DLT Selection',
-                recommendation
-            )
-            st.success("Recomendação salva com sucesso!")
-        else:
-            st.warning("Faça login para salvar a recomendação.")
-    
-    return recommendation
+        if 'academic_validation' in recommendation:
+            st.subheader("Validação Acadêmica")
+            academic = recommendation['academic_validation']
+            if academic:
+                st.write(f"**Score Acadêmico:** {academic.get('score', 'N/A')}/5.0")
+                st.write(f"**Citações:** {academic.get('citations', 'N/A')}")
+                st.write(f"**Referência:** {academic.get('reference', 'N/A')}")
+                st.write(f"**Validação:** {academic.get('validation', 'N/A')}")
 
 def run_decision_tree():
+    """Run the interactive decision tree process"""
     if 'answers' not in st.session_state:
         st.session_state.answers = {}
 
@@ -477,6 +328,7 @@ def run_decision_tree():
         st.session_state.recommendation = show_recommendation(st.session_state.answers, weights, questions)
 
 def restart_decision_tree():
+    """Reset the decision tree process"""
     if st.button("Reiniciar Processo", help="Clique para começar um novo processo de seleção"):
         st.session_state.answers = {}
         st.experimental_rerun()
