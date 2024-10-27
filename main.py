@@ -56,28 +56,34 @@ def show_home_page():
     
     st.markdown("## Tabela de Referência DLT")
     
-    # Complete DLT reference data
+    # Updated DLT reference data with new consensus algorithms
     dlt_data = [
-        ['Hyperledger Fabric', 'DLT Permissionada Privada', 'Alta Segurança e Controle dos dados sensíveis', 'RAFT/IBFT', 
-         'Alta tolerância a falhas, consenso rápido em ambientes permissionados', 'Guardtime: Aplicado em sistemas de saúde da Estônia para proteger a integridade e a privacidade dos registros médicos'],
+        ['Hyperledger Fabric', 'DLT Permissionada Privada', 'Alta Segurança e Controle dos dados sensíveis', 'PBFT/RAFT/IBFT', 
+         'Alta tolerância a falhas, finalidade imediata, adequado para redes permissionadas', 'Sistemas de saúde da Estônia: Proteção da integridade e privacidade dos registros médicos. Redes de provedores de saúde com necessidade de forte consistência'],
+        ['Hyperledger Sawtooth', 'DLT Permissionada Privada', 'Alta Eficiência e Controle', 'PoET', 
+         'Eficiente em recursos, eleição justa de líderes, adequado para redes permissionadas', 'Gestão da cadeia de suprimentos médicos, rastreamento de medicamentos e equipamentos'],
+        ['EOS', 'DLT Pública', 'Alta Escalabilidade', 'DPoS', 
+         'Alto throughput, eficiência energética, validação delegada', 'Sistemas de gestão de dados de saúde em larga escala, registros médicos distribuídos'],
+        ['TRON', 'DLT Pública', 'Alta Escalabilidade', 'DPoS', 
+         'Alto throughput, eficiência energética, validação delegada', 'Gestão de dados de saúde em larga escala, interoperabilidade entre sistemas'],
         ['Corda', 'DLT Permissionada Simples', 'Alta Segurança e Controle dos dados sensíveis', 'RAFT',
-         'Consenso baseado em líderes, adequado para redes privadas', 'ProCredEx: Usado para validação de credenciais de profissionais de saúde nos EUA, assegurando qualidade e rastreabilidade'],
+         'Consenso baseado em líderes, adequado para redes privadas', 'ProCredEx: Validação de credenciais de profissionais de saúde nos EUA'],
         ['Quorum', 'DLT Híbrida', 'Escalabilidade e Governança Flexível', 'RAFT/IBFT',
-         'Flexibilidade de governança, consenso eficiente para redes híbridas', 'Chronicled (Mediledger Project): Garantia de rastreamento de medicamentos na cadeia de suprimentos farmacêutica'],
+         'Flexibilidade de governança, consenso eficiente para redes híbridas', 'Chronicled (Mediledger Project): Rastreamento de medicamentos na cadeia farmacêutica'],
         ['VeChain', 'DLT Híbrida', 'Alta Eficiência Operacional em redes locais', 'PoA',
-         'Alta eficiência, baixa latência, consenso delegado a validadores autorizados', 'FarmaTrust: Rastreia medicamentos e combate falsificação na cadeia de suprimentos farmacêutica'],
+         'Alta eficiência, baixa latência, consenso delegado a validadores autorizados', 'FarmaTrust: Rastreamento de medicamentos e combate à falsificação'],
         ['IOTA', 'DLT com Consenso Delegado', 'Alta Escalabilidade em Redes IoT', 'Tangle',
-         'Escalabilidade alta, arquitetura sem blocos, adequada para IoT', 'Patientory: Aplicado para compartilhamento seguro de dados de pacientes em tempo real via IoT'],
+         'Escalabilidade alta, arquitetura sem blocos, adequada para IoT', 'Patientory: Compartilhamento seguro de dados de pacientes via IoT'],
         ['Ripple (XRP Ledger)', 'DLT com Consenso Delegado', 'Alta Eficiência Operacional em redes locais', 'Ripple Consensus Algorithm',
-         'Consenso rápido, baixa latência, baseado em validadores confiáveis', 'Change Healthcare: Usado para simplificação de gestão de ciclo de receita e processamento de transações na saúde'],
+         'Consenso rápido, baixa latência, baseado em validadores confiáveis', 'Change Healthcare: Gestão de ciclo de receita e processamento de transações'],
         ['Stellar', 'DLT com Consenso Delegado', 'Alta Eficiência Operacional em redes locais', 'SCP',
-         'Consenso baseado em quórum, alta eficiência, tolerância a falhas', 'MedicalChain: Oferece controle de dados de pacientes e consultas telemédicas seguras'],
+         'Consenso baseado em quórum, alta eficiência, tolerância a falhas', 'MedicalChain: Controle de dados de pacientes e telemedicina'],
         ['Bitcoin', 'DLT Pública', 'Alta Segurança e Descentralização de dados críticos', 'PoW',
-         'Segurança alta, descentralização, consumo elevado de energia', 'Guardtime: Utiliza a blockchain para rastreamento de dados de saúde em redes públicas com alta segurança'],
+         'Segurança alta, descentralização, consumo elevado de energia', 'Guardtime: Rastreamento de dados de saúde em redes públicas'],
         ['Ethereum (PoW)', 'DLT Pública', 'Alta Segurança e Descentralização de dados críticos', 'PoW',
-         'Segurança alta, descentralização, escalabilidade limitada, alto custo', 'Embleema: Blockchain usada para acelerar o desenvolvimento de medicamentos e ensaios clínicos'],
+         'Segurança alta, descentralização, escalabilidade limitada, alto custo', 'Embleema: Desenvolvimento de medicamentos e ensaios clínicos'],
         ['Ethereum 2.0 (PoS)', 'DLT Pública Permissionless', 'Escalabilidade e Governança Flexível', 'PoS',
-         'Eficiência energética, incentivo à participação, redução da centralização', 'MTBC: Utiliza Ethereum para a gestão de registros eletrônicos de saúde (EHR) nos EUA']
+         'Eficiência energética, incentivo à participação, redução da centralização', 'MTBC: Gestão de registros eletrônicos de saúde (EHR)']
     ]
     
     # Create DataFrame
