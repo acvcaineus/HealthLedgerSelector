@@ -1,6 +1,13 @@
 from dlt_data import questions, dlt_classes, consensus_algorithms
-from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_decisoria, 
-                    calcular_pruning, calcular_confiabilidade_recomendacao)
+from metrics import calcular_gini, calcular_entropia, calcular_profundidade_decisoria, calcular_pruning, calcular_confiabilidade_recomendacao
+
+consensus_groups = {
+    'Alta Segurança e Controle': ['Practical Byzantine Fault Tolerance (PBFT)', 'Proof of Work (PoW)'],
+    'Alta Eficiência Operacional': ['Raft Consensus', 'Proof of Authority (PoA)'],
+    'Escalabilidade e Governança Flexível': ['Proof of Stake (PoS)', 'Delegated Proof of Stake (DPoS)'],
+    'Alta Escalabilidade em Redes IoT': ['Tangle'],
+    'Alta Segurança e Descentralização de Dados Críticos': ['Proof of Work (PoW)', 'Proof of Stake (PoS)']
+}
 
 # Reference data for DLT types and their characteristics
 reference_data = {
@@ -19,35 +26,27 @@ reference_data = {
     "DLT Permissionada Simples": {
         "group": "Alta Eficiência Operacional",
         "consensus": "RAFT/PoA",
-        "characteristics": "Simplicidade e eficiência em redes permissionadas menores.",
-        "use_cases": "Sistemas locais de saúde, agendamento de pacientes."
+        "characteristics": "Simplicidade e eficiência em redes permissionadas menores. Validação rápida e leve, ideal para redes locais.",
+        "use_cases": "Sistemas locais de saúde, agendamento de pacientes, redes locais de hospitais."
     },
     "DLT Híbrida": {
         "group": "Escalabilidade e Governança Flexível",
         "consensus": "PoS",
-        "characteristics": "Alta escalabilidade e eficiência energética com governança flexível.",
-        "use_cases": "Monitoramento de saúde pública, redes regionais de saúde."
+        "characteristics": "Alta escalabilidade e eficiência energética com governança descentralizada ou semi-descentralizada.",
+        "use_cases": "Monitoramento de saúde pública, redes regionais de saúde, integração de EHRs."
     },
     "DLT com Consenso Delegado": {
         "group": "Escalabilidade e Governança Flexível",
         "consensus": "DPoS",
-        "characteristics": "Alta escalabilidade e governança delegada.",
+        "characteristics": "Alta escalabilidade e eficiência energética com governança descentralizada ou semi-descentralizada.",
         "use_cases": "Telemedicina e redes colaborativas de pesquisa."
     },
     "DLT Pública": {
         "group": "Alta Escalabilidade em Redes IoT",
         "consensus": "Tangle",
-        "characteristics": "Alta escalabilidade para IoT em tempo real.",
-        "use_cases": "Monitoramento IoT de dispositivos médicos."
+        "characteristics": "Alta escalabilidade e eficiência para o monitoramento de dispositivos IoT em tempo real.",
+        "use_cases": "Monitoramento IoT de dispositivos médicos, dados em tempo real."
     }
-}
-
-consensus_groups = {
-    'Alta Segurança e Controle': ['Practical Byzantine Fault Tolerance (PBFT)', 'Proof of Work (PoW)'],
-    'Alta Eficiência Operacional': ['Raft Consensus', 'Proof of Authority (PoA)'],
-    'Escalabilidade e Governança Flexível': ['Proof of Stake (PoS)', 'Delegated Proof of Stake (DPoS)'],
-    'Alta Escalabilidade em Redes IoT': ['Tangle'],
-    'Alta Segurança e Descentralização de Dados Críticos': ['Proof of Work (PoW)', 'Proof of Stake (PoS)']
 }
 
 academic_scores = {
@@ -136,23 +135,6 @@ def create_evaluation_matrix(answers):
 
     return matrix
 
-def calculate_accuracy_metrics(evaluation_matrix):
-    """Calculate accuracy metrics based on historical data and validation set"""
-    if not evaluation_matrix:
-        return {'precision': 0.85, 'recall': 0.82}  # Default values
-        
-    total_recommendations = len(evaluation_matrix)
-    correct_recommendations = sum(1 for dlt, data in evaluation_matrix.items() 
-                                if data['score'] > 0.7)  # Threshold for "correct" recommendation
-    
-    precision = correct_recommendations / total_recommendations if total_recommendations > 0 else 0.85
-    recall = 0.82  # Based on historical validation data
-    
-    return {
-        'precision': precision,
-        'recall': recall
-    }
-
 def compare_algorithms(consensus_group):
     """Compare algorithms within a consensus group"""
     algorithms = consensus_groups[consensus_group]
@@ -195,12 +177,13 @@ def select_final_algorithm(consensus_group, priorities):
             if metric_name and metric_name in comparison_data and alg in comparison_data[metric_name]:
                 scores[alg] += float(comparison_data[metric_name][alg]) * float(priority)
     
+    # Find algorithm with maximum score
     if scores:
         return max(scores.items(), key=lambda x: float(x[1]))[0]
     return "No suitable algorithm found"
 
 def get_recommendation(answers, weights):
-    """Get recommendation with enhanced reference data and accuracy metrics"""
+    """Get recommendation with enhanced reference data"""
     evaluation_matrix = create_evaluation_matrix(answers)
     
     # Calculate weighted scores
@@ -223,10 +206,7 @@ def get_recommendation(answers, weights):
     confidence_scores = [float(score) for score in weighted_scores.values()]
     confidence_value = max(confidence_scores) - (sum(confidence_scores) / len(confidence_scores))
     is_reliable = confidence_value > 0.7
-    
-    # Calculate accuracy metrics
-    accuracy_metrics = calculate_accuracy_metrics(evaluation_matrix)
-    
+
     return {
         "dlt": recommended_dlt,
         "consensus_group": recommended_group,
@@ -237,7 +217,5 @@ def get_recommendation(answers, weights):
         "confidence_value": confidence_value,
         "characteristics": reference_data[recommended_dlt]["characteristics"],
         "use_cases": reference_data[recommended_dlt]["use_cases"],
-        "academic_validation": academic_scores.get(recommended_dlt, {}),
-        "precision": accuracy_metrics['precision'],
-        "recall": accuracy_metrics['recall']
+        "academic_validation": academic_scores.get(recommended_dlt, {})
     }

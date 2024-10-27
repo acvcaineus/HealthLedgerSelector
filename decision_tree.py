@@ -1,8 +1,10 @@
 import streamlit as st
 import plotly.graph_objects as go
-from metrics import calcular_gini, calcular_entropia, calcular_profundidade_decisoria, calcular_pruning
-from dlt_data import questions, consensus_algorithms
-from decision_logic import get_recommendation
+from decision_logic import get_recommendation, consensus_algorithms
+from database import save_recommendation
+import networkx as nx
+from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_decisoria, 
+                    calcular_pruning, calcular_confiabilidade_recomendacao)
 
 def create_progress_animation(current_phase, answers, questions):
     phases = ['Aplicação', 'Consenso', 'Infraestrutura', 'Internet']
@@ -360,12 +362,6 @@ def show_recommendation(answers, weights, questions):
             st.success("Recomendação salva com sucesso!")
         else:
             st.warning("Faça login para salvar a recomendação.")
-            
-    # Add navigation button to metrics
-    st.markdown("---")
-    if st.button("Ver Métricas Detalhadas"):
-        st.session_state.page = 'Métricas'
-        st.rerun()
     
     return recommendation
 
@@ -469,7 +465,7 @@ def run_decision_tree():
 
         if st.button("Próxima Pergunta"):
             st.session_state.answers[current_question["id"]] = response
-            st.rerun()
+            st.experimental_rerun()
 
     if len(st.session_state.answers) == len(questions):
         weights = {
@@ -483,4 +479,4 @@ def run_decision_tree():
 def restart_decision_tree():
     if st.button("Reiniciar Processo", help="Clique para começar um novo processo de seleção"):
         st.session_state.answers = {}
-        st.rerun()
+        st.experimental_rerun()
