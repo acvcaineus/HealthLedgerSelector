@@ -8,7 +8,6 @@ from database import get_user_recommendations, save_recommendation
 from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_decisoria, 
                     calcular_pruning, calcular_confiabilidade_recomendacao)
 
-# Funções de inicialização e gerenciamento de estado
 def init_session_state():
     """Initialize all required session state variables with error handling"""
     try:
@@ -21,28 +20,12 @@ def init_session_state():
             st.session_state.error = None
             st.session_state.loading = False
             st.session_state.recommendation = None
+            st.session_state.current_phase = 1
+            st.session_state.phase_complete = False
     except Exception as e:
         st.error(f"Error initializing session state: {str(e)}")
         st.session_state.error = str(e)
 
-def reset_session_state():
-    """Reset session state on errors"""
-    try:
-        st.session_state.answers = {}
-        st.session_state.error = None
-        st.session_state.loading = False
-        st.session_state.recommendation = None
-    except Exception as e:
-        st.error(f"Error resetting session state: {str(e)}")
-
-
-        # Função de fallback para exibir mensagem de erro
-        def show_fallback_ui():
-            st.error("Ocorreu um erro ao carregar o conteúdo.")
-            if st.button("Tentar Novamente"):
-                st.session_state.page = "Início"
-                
-# Funções para exibir cada página
 def show_home_page():
     """Display home page with framework explanation and reference table"""
     st.title("SeletorDLTSaude")
@@ -88,92 +71,95 @@ def show_home_page():
         ]
     }
 
-    # Criação da tabela
+    # Create table
     df = pd.DataFrame(data)
     st.table(df)
 
-    # Botão para iniciar o questionário
-    if st.button("Iniciar Questionário"):
+    # Button to start questionnaire with proper navigation
+    if st.button("Iniciar Seleção de DLT", type="primary"):
         st.session_state.page = 'Framework Proposto'
-
-
-def show_framework_proposed():
-    """Display the decision tree framework for user selection"""
-    st.header("Framework Proposto - Questionário de Seleção de DLT")
-    st.write("Responda às perguntas abaixo para obter uma recomendação de DLT.")
-
-    answers = {}
-    answers['security'] = st.slider("Nível de segurança necessário (0-100)", 0, 100, 50)
-    answers['scalability'] = st.slider("Nível de escalabilidade desejado (0-100)", 0, 100, 50)
-    answers['energy_efficiency'] = st.slider("Eficiência energética desejada (0-100)", 0, 100, 50)
-    answers['governance'] = st.slider("Nível de governança necessária (0-100)", 0, 100, 50)
-
-    # Verifica o botão para obter a recomendação
-    if st.button("Obter Recomendação"):
-        try:
-            # Armazena as respostas no estado da sessão
-            st.session_state.answers = answers
-            st.session_state.recommendation = get_recommendation(answers)
-
-            # Salva a recomendação no banco de dados com data e usuário
-            if st.session_state.recommendation:
-                save_recommendation(st.session_state.username, st.session_state.recommendation, datetime.now())
-                st.success("Recomendação calculada e salva com sucesso!")
-                # Muda a página para 'Métricas'
-                st.session_state.page = 'Métricas'
-        except Exception as e:
-            st.error(f"Erro ao obter recomendação: {str(e)}")
-
+        st.experimental_rerun()
 
 def show_metrics():
+    """Display metrics and recommendation results"""
     st.header("Métricas - Resultados da Recomendação")
-    st.write("Esta página exibe as métricas calculadas com base na recomendação.")
+    
+    if not hasattr(st.session_state, 'recommendation') or st.session_state.recommendation is None:
+        st.warning("Por favor, complete o questionário primeiro para visualizar as métricas.")
+        if st.button("Ir para o Questionário"):
+            st.session_state.page = 'Framework Proposto'
+            st.experimental_rerun()
+        return
+
+    # Display recommendation metrics
+    recommendation = st.session_state.recommendation
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("Métricas de Avaliação")
+        metrics_df = pd.DataFrame({
+            'Métrica': ['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança'],
+            'Valor': [
+                recommendation['evaluation_matrix'][recommendation['dlt']]['metrics']['security'],
+                recommendation['evaluation_matrix'][recommendation['dlt']]['metrics']['scalability'],
+                recommendation['evaluation_matrix'][recommendation['dlt']]['metrics']['energy_efficiency'],
+                recommendation['evaluation_matrix'][recommendation['dlt']]['metrics']['governance']
+            ]
+        })
+        st.table(metrics_df)
+    
+    with col2:
+        st.subheader("Confiabilidade da Recomendação")
+        confidence_value = recommendation.get('confidence_value', 0.0)
+        st.metric(
+            label="Índice de Confiança",
+            value=f"{confidence_value:.2%}",
+            delta=f"{'Alta' if confidence_value > 0.7 else 'Média'} Confiabilidade"
+        )
 
 def show_profile():
-    """Display the user's profile with saved recommendations"""
+    """Display user profile and saved recommendations"""
     st.header(f"Perfil do Usuário: {st.session_state.username}")
     st.subheader("Recomendações Anteriores")
+    
     recommendations = get_user_recommendations(st.session_state.username)
     if recommendations:
         for rec in recommendations:
-            st.write(f"DLT: {rec['dlt']}, Consenso: {rec['consensus']}, Data: {rec['timestamp']}")
-            st.markdown("---")
+            with st.expander(f"Recomendação de {rec['timestamp']}", expanded=False):
+                st.write(f"**DLT Recomendada:** {rec['dlt']}")
+                st.write(f"**Algoritmo de Consenso:** {rec['consensus']}")
+                st.write("---")
     else:
         st.info("Nenhuma recomendação salva.")
 
-def show_discussion_conclusion():
-    st.header("Discussão e Conclusão")
-    st.write("Discussão sobre os resultados e conclusões baseadas nas recomendações e métricas.")
-
-# Função principal para controle de navegação e exibição de conteúdo
-
 def main():
+    """Main function with improved navigation and authentication"""
     init_session_state()
 
+    # Handle authentication
     if not st.session_state.authenticated:
-        st.title("SeletorDLTSaude - Login")
         tab1, tab2 = st.tabs(["Login", "Registrar"])
         with tab1:
-            if login():
-                st.session_state.authenticated = True
-                st.session_state.page = 'Início'
+            login()
         with tab2:
             register()
     else:
+        # Show navigation menu only when authenticated
         menu_options = ['Início', 'Framework Proposto', 'Métricas', 'Perfil', 'Logout']
         menu_option = st.sidebar.selectbox("Escolha uma opção", menu_options)
 
         if menu_option == 'Logout':
-            st.session_state.authenticated = False
-            st.session_state.page = 'Login'
+            logout()
+            st.experimental_rerun()
         else:
             st.session_state.page = menu_option
 
-        # Exibir a página com base no valor de `st.session_state.page`
+        # Display current page content
         if st.session_state.page == 'Início':
             show_home_page()
         elif st.session_state.page == 'Framework Proposto':
-            show_framework_proposed()
+            from decision_tree import run_decision_tree
+            run_decision_tree()
         elif st.session_state.page == 'Métricas':
             show_metrics()
         elif st.session_state.page == 'Perfil':
