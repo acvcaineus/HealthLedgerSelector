@@ -8,6 +8,202 @@ from database import get_user_recommendations
 from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_decisoria, 
                     calcular_pruning, calcular_confiabilidade_recomendacao)
 import traceback
+import numpy as np
+
+def create_gini_radar(gini_values):
+    """Create an interactive radar chart for Gini index visualization"""
+    categories = ['Separação de Classes', 'Pureza dos Dados', 'Consistência', 'Precisão']
+    
+    fig = go.Figure()
+    
+    # Add trace for current values
+    fig.add_trace(go.Scatterpolar(
+        r=[1-gini_values, 1-gini_values/2, (1-gini_values)*0.8, (1-gini_values)*0.9],
+        theta=categories,
+        fill='toself',
+        name='Métricas Atuais'
+    ))
+    
+    # Update layout
+    fig.update_layout(
+        polar=dict(
+            radialaxis=dict(
+                visible=True,
+                range=[0, 1]
+            )),
+        showlegend=True,
+        title="Análise do Índice de Gini",
+        height=400
+    )
+    
+    return fig
+
+def create_entropy_evolution(answers):
+    """Create an interactive line chart for entropy evolution"""
+    entropy_values = []
+    classes = {}
+    
+    # Calculate entropy for each step
+    for i in range(len(answers)):
+        partial_answers = dict(list(answers.items())[:i+1])
+        weights = {"security": 0.4, "scalability": 0.25, "energy_efficiency": 0.2, "governance": 0.15}
+        recommendation = get_recommendation(partial_answers, weights)
+        classes = {k: v['score'] for k, v in recommendation['evaluation_matrix'].items()}
+        entropy_values.append(calcular_entropia(classes))
+    
+    fig = go.Figure()
+    
+    # Add trace for entropy evolution
+    fig.add_trace(go.Scatter(
+        x=list(range(1, len(entropy_values) + 1)),
+        y=entropy_values,
+        mode='lines+markers',
+        name='Evolução da Entropia',
+        hovertemplate='Passo %{x}<br>Entropia: %{y:.2f}<extra></extra>'
+    ))
+    
+    # Update layout
+    fig.update_layout(
+        title="Evolução da Entropia no Processo Decisório",
+        xaxis_title="Número de Perguntas Respondidas",
+        yaxis_title="Entropia (bits)",
+        height=400,
+        showlegend=True
+    )
+    
+    return fig
+
+def create_metrics_dashboard(depth, pruning_ratio, confidence):
+    """Create an interactive dashboard for decision tree metrics"""
+    fig = go.Figure()
+    
+    # Add gauge charts
+    fig.add_trace(go.Indicator(
+        mode="gauge+number",
+        value=depth,
+        title={'text': "Profundidade da Árvore"},
+        gauge={'axis': {'range': [0, 10]},
+               'bar': {'color': "darkblue"},
+               'steps': [
+                   {'range': [0, 3], 'color': "lightgreen"},
+                   {'range': [3, 7], 'color': "yellow"},
+                   {'range': [7, 10], 'color': "red"}
+               ]},
+        domain={'row': 0, 'column': 0}
+    ))
+    
+    fig.add_trace(go.Indicator(
+        mode="gauge+number",
+        value=pruning_ratio * 100,
+        title={'text': "Taxa de Poda (%)"},
+        gauge={'axis': {'range': [0, 100]},
+               'bar': {'color': "darkgreen"},
+               'steps': [
+                   {'range': [0, 30], 'color': "red"},
+                   {'range': [30, 70], 'color': "yellow"},
+                   {'range': [70, 100], 'color': "lightgreen"}
+               ]},
+        domain={'row': 0, 'column': 1}
+    ))
+    
+    fig.add_trace(go.Indicator(
+        mode="gauge+number",
+        value=confidence * 100,
+        title={'text': "Confiança (%)"},
+        gauge={'axis': {'range': [0, 100]},
+               'bar': {'color': "darkred"},
+               'steps': [
+                   {'range': [0, 50], 'color': "red"},
+                   {'range': [50, 80], 'color': "yellow"},
+                   {'range': [80, 100], 'color': "lightgreen"}
+               ]},
+        domain={'row': 0, 'column': 2}
+    ))
+    
+    # Update layout
+    fig.update_layout(
+        grid={'rows': 1, 'columns': 3, 'pattern': "independent"},
+        title="Dashboard de Métricas da Árvore de Decisão",
+        height=400
+    )
+    
+    return fig
+
+def show_metrics_explanation():
+    """Display enhanced metrics explanations with interactive visualizations"""
+    st.header("Métricas Técnicas do Framework")
+    
+    # Get necessary values from session state
+    answers = st.session_state.get('answers', {})
+    if not answers:
+        st.warning("Complete o processo de seleção para ver as métricas detalhadas.")
+        return
+        
+    weights = {"security": 0.4, "scalability": 0.25, "energy_efficiency": 0.2, "governance": 0.15}
+    recommendation = get_recommendation(answers, weights)
+    classes = {k: v['score'] for k, v in recommendation['evaluation_matrix'].items()}
+    
+    gini_values = calcular_gini(classes)
+    depth = calcular_profundidade_decisoria(list(range(len(answers))))
+    total_nos = len(answers) * 2 + 1
+    nos_podados = total_nos - len(answers) - 1
+    pruning_ratio = calcular_pruning(total_nos, nos_podados)
+    confidence = recommendation.get('confidence_value', 0.0)
+    
+    # Gini Index Section
+    with st.expander("Índice de Gini - Pureza da Classificação"):
+        st.write("### Análise do Índice de Gini")
+        gini_fig = create_gini_radar(gini_values)
+        st.plotly_chart(gini_fig)
+        st.markdown('''
+            O Índice de Gini mede a pureza da classificação:
+            - **0-0.3**: Alta pureza - Decisão muito confiável
+            - **0.3-0.6**: Pureza moderada - Decisão aceitável
+            - **>0.6**: Baixa pureza - Decisão precisa ser revisada
+        ''')
+    
+    # Entropy Evolution
+    with st.expander("Evolução da Entropia - Processo Decisório"):
+        st.write("### Evolução da Entropia nas Decisões")
+        entropy_fig = create_entropy_evolution(answers)
+        st.plotly_chart(entropy_fig)
+        st.markdown('''
+            A entropia mostra a incerteza no processo decisório:
+            - **Descendente**: Aumento da certeza nas decisões
+            - **Estável**: Consistência nas decisões
+            - **Ascendente**: Aumento da incerteza
+        ''')
+    
+    # Decision Tree Metrics
+    with st.expander("Métricas da Árvore de Decisão"):
+        st.write("### Dashboard de Métricas")
+        metrics_fig = create_metrics_dashboard(depth, pruning_ratio, confidence)
+        st.plotly_chart(metrics_fig)
+        st.markdown('''
+            Análise das métricas principais:
+            - **Profundidade**: Complexidade do processo decisório
+            - **Taxa de Poda**: Eficiência da simplificação
+            - **Confiança**: Confiabilidade da recomendação
+        ''')
+    
+    # Framework Justification
+    with st.expander("Justificativa do Framework"):
+        st.write("### Fundamentação do Framework")
+        st.markdown('''
+            O framework foi desenvolvido considerando:
+            1. **Segurança (40%)**: 
+               - Proteção de dados sensíveis de saúde
+               - Conformidade com LGPD e HIPAA
+            2. **Escalabilidade (25%)**:
+               - Capacidade de crescimento da rede
+               - Suporte a múltiplos nós e transações
+            3. **Eficiência Energética (20%)**:
+               - Sustentabilidade da solução
+               - Custo operacional otimizado
+            4. **Governança (15%)**:
+               - Flexibilidade administrativa
+               - Controle de acesso e permissões
+        ''')
 
 def init_session_state():
     """Initialize all required session state variables with error handling"""
@@ -25,150 +221,6 @@ def init_session_state():
         st.error(f"Error initializing session state: {str(e)}")
         st.session_state.error = str(e)
 
-def reset_session_state():
-    """Reset session state on errors"""
-    try:
-        st.session_state.answers = {}
-        st.session_state.error = None
-        st.session_state.loading = False
-        st.session_state.recommendation = None
-    except Exception as e:
-        st.error(f"Error resetting session state: {str(e)}")
-
-def show_home_page():
-    """Display home page with framework explanation and reference table"""
-    st.title("SeletorDLTSaude")
-    st.write("Bem-vindo ao sistema de seleção de DLT para saúde.")
-
-    st.header("Objetivo do Framework")
-    st.markdown('''
-        O SeletorDLTSaude é uma aplicação interativa desenvolvida para ajudar profissionais 
-        e pesquisadores a escolherem a melhor solução de Distributed Ledger Technology (DLT) 
-        e o algoritmo de consenso mais adequado para projetos de saúde. 
-        
-        A aplicação guia o usuário através de um processo estruturado em quatro fases:
-        - **Fase de Aplicação**: Avalia requisitos de privacidade e integração
-        - **Fase de Consenso**: Analisa necessidades de segurança e eficiência
-        - **Fase de Infraestrutura**: Considera escalabilidade e performance
-        - **Fase de Internet**: Avalia governança e interoperabilidade
-    ''')
-
-    st.subheader("Tabela de Referência de DLTs e Algoritmos")
-    data = {
-        'DLT': [
-            'Hyperledger Fabric',
-            'Hyperledger Fabric',
-            'VeChain',
-            'Quorum (Mediledger)',
-            'IOTA',
-            'Ripple (XRP Ledger)',
-            'Stellar',
-            'Bitcoin',
-            'Ethereum (PoW)',
-            'Ethereum 2.0 (PoS)'
-        ],
-        'Tipo de DLT': [
-            'DLT Permissionada Privada',
-            'DLT Permissionada Privada',
-            'DLT Permissionada Simples',
-            'DLT Híbrida',
-            'DLT Pública',
-            'DLT Pública Permissionless',
-            'DLT Pública Permissionless',
-            'DLT Pública',
-            'DLT Pública',
-            'DLT Pública'
-        ],
-        'Grupo de Algoritmo': [
-            'Alta Segurança e Controle dos dados',
-            'Alta Segurança e Controle dos dados',
-            'Alta Eficiência Operacional em redes locais',
-            'Escalabilidade e Governança Flexível',
-            'Alta Escalabilidade em Redes IoT',
-            'Alta Eficiência Operacional em redes locais',
-            'Alta Eficiência Operacional em redes locais',
-            'Alta Segurança e Descentralização',
-            'Alta Segurança e Descentralização',
-            'Escalabilidade e Governança Flexível'
-        ],
-        'Algoritmo de Consenso': [
-            'RAFT/IBFT',
-            'PBFT',
-            'Proof of Authority (PoA)',
-            'RAFT/IBFT',
-            'Tangle',
-            'Ripple Consensus Algorithm',
-            'Stellar Consensus Protocol (SCP)',
-            'Proof of Work (PoW)',
-            'Proof of Work (PoW)',
-            'Proof of Stake (PoS)'
-        ],
-        'Caso de Uso': [
-            'Rastreabilidade de medicamentos na cadeia de suprimentos',
-            'Compartilhamento de Dados de Pesquisa e Registros de Saúde',
-            'Rastreamento de suprimentos médicos e cadeia farmacêutica',
-            'Monitoramento e rastreamento de medicamentos',
-            'Compartilhamento seguro de dados de pacientes via IoT',
-            'Processamento eficiente de transações e segurança de dados',
-            'Gerenciamento de transações de pagamentos entre provedores',
-            'Armazenamento seguro de dados médicos críticos',
-            'Contratos inteligentes e registros médicos eletrônicos',
-            'Aceleração de ensaios clínicos e compartilhamento de dados'
-        ],
-        'Referência Bibliográfica': [
-            'NASIR, S.; ALPHABLOCK. Medledger system for monitoring counterfeit drugs. 2019.',
-            'NASIR, S.; ALPHABLOCK. Permissioned health data networks for secure data sharing. 2020.',
-            "TURK, Z.; KLINC, R. FarmaTrust's VeChain for drug authenticity verification. 2019.",
-            'GIL, A. C. Mediledger transparency system for drug monitoring. 2002.',
-            'VIEIRA, S. C. V. C. A.; GIOZZA, W. F.; RODRIGUES, C. K. S. Patientory platform for real-time data sharing in IoT. 2023.',
-            "HEISKANEN, H. Ripple's fast and secure transactions in healthcare. 2020.",
-            'LI, J.; HEISKANEN, H. Stellar protocol for secure healthcare payments. 2019.',
-            'GIL, A. C. Immutable data storage in public health networks. 2002.',
-            'GIOZZA, W. F.; ALMEIDA, S. C. V. C.; RODRIGUES, C. K. S. Smart contracts for secure health records on Ethereum. 2023.',
-            'GIL, A. C. Ethereum-based clinical trial tracking system. 2002.'
-        ]
-    }
-
-    # Update table display to show all columns
-    df = pd.DataFrame(data)
-    st.table(df)
-
-    if st.button("Iniciar Seleção de DLT", type="primary"):
-        st.session_state.page = 'Framework Proposto'
-        st.experimental_rerun()
-
-def show_fallback_ui():
-    """Display fallback UI when main content fails to load"""
-    st.error("Ocorreu um erro ao carregar o conteúdo")
-    if st.button("Tentar Novamente"):
-        st.experimental_rerun()
-
-def show_metrics_explanation():
-    """Display enhanced metrics explanations"""
-    st.header("Métricas do Sistema")
-    
-    with st.expander("Explicação das Métricas de Avaliação"):
-        st.markdown("""
-        ### 1. Índice de Confiança
-        Mede a confiabilidade da recomendação baseado em:
-        - Diferença entre o score mais alto e a média dos scores
-        - Consistência das respostas fornecidas
-        - Validação acadêmica das soluções
-
-        ### 2. Matriz de Avaliação
-        Apresenta uma visualização detalhada de como cada DLT se comporta em relação a:
-        - Segurança (40%)
-        - Escalabilidade (25%)
-        - Eficiência Energética (20%)
-        - Governança (15%)
-
-        ### 3. Compatibilidade DLT-Algoritmo
-        Análise da compatibilidade entre DLTs e algoritmos de consenso considerando:
-        - Características técnicas
-        - Requisitos de implementação
-        - Casos de uso validados
-        """)
-
 def main():
     """Main application with improved error handling and state management"""
     try:
@@ -176,7 +228,9 @@ def main():
         init_session_state()
 
         if st.session_state.error:
-            show_fallback_ui()
+            st.error("Ocorreu um erro ao carregar o conteúdo")
+            if st.button("Tentar Novamente"):
+                st.experimental_rerun()
             return
 
         if not is_authenticated():
@@ -204,7 +258,8 @@ def main():
 
             try:
                 if menu_option == 'Início':
-                    show_home_page()
+                    st.title("SeletorDLTSaude")
+                    st.write("Bem-vindo ao sistema de seleção de DLT para saúde.")
                 elif menu_option == 'Framework Proposto':
                     run_decision_tree()
                 elif menu_option == 'Métricas':
@@ -226,12 +281,16 @@ def main():
 
             except Exception as e:
                 st.error(f"Error loading content: {str(e)}")
-                show_fallback_ui()
+                if st.button("Tentar Novamente"):
+                    st.experimental_rerun()
 
     except Exception as e:
         st.error(f"Critical error: {str(e)}")
         st.code(traceback.format_exc())
-        reset_session_state()
+        st.session_state.error = str(e)
+        if st.button("Reiniciar Aplicação"):
+            st.session_state.clear()
+            st.experimental_rerun()
 
 if __name__ == "__main__":
     main()
