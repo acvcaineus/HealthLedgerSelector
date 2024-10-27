@@ -80,7 +80,7 @@ def show_home_page():
         st.rerun()
 
 def show_metrics():
-    st.header("Métricas Técnicas do Processo de Decisão")
+    st.header("Métricas Técnicas do Processo Decisório")
     try:
         if 'recommendation' in st.session_state:
             with st.spinner('Carregando métricas...'):
@@ -89,67 +89,106 @@ def show_metrics():
                     classes = {k: v['score'] for k, v in rec['evaluation_matrix'].items()}
                     gini = calcular_gini(classes)
                     entropy = calcular_entropia(classes)
+                    profundidade = calcular_profundidade_decisoria(list(classes.keys()))
+                    pruning = calcular_pruning(len(classes), sum(1 for score in classes.values() if score > 0))
+                    confiabilidade = calcular_confiabilidade_recomendacao(classes)
 
+                    # Gini Index Section
                     st.subheader("1. Índice de Gini")
                     with st.expander("Ver Explicação do Índice de Gini"):
                         st.latex(r'''Gini = 1 - \sum_{i=1}^{n} p_i^2''')
-                        st.markdown("""
-                            O Índice de Gini mede a dispersão das recomendações entre as diferentes DLTs.
+                        st.markdown('''
+                            O Índice de Gini mede a pureza da classificação:
                             - Valor próximo a 0: Uma DLT claramente se destaca
                             - Valor próximo a 1: Várias DLTs têm pontuações similares
-                        """)
+                            
+                            **Interpretação do Valor Atual:**
+                            {}
+                        '''.format("Boa separação entre classes" if gini < 0.3 else 
+                                 "Separação moderada" if gini < 0.6 else 
+                                 "Alta mistura entre classes"))
+                    st.metric("Valor do Gini", f"{gini:.2f}")
 
+                    # Entropy Section
                     st.subheader("2. Entropia da Decisão")
                     with st.expander("Ver Explicação da Entropia"):
                         st.latex(r'''Entropia = -\sum_{i=1}^{n} p_i \log_2(p_i)''')
-                        st.markdown("""
-                            A Entropia mede a incerteza na classificação das DLTs.
+                        st.markdown('''
+                            A Entropia mede a incerteza na classificação:
                             - Valor baixo: Alta certeza na recomendação
                             - Valor alto: Maior incerteza na escolha
-                        """)
+                            
+                            **Interpretação do Valor Atual:**
+                            {}
+                        '''.format("Alta certeza na decisão" if entropy < 1 else 
+                                 "Certeza moderada" if entropy < 2 else 
+                                 "Alta incerteza na decisão"))
+                    st.metric("Valor da Entropia", f"{entropy:.2f}")
 
+                    # Decision Tree Metrics
+                    st.subheader("3. Métricas da Árvore de Decisão")
                     col1, col2 = st.columns(2)
                     with col1:
-                        st.metric("Índice de Gini", f"{gini:.2f}")
+                        with st.expander("Ver Explicação da Profundidade"):
+                            st.markdown('''
+                                A profundidade indica a complexidade do processo decisório:
+                                - Valor baixo: Processo simples e direto
+                                - Valor alto: Processo mais complexo e detalhado
+                            ''')
+                        st.metric("Profundidade", f"{profundidade}")
+                    
                     with col2:
-                        st.metric("Entropia", f"{entropy:.2f}")
+                        with st.expander("Ver Explicação da Taxa de Poda"):
+                            st.markdown('''
+                                A taxa de poda indica a otimização da árvore:
+                                - Valor alto: Árvore bem otimizada
+                                - Valor baixo: Potencial para otimização
+                            ''')
+                        st.metric("Taxa de Poda", f"{pruning:.2%}")
 
-                    st.subheader("3. Matriz de Avaliação")
-                    matrix_data = []
-                    for dlt, data in rec['evaluation_matrix'].items():
-                        row = [dlt]
-                        for metric in ['security', 'scalability', 'energy_efficiency', 'governance']:
-                            row.append(float(data['metrics'][metric]))
-                        matrix_data.append(row)
+                    # Confidence Section
+                    st.subheader("4. Índice de Confiabilidade")
+                    with st.expander("Ver Explicação do Índice de Confiabilidade"):
+                        st.markdown('''
+                            O índice de confiabilidade é calculado considerando:
+                            1. Diferença entre scores (maior score vs média)
+                            2. Consistência das respostas
+                            3. Validação acadêmica
+                            
+                            **Interpretação:**
+                            - Valor > 0.7: Alta confiabilidade
+                            - Valor ≤ 0.7: Confiabilidade moderada
+                        ''')
+                    st.metric("Confiabilidade", 
+                             f"{confiabilidade:.2f}",
+                             delta="Alta" if confiabilidade > 0.7 else "Moderada")
 
-                    df = pd.DataFrame(matrix_data, 
-                                    columns=['DLT', 'Segurança', 'Escalabilidade', 
-                                            'Eficiência Energética', 'Governança'])
-                    st.table(df)
-
-                    st.subheader("4. Visualização das Métricas")
+                    # Visualization Section
+                    st.subheader("5. Visualização Comparativa")
                     fig = go.Figure()
-                    for dlt in df['DLT']:
-                        values = df[df['DLT'] == dlt].iloc[0, 1:].values.tolist()
-                        values.append(values[0])  # Close the polygon
+                    
+                    # Add radar chart for metrics comparison
+                    for dlt, data in rec['evaluation_matrix'].items():
+                        metrics = data['metrics']
                         fig.add_trace(go.Scatterpolar(
-                            r=values,
-                            theta=['Segurança', 'Escalabilidade', 'Eficiência Energética', 
-                                  'Governança', 'Segurança'],
-                            name=dlt,
-                            fill='toself'
+                            r=[metrics['security'], metrics['scalability'], 
+                               metrics['energy_efficiency'], metrics['governance']],
+                            theta=['Segurança', 'Escalabilidade', 
+                                  'Eficiência Energética', 'Governança'],
+                            fill='toself',
+                            name=dlt
                         ))
-
+                    
                     fig.update_layout(
                         polar=dict(radialaxis=dict(visible=True, range=[0, 5])),
                         showlegend=True,
                         title="Comparação de Métricas entre DLTs"
                     )
+                    
                     st.plotly_chart(fig)
 
         else:
             st.info("Complete o processo de seleção para ver as métricas.")
-
     except Exception as e:
         st.error(f"Erro ao exibir métricas: {str(e)}")
         st.code(traceback.format_exc())
