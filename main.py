@@ -137,12 +137,75 @@ def show_metrics():
         st.info("Por favor, tente reiniciar o processo de recomendação")
 
 def show_home_page():
-    # [Previous home page code remains unchanged]
-    pass
+    st.title("SeletorDLTSaude - Sistema de Seleção de DLT para Saúde")
+    
+    # Reference table section
+    st.header("Tabela de Referência DLT")
+    
+    # Create DataFrame with the DLT reference data
+    df = pd.DataFrame({
+        'DLT': [],
+        'Tipo de DLT': [],
+        'Grupo de Algoritmo': [],
+        'Algoritmo de Consenso': [],
+        'Principais Características': [],
+        'Estudos de Uso': []
+    })
+    
+    # Load data from the provided file
+    with open('Pasted-DLT-Tipo-de-DLT-Grupo-de-Algoritmo-Algoritmo-de-Consenso-Principais-Caracter-sticas-do-Algoritmo-Est-1729763052900.txt', 'r') as file:
+        lines = file.readlines()
+        for line in lines[1:]:  # Skip header
+            if line.strip():  # Skip empty lines
+                parts = line.strip().split('\t')
+                if len(parts) >= 6:
+                    df = pd.concat([df, pd.DataFrame({
+                        'DLT': [parts[0]],
+                        'Tipo de DLT': [parts[1]],
+                        'Grupo de Algoritmo': [parts[2]],
+                        'Algoritmo de Consenso': [parts[3]],
+                        'Principais Características': [parts[4]],
+                        'Estudos de Uso': [parts[5]]
+                    })], ignore_index=True)
+    
+    # Display the reference table
+    st.dataframe(df, use_container_width=True)
+    
+    # Add explanatory sections
+    st.markdown("### Sobre o SeletorDLTSaude")
+    st.write('''
+    O SeletorDLTSaude é uma aplicação interativa que auxilia profissionais e pesquisadores 
+    na escolha da melhor solução de Distributed Ledger Technology (DLT) e algoritmo de 
+    consenso para projetos de saúde.
+    ''')
+    
+    st.markdown("### Como Utilizar")
+    st.write('''
+    1. Acesse o Framework Proposto no menu lateral
+    2. Responda às perguntas sobre seu projeto
+    3. Receba uma recomendação personalizada de DLT
+    4. Visualize métricas detalhadas da recomendação
+    ''')
+    
+    # Add call-to-action button
+    if st.button("Iniciar Seleção de DLT"):
+        st.session_state.page = "Framework Proposto"
+        st.experimental_rerun()
 
 def show_user_profile():
-    # [Previous user profile code remains unchanged]
-    pass
+    st.header(f"Perfil do Usuário: {st.session_state.username}")
+    
+    # Display user's recommendations
+    recommendations = get_user_recommendations(st.session_state.username)
+    if recommendations:
+        st.subheader("Suas Últimas Recomendações")
+        for rec in recommendations:
+            st.write(f"Data: {rec['timestamp']}")
+            st.write(f"DLT: {rec['dlt']}")
+            st.write(f"Algoritmo de Consenso: {rec['consensus']}")
+            st.write("---")
+    else:
+        st.info("Você ainda não tem recomendações salvas.")
 
 def main():
     st.set_page_config(page_title="SeletorDLTSaude", page_icon="🏥", layout="wide")
