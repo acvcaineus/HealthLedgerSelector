@@ -73,10 +73,6 @@ def show_phase_progress(current_phase):
 
 def run_decision_tree():
     """Main function for the decision tree"""
-    if not st.session_state.questionnaire_started:
-        st.warning("Por favor, inicie o questionário na página inicial.")
-        return
-        
     st.title("Framework de Seleção de DLT")
     
     # Show current phase progress

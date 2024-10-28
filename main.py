@@ -21,7 +21,6 @@ def init_session_state():
             st.session_state.loading = False
             st.session_state.recommendation = None
             st.session_state.current_phase = 1
-            st.session_state.questionnaire_started = False  # Add questionnaire state
     except Exception as e:
         st.error(f"Error initializing session state: {str(e)}")
         st.session_state.error = str(e)
@@ -43,11 +42,41 @@ def show_home_page():
         - **Fase de Internet**: Avalia governança e interoperabilidade
     ''')
 
-    if st.button("Selecionar DLT"):
-        st.session_state.questionnaire_started = True
+    # Reference table display
+    data = {
+        'Grupo': [
+            'Alta Segurança e Controle',
+            'Alta Segurança e Controle',
+            'Alta Eficiência Operacional',
+            'Alta Eficiência Operacional',
+            'Escalabilidade e Governança Flexível',
+            'Alta Escalabilidade em Redes IoT'
+        ],
+        'Tipo DLT': [
+            'DLT Permissionada Privada',
+            'DLT Pública Permissionless',
+            'DLT Permissionada Simples',
+            'DLT Híbrida',
+            'DLT com Consenso Delegado',
+            'DLT Pública'
+        ],
+        'Nome DLT': [
+            'Hyperledger Fabric',
+            'Bitcoin',
+            'Quorum',
+            'Ethereum 2.0',
+            'EOS',
+            'IOTA'
+        ]
+    }
+    
+    st.table(pd.DataFrame(data))
+
+    # Simple button that directly changes the page
+    if st.button("Iniciar Seleção de DLT"):
         st.session_state.page = 'Framework Proposto'
-        st.session_state.current_phase = 1
         st.session_state.answers = {}
+        st.session_state.current_phase = 1
         st.experimental_rerun()
 
 def show_metrics():
