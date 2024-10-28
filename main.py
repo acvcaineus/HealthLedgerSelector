@@ -21,33 +21,30 @@ def init_session_state():
             st.session_state.loading = False
             st.session_state.recommendation = None
             st.session_state.current_phase = 1
-            st.session_state.phase_complete = False
-            st.session_state.questionnaire_started = False
     except Exception as e:
         st.error(f"Error initializing session state: {str(e)}")
         st.session_state.error = str(e)
 
 def show_home_page():
-    """Display home page with framework explanation and start button"""
     st.title("SeletorDLTSaude")
     st.write("Bem-vindo ao sistema de seleção de DLT para saúde.")
     
     st.markdown('''
-        ### Como Funciona
-        A aplicação guia você através de um processo estruturado em quatro fases:
-        1. **Fase de Aplicação**: Avalia requisitos de privacidade e integração
-        2. **Fase de Consenso**: Determina requisitos de segurança
-        3. **Fase de Infraestrutura**: Considera escalabilidade e performance
-        4. **Fase de Internet**: Define governança e interoperabilidade
+        ### Objetivo do Framework
+        O SeletorDLTSaude é uma aplicação interativa desenvolvida para ajudar profissionais 
+        e pesquisadores a escolherem a melhor solução de Distributed Ledger Technology (DLT) 
+        e o algoritmo de consenso mais adequado para projetos de saúde.
+        
+        A aplicação guia o usuário através de um processo estruturado em quatro fases:
+        - **Fase de Aplicação**: Avalia requisitos de privacidade e integração
+        - **Fase de Consenso**: Analisa necessidades de segurança e eficiência
+        - **Fase de Infraestrutura**: Considera escalabilidade e performance
+        - **Fase de Internet**: Avalia governança e interoperabilidade
     ''')
-    
-    # Update button logic to properly handle state changes
-    if st.button("Iniciar Seleção de DLT", type="primary"):
-        st.session_state.questionnaire_started = True
+
+    # Add the new button with direct navigation
+    if st.button("Selecionar DLT"):
         st.session_state.page = 'Framework Proposto'
-        st.session_state.answers = {}
-        st.session_state.current_phase = 1
-        st.session_state.recommendation = None
         st.experimental_rerun()
 
 def show_metrics():
@@ -95,13 +92,7 @@ def main():
             show_home_page()
         elif st.session_state.page == 'Framework Proposto':
             from decision_tree import run_decision_tree
-            if st.session_state.questionnaire_started:
-                run_decision_tree()
-            else:
-                st.warning("Por favor, clique em 'Iniciar Seleção de DLT' na página inicial.")
-                if st.button("Voltar para a Página Inicial"):
-                    st.session_state.page = 'Início'
-                    st.experimental_rerun()
+            run_decision_tree()
         elif st.session_state.page == 'Métricas':
             show_metrics()
         elif st.session_state.page == 'Perfil':
