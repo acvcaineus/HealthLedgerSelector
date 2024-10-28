@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import traceback
 from datetime import datetime
-from user_management import login, register, is_authenticated, logout
+from user_management import login, register, logout
 from decision_logic import get_recommendation
 from database import get_user_recommendations, save_recommendation
 from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_decisoria, 
@@ -84,7 +84,7 @@ def show_metrics():
     """Display metrics and recommendation results"""
     st.header("Métricas - Resultados da Recomendação")
     
-    if not hasattr(st.session_state, 'recommendation') or st.session_state.recommendation is None:
+    if 'recommendation' not in st.session_state or st.session_state.recommendation is None:
         st.warning("Por favor, complete o questionário primeiro para visualizar as métricas.")
         if st.button("Ir para o Questionário"):
             st.session_state.page = 'Framework Proposto'
