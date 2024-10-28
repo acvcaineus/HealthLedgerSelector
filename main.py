@@ -6,10 +6,11 @@ from decision_tree import run_decision_tree
 from decision_logic import compare_algorithms, consensus_algorithms
 from database import get_user_recommendations
 from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_decisoria, 
-                    calcular_pruning, calcular_confiabilidade_recomendacao)
+                    calcular_pruning, calcular_confiabilidade_recomendacao, get_metric_interpretation)
 from utils import init_session_state
 
 def show_metrics():
+    """Display enhanced metrics and analysis"""
     st.title("Métricas do Processo de Decisão")
     
     if 'recommendation' not in st.session_state:
@@ -18,21 +19,20 @@ def show_metrics():
             st.session_state.page = "Framework Proposto"
             st.experimental_rerun()
         return
-        
+    
     try:
         rec = st.session_state.recommendation
         
         # Accuracy metrics
         with st.expander("Precisão (Accuracy)", expanded=True):
             st.write("### Métricas de Precisão")
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                if 'evaluation_matrix' in rec:
-                    scores = [float(data['score']) for data in rec['evaluation_matrix'].values()]
-                    correct_decisions = sum(1 for score in scores if score > 0.7)
-                    total_decisions = len(scores)
-                    
+            if 'evaluation_matrix' in rec:
+                scores = [float(data['score']) for data in rec['evaluation_matrix'].values()]
+                correct_decisions = sum(1 for score in scores if score > 0.7)
+                total_decisions = len(scores)
+                
+                col1, col2 = st.columns(2)
+                with col1:
                     fig = go.Figure(data=[
                         go.Bar(name='Decisões Corretas', x=['Precisão'], y=[correct_decisions]),
                         go.Bar(name='Total', x=['Precisão'], y=[total_decisions])
@@ -42,85 +42,70 @@ def show_metrics():
                     
                     accuracy = correct_decisions / total_decisions if total_decisions > 0 else 0
                     st.metric("Precisão", f"{accuracy:.2%}")
-                else:
-                    st.warning("Dados de avaliação não disponíveis")
                 
-            with col2:
-                st.write('''
-                A precisão mede a proporção de decisões corretas em relação ao total.
-                
-                **Interpretação:**
-                - Valores altos: Sistema confiável
-                - Valores baixos: Necessita ajustes
-                ''')
+                with col2:
+                    st.write('''
+                    A precisão mede a proporção de decisões corretas em relação ao total.
+                    
+                    **Interpretação:**
+                    - Valores altos (>70%): Sistema confiável
+                    - Valores médios (40-70%): Sistema adequado
+                    - Valores baixos (<40%): Necessita ajustes
+                    ''')
+            else:
+                st.warning("Dados de avaliação não disponíveis")
         
-        # Sensitivity and Specificity
-        with st.expander("Sensibilidade e Especificidade"):
-            st.write("### Análise de Sensibilidade")
+        # Detailed metrics analysis
+        with st.expander("Análise Detalhada de Métricas"):
+            st.write("### Métricas de Avaliação")
             
-            if 'evaluation_matrix' in rec:
-                col1, col2 = st.columns(2)
-                
-                true_positives = sum(1 for data in rec['evaluation_matrix'].values() 
-                                   if float(data['score']) > 0.7)
-                false_positives = sum(1 for data in rec['evaluation_matrix'].values() 
-                                    if float(data['score']) <= 0.7)
-                total = len(rec['evaluation_matrix'])
-                
-                sensitivity = true_positives / total if total > 0 else 0
-                specificity = (total - false_positives) / total if total > 0 else 0
-                
-                with col1:
-                    st.metric("Sensibilidade", f"{sensitivity:.2%}")
-                with col2:
-                    st.metric("Especificidade", f"{specificity:.2%}")
-                
-                # Create ROC-like visualization
-                fig = go.Figure()
-                fig.add_trace(go.Scatter(
-                    x=[0, specificity, 1],
-                    y=[0, sensitivity, 1],
-                    mode='lines+markers',
-                    name='Curva ROC'
-                ))
-                fig.update_layout(
-                    title="Visualização de Sensibilidade vs. Especificidade",
-                    xaxis_title="1 - Especificidade",
-                    yaxis_title="Sensibilidade"
-                )
-                st.plotly_chart(fig)
-            else:
-                st.warning("Dados insuficientes para calcular sensibilidade e especificidade")
+            col1, col2 = st.columns(2)
+            with col1:
+                # Calculate and display metrics with explanations
+                if 'answers' in st.session_state:
+                    depth = len(st.session_state.answers)
+                    total_nodes = depth * 2 + 1
+                    pruned_nodes = total_nodes - depth - 1
+                    pruning_ratio = calcular_pruning(total_nodes, pruned_nodes)
+                    
+                    metrics_data = {
+                        "depth": depth,
+                        "pruning": pruning_ratio,
+                        "confidence": rec.get('confidence_value', 0)
+                    }
+                    
+                    for metric_name, value in metrics_data.items():
+                        interpretation = get_metric_interpretation(metric_name, value)
+                        if interpretation:
+                            st.metric(interpretation["title"], f"{value:.2f}")
+                            st.info(interpretation["description"])
+                            st.success(interpretation["interpretation"])
+            
+            with col2:
+                # Visualization of metrics
+                if 'evaluation_matrix' in rec:
+                    fig = go.Figure(go.Indicator(
+                        mode="gauge+number",
+                        value=float(rec.get('confidence_value', 0)) * 100,
+                        domain={'x': [0, 1], 'y': [0, 1]},
+                        title={'text': "Confiabilidade da Recomendação"},
+                        gauge={
+                            'axis': {'range': [0, 100]},
+                            'steps': [
+                                {'range': [0, 40], 'color': "lightgray"},
+                                {'range': [40, 70], 'color': "gray"},
+                                {'range': [70, 100], 'color': "darkgreen"}
+                            ],
+                            'threshold': {
+                                'line': {'color': "red", 'width': 4},
+                                'thickness': 0.75,
+                                'value': 70
+                            }
+                        }
+                    ))
+                    st.plotly_chart(fig)
         
-        # Tree Depth
-        with st.expander("Profundidade da Árvore"):
-            st.write("### Análise de Profundidade")
-            if 'answers' in st.session_state:
-                depth = len(st.session_state.answers)
-                total_nodes = depth * 2 + 1
-                pruned_nodes = total_nodes - depth - 1
-                pruning_ratio = calcular_pruning(total_nodes, pruned_nodes)
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.metric("Profundidade Atual", depth)
-                    st.progress(depth / 8)  # Assuming 8 is max depth
-                with col2:
-                    st.metric("Taxa de Poda", f"{pruning_ratio:.1%}")
-                
-                # Create tree depth visualization
-                fig = go.Figure(go.Sunburst(
-                    ids=['root'] + [f'level_{i}' for i in range(depth)],
-                    labels=['Raiz'] + [f'Nível {i+1}' for i in range(depth)],
-                    parents=[''] + ['root'] * depth,
-                    values=[1] * (depth + 1)
-                ))
-                fig.update_layout(title="Visualização da Profundidade da Árvore")
-                st.plotly_chart(fig)
-            else:
-                st.warning("Dados da árvore não disponíveis")
-        
-        # Add return button
+        # Add navigation buttons
         st.markdown("---")
         col1, col2 = st.columns(2)
         with col1:
@@ -131,121 +116,86 @@ def show_metrics():
             if st.button("Voltar ao Início"):
                 st.session_state.page = "Início"
                 st.experimental_rerun()
-                
+    
     except Exception as e:
         st.error(f"Erro ao processar métricas: {str(e)}")
         st.info("Por favor, tente reiniciar o processo de recomendação")
+        if st.button("Reiniciar"):
+            st.session_state.page = "Framework Proposto"
+            st.experimental_rerun()
 
 def show_home_page():
     st.title("SeletorDLTSaude - Sistema de Seleção de DLT para Saúde")
     
-    # Reference table section
-    st.header("Tabela de Referência DLT")
+    st.markdown("""
+    ### Bem-vindo ao SeletorDLTSaude
     
-    # Create DataFrame with the DLT reference data
-    df = pd.DataFrame({
-        'DLT': [],
-        'Tipo de DLT': [],
-        'Grupo de Algoritmo': [],
-        'Algoritmo de Consenso': [],
-        'Principais Características': [],
-        'Estudos de Uso': []
-    })
+    Este sistema ajuda você a escolher a melhor tecnologia de ledger distribuído (DLT) 
+    e algoritmo de consenso para seu projeto na área de saúde.
     
-    # Load data from the provided file
-    with open('Pasted-DLT-Tipo-de-DLT-Grupo-de-Algoritmo-Algoritmo-de-Consenso-Principais-Caracter-sticas-do-Algoritmo-Est-1729763052900.txt', 'r') as file:
-        lines = file.readlines()
-        for line in lines[1:]:  # Skip header
-            if line.strip():  # Skip empty lines
-                parts = line.strip().split('\t')
-                if len(parts) >= 6:
-                    df = pd.concat([df, pd.DataFrame({
-                        'DLT': [parts[0]],
-                        'Tipo de DLT': [parts[1]],
-                        'Grupo de Algoritmo': [parts[2]],
-                        'Algoritmo de Consenso': [parts[3]],
-                        'Principais Características': [parts[4]],
-                        'Estudos de Uso': [parts[5]]
-                    })], ignore_index=True)
+    #### Como funciona:
+    1. Responda a perguntas sobre seus requisitos
+    2. Receba recomendações personalizadas
+    3. Analise métricas detalhadas
+    4. Compare diferentes soluções
+    """)
     
-    # Display the reference table
-    st.dataframe(df, use_container_width=True)
-    
-    # Add explanatory sections
-    st.markdown("### Sobre o SeletorDLTSaude")
-    st.write('''
-    O SeletorDLTSaude é uma aplicação interativa que auxilia profissionais e pesquisadores 
-    na escolha da melhor solução de Distributed Ledger Technology (DLT) e algoritmo de 
-    consenso para projetos de saúde.
-    ''')
-    
-    st.markdown("### Como Utilizar")
-    st.write('''
-    1. Acesse o Framework Proposto no menu lateral
-    2. Responda às perguntas sobre seu projeto
-    3. Receba uma recomendação personalizada de DLT
-    4. Visualize métricas detalhadas da recomendação
-    ''')
-    
-    # Add call-to-action button
-    if st.button("Iniciar Seleção de DLT"):
+    if st.button("Iniciar Seleção"):
         st.session_state.page = "Framework Proposto"
         st.experimental_rerun()
 
 def show_user_profile():
+    if not is_authenticated():
+        st.warning("Faça login para ver seu perfil")
+        return
+        
     st.header(f"Perfil do Usuário: {st.session_state.username}")
-    
-    # Display user's recommendations
     recommendations = get_user_recommendations(st.session_state.username)
+    
     if recommendations:
-        st.subheader("Suas Últimas Recomendações")
+        st.subheader("Suas Recomendações")
         for rec in recommendations:
-            st.write(f"Data: {rec['timestamp']}")
-            st.write(f"DLT: {rec['dlt']}")
-            st.write(f"Algoritmo de Consenso: {rec['consensus']}")
-            st.write("---")
+            with st.expander(f"Recomendação - {rec['timestamp']}", expanded=False):
+                st.write(f"**DLT:** {rec['dlt']}")
+                st.write(f"**Algoritmo:** {rec['consensus']}")
+                st.write("---")
     else:
         st.info("Você ainda não tem recomendações salvas.")
 
 def main():
-    st.set_page_config(page_title="SeletorDLTSaude", page_icon="🏥", layout="wide")
+    st.set_page_config(
+        page_title="SeletorDLTSaude",
+        page_icon="🏥",
+        layout="wide"
+    )
+    
     init_session_state()
-
-    try:
-        if not is_authenticated():
-            st.title("SeletorDLTSaude - Login")
-            tab1, tab2 = st.tabs(["Login", "Registrar"])
-            with tab1:
-                login()
-            with tab2:
-                register()
+    
+    if not is_authenticated():
+        st.title("SeletorDLTSaude - Login")
+        tab1, tab2 = st.tabs(["Login", "Registrar"])
+        
+        with tab1:
+            login()
+        with tab2:
+            register()
+    else:
+        st.sidebar.title("Menu")
+        pages = {
+            "Início": show_home_page,
+            "Framework Proposto": run_decision_tree,
+            "Métricas": show_metrics,
+            "Perfil": show_user_profile,
+            "Logout": logout
+        }
+        
+        page = st.sidebar.selectbox("Navegação", list(pages.keys()))
+        
+        if page != "Logout":
+            pages[page]()
         else:
-            st.sidebar.title("Menu")
-            menu_options = ['Início', 'Framework Proposto', 'Métricas', 'Perfil', 'Logout']
-            
-            menu_option = st.sidebar.selectbox(
-                "Escolha uma opção",
-                menu_options,
-                index=menu_options.index(st.session_state.page) if st.session_state.page in menu_options else 0
-            )
-            
-            st.session_state.page = menu_option
-            
-            if menu_option == 'Início':
-                show_home_page()
-            elif menu_option == 'Framework Proposto':
-                run_decision_tree()
-            elif menu_option == 'Métricas':
-                show_metrics()
-            elif menu_option == 'Perfil':
-                show_user_profile()
-            elif menu_option == 'Logout':
-                logout()
-                st.session_state.page = 'Início'
-                st.experimental_rerun()
-    except Exception as e:
-        st.error(f"Erro na aplicação: {str(e)}")
-        st.info("Por favor, recarregue a página ou faça login novamente.")
+            logout()
+            st.experimental_rerun()
 
 if __name__ == "__main__":
     main()

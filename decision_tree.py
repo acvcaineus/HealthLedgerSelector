@@ -174,14 +174,34 @@ def show_detailed_recommendation(recommendation):
         st.info(recommendation['consensus'])
         st.markdown("### Grupo de Algoritmos")
         st.write(recommendation['consensus_group'])
+        
+        st.subheader("Casos de Uso")
+        st.write(recommendation.get('use_cases', 'Não disponível'))
     
     with tabs[1]:
         st.subheader("Análise de Características")
         show_characteristic_analysis(recommendation.get('analysis', {}))
+        
+        # Show evaluation matrix if available
+        if 'evaluation_matrix' in recommendation:
+            st.subheader("Matriz de Avaliação")
+            df = pd.DataFrame.from_dict(
+                {k: v['metrics'] for k, v in recommendation['evaluation_matrix'].items()},
+                orient='index'
+            )
+            st.dataframe(df.style.background_gradient(cmap='RdYlGn', axis=None))
     
     with tabs[2]:
         st.subheader("Métricas de Decisão")
         show_decision_metrics(recommendation.get('metrics', {}))
+        
+        # Show confidence indicator
+        confidence = recommendation.get('confidence_value', 0)
+        st.metric("Índice de Confiança", f"{confidence:.1%}")
+        if confidence > 0.7:
+            st.success("Alta confiabilidade na recomendação")
+        else:
+            st.warning("Confiabilidade moderada - considere revisar os requisitos")
     
     with tabs[3]:
         st.subheader("Validação Acadêmica")
@@ -191,79 +211,96 @@ def run_decision_tree():
     """Main function to run the decision tree interface"""
     st.title("Framework de Seleção de DLT")
     
-    # Initialize session state
-    if 'current_phase' not in st.session_state:
-        st.session_state.current_phase = "Aplicação"
-    if 'answers' not in st.session_state:
-        st.session_state.answers = {}
-    if 'characteristics' not in st.session_state:
-        st.session_state.characteristics = {}
-    
-    # Show current phase and progress
-    st.subheader(f"Fase Atual: {st.session_state.current_phase}")
-    current_step = len(st.session_state.answers) + 1
-    
-    # Create progress visualization
-    phases = ["Aplicação", "Consenso", "Infraestrutura", "Internet"]
-    progress = phases.index(st.session_state.current_phase) / len(phases)
-    st.progress(progress)
-    
-    # Get current question based on phase
-    current_question = get_question_for_phase(st.session_state.current_phase)
-    
-    if current_question:
-        # Show question with explanation
-        st.markdown(f"### {current_question['text']}")
-        st.info(current_question['explanation'])
+    try:
+        # Initialize session state
+        if 'current_phase' not in st.session_state:
+            st.session_state.current_phase = "Aplicação"
+        if 'answers' not in st.session_state:
+            st.session_state.answers = {}
+        if 'characteristics' not in st.session_state:
+            st.session_state.characteristics = {}
         
-        # Get user response
-        response = st.radio(
-            "Selecione sua resposta:",
-            ["Sim", "Não"],
-            key=f"question_{current_step}"
-        )
+        # Show current phase and progress
+        st.subheader(f"Fase Atual: {st.session_state.current_phase}")
+        current_step = len(st.session_state.answers) + 1
         
-        # Show characteristic impact
-        st.markdown("#### Impacto desta escolha:")
-        st.write(current_question['impact'])
+        # Create progress visualization
+        phases = ["Aplicação", "Consenso", "Infraestrutura", "Internet"]
+        progress = phases.index(st.session_state.current_phase) / len(phases)
+        st.progress(progress)
         
-        # Handle response
-        if st.button("Próxima Pergunta"):
-            # Store response with metadata
-            st.session_state.answers[current_question['id']] = {
-                'response': response,
-                'phase': st.session_state.current_phase,
-                'characteristics': current_question['characteristics']
+        # Get current question based on phase
+        current_question = get_question_for_phase(st.session_state.current_phase)
+        
+        if current_question:
+            # Show question with explanation
+            st.markdown(f"### {current_question['text']}")
+            st.info(current_question['explanation'])
+            
+            # Get user response
+            response = st.radio(
+                "Selecione sua resposta:",
+                ["Sim", "Não"],
+                key=f"question_{current_step}"
+            )
+            
+            # Show characteristic impact
+            st.markdown("#### Impacto desta escolha:")
+            st.write(current_question['impact'])
+            
+            # Handle response
+            if st.button("Próxima Pergunta"):
+                # Store response with metadata
+                st.session_state.answers[current_question['id']] = {
+                    'response': response,
+                    'phase': st.session_state.current_phase,
+                    'characteristics': current_question['characteristics']
+                }
+                
+                # Update characteristics scores
+                update_characteristic_scores(response, current_question['characteristics'])
+                
+                # Move to next phase if needed
+                if len(st.session_state.answers) % 2 == 0:
+                    current_index = phases.index(st.session_state.current_phase)
+                    if current_index < len(phases) - 1:
+                        st.session_state.current_phase = phases[current_index + 1]
+                
+                st.experimental_rerun()
+        
+        # Show recommendation when all questions are answered
+        if len(st.session_state.answers) == 8:  # Total number of questions
+            weights = {
+                "security": float(0.4),
+                "scalability": float(0.25),
+                "energy_efficiency": float(0.20),
+                "governance": float(0.15)
             }
             
-            # Update characteristics scores
-            update_characteristic_scores(response, current_question['characteristics'])
+            # Get recommendation
+            recommendation = get_recommendation(st.session_state.answers, weights)
             
-            # Move to next phase if needed
-            if len(st.session_state.answers) % 2 == 0:
-                current_index = phases.index(st.session_state.current_phase)
-                if current_index < len(phases) - 1:
-                    st.session_state.current_phase = phases[current_index + 1]
+            # Store recommendation for metrics
+            st.session_state.recommendation = recommendation
             
-            st.experimental_rerun()
+            # Show detailed recommendation
+            show_detailed_recommendation(recommendation)
+            
+            # Add navigation buttons
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Ver Métricas Detalhadas"):
+                    st.session_state.page = "Métricas"
+                    st.experimental_rerun()
+            with col2:
+                if st.button("Reiniciar"):
+                    restart_decision_tree()
     
-    # Show recommendation when all questions are answered
-    if len(st.session_state.answers) == 8:  # Total number of questions
-        weights = {
-            "security": float(0.4),
-            "scalability": float(0.25),
-            "energy_efficiency": float(0.20),
-            "governance": float(0.15)
-        }
-        
-        # Get recommendation
-        recommendation = get_recommendation(st.session_state.answers, weights)
-        
-        # Store recommendation for metrics
-        st.session_state.recommendation = recommendation
-        
-        # Show detailed recommendation
-        show_detailed_recommendation(recommendation)
+    except Exception as e:
+        st.error(f"Erro no processamento: {str(e)}")
+        st.info("Por favor, tente reiniciar o processo")
+        if st.button("Reiniciar"):
+            restart_decision_tree()
 
 def restart_decision_tree():
     """Reset the decision tree state"""
