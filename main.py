@@ -60,28 +60,6 @@ def show_home_page():
             'Proof of Work (PoW)',
             'Proof of Work (PoW)',
             'Proof of Stake (PoS)'
-        ],
-        'Principais Características': [
-            'Alta segurança e resiliência contra falhas bizantinas',
-            'Simplicidade e eficiência em redes permissionadas menores',
-            'Alta escalabilidade e eficiência energética',
-            'Alta escalabilidade e eficiência para IoT',
-            'Processamento eficiente de transações',
-            'Gerenciamento de transações de pagamentos',
-            'Máxima segurança e descentralização',
-            'Alta segurança e descentralização',
-            'Alta escalabilidade e eficiência energética'
-        ],
-        'Estudos de Uso': [
-            'Prontuários eletrônicos, integração de dados sensíveis',
-            'Sistemas locais de saúde, redes locais de hospitais',
-            'Monitoramento e rastreamento de medicamentos',
-            'Monitoramento de dispositivos IoT em saúde',
-            'Processamento de transações na saúde',
-            'Consultas telemédicas seguras',
-            'Armazenamento seguro de dados médicos críticos',
-            'Contratos inteligentes e registros médicos',
-            'Ensaios clínicos e compartilhamento de dados'
         ]
     })
     
@@ -120,20 +98,6 @@ def show_home_page():
         if st.button("Ver Métricas Detalhadas"):
             st.session_state.page = "Métricas"
             st.experimental_rerun()
-
-def show_metrics():
-    st.header("Métricas Técnicas do Processo de Decisão")
-    
-    if 'recommendation' not in st.session_state:
-        st.warning("Complete o processo de recomendação primeiro para visualizar as métricas.")
-        if st.button("Ir para o Framework"):
-            st.session_state.page = "Framework Proposto"
-            st.experimental_rerun()
-        return
-
-    with st.spinner("Carregando métricas..."):
-        # [Rest of the metrics code remains unchanged]
-        pass
 
 def show_user_profile():
     st.header(f"Perfil do Usuário: {st.session_state.username}")
