@@ -55,31 +55,60 @@ def show_recommendation(answers, weights, questions):
     st.header("Recomendação Final")
     
     # Create tabs for different sections of the recommendation
-    tab1, tab2, tab3 = st.tabs(["Recomendação", "Análise Detalhada", "Métricas"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Recomendação", "Análise Detalhada", "Métricas", "Explicações"])
     
     with tab1:
-        st.subheader("DLT Recomendada")
-        st.info(f"**{recommendation['dlt']}**")
-        st.write(recommendation.get('dlt_explanation', ''))
+        col1, col2 = st.columns([2, 1])
         
-        st.subheader("Algoritmo de Consenso Recomendado")
-        st.info(f"**{recommendation['consensus']}**")
-        st.write(recommendation.get('consensus_explanation', ''))
+        with col1:
+            st.subheader("DLT Recomendada")
+            st.info(f"**{recommendation['dlt']}**")
+            st.write(recommendation.get('dlt_explanation', ''))
+            
+            st.subheader("Grupo de Consenso")
+            st.info(f"**{recommendation['consensus_group']}**")
+            
+            st.subheader("Algoritmo de Consenso Principal")
+            st.info(f"**{recommendation['consensus']}**")
         
-        # Add confidence indicator
-        confidence = recommendation.get('confidence_value', 0)
-        st.metric("Índice de Confiança", f"{confidence:.1%}")
+        with col2:
+            st.subheader("Algoritmos Compatíveis")
+            for alg in recommendation['possible_algorithms']:
+                st.write(f"- {alg}")
+            
+            # Add confidence indicator with explanation
+            confidence = recommendation.get('confidence_value', 0)
+            st.metric("Índice de Confiança", f"{confidence:.1%}")
+            if confidence > 0.7:
+                st.success("Alta confiabilidade na recomendação")
+            else:
+                st.warning("Confiabilidade moderada - considere revisar os requisitos")
+        
+        st.subheader("Casos de Uso Recomendados")
+        st.write(recommendation.get('use_cases', ''))
     
     with tab2:
         st.subheader("Matriz de Avaliação")
         if 'evaluation_matrix' in recommendation:
+            # Create metrics explanation
+            st.write("""
+            A matriz abaixo mostra as pontuações de cada característica para as DLTs avaliadas:
+            - **Segurança**: Capacidade de proteger dados e transações
+            - **Privacidade**: Controle sobre visibilidade dos dados
+            - **Eficiência**: Otimização de recursos e desempenho
+            - **Escalabilidade**: Capacidade de crescimento
+            - **Governança**: Flexibilidade administrativa
+            """)
+            
             df = pd.DataFrame.from_dict(
                 {k: v['metrics'] for k, v in recommendation['evaluation_matrix'].items()},
                 orient='index'
             )
-            st.dataframe(df)
             
-            # Create radar chart
+            # Add color scale to dataframe
+            st.dataframe(df.style.background_gradient(cmap='RdYlGn', axis=None))
+            
+            # Create radar chart with improved layout
             fig = go.Figure()
             for dlt, data in recommendation['evaluation_matrix'].items():
                 fig.add_trace(go.Scatterpolar(
@@ -89,29 +118,88 @@ def show_recommendation(answers, weights, questions):
                     name=dlt
                 ))
             fig.update_layout(
-                polar=dict(radialaxis=dict(visible=True, range=[0, 5])),
+                polar=dict(
+                    radialaxis=dict(
+                        visible=True,
+                        range=[0, 5],
+                        ticktext=['Baixo', 'Moderado', 'Alto'],
+                        tickvals=[1, 3, 5]
+                    )
+                ),
                 showlegend=True,
-                title="Comparação de Características"
+                title="Comparação de Características por DLT"
             )
             st.plotly_chart(fig)
     
     with tab3:
-        st.subheader("Métricas de Decisão")
+        st.subheader("Métricas de Avaliação")
         col1, col2 = st.columns(2)
         
         with col1:
-            # Calculate and display metrics
+            # Calculate and display metrics with explanations
             depth = len(answers)
             pruning = calcular_pruning(depth * 2 + 1, depth + 1)
+            
             st.metric("Profundidade da Árvore", depth)
+            st.write("Número de níveis de decisão considerados")
+            
             st.metric("Taxa de Poda", f"{pruning:.1%}")
+            st.write("Otimização da estrutura de decisão")
+            
+            if 'academic_validation' in recommendation:
+                score = recommendation['academic_validation'].get('score', 0)
+                st.metric("Validação Acadêmica", f"{score:.1f}/5.0")
+                st.write(f"Base: {recommendation['academic_validation'].get('reference', '')}")
         
         with col2:
-            # Display academic validation if available
-            if 'academic_validation' in recommendation:
-                st.metric("Validação Acadêmica", 
-                         f"{recommendation['academic_validation'].get('score', 0):.1f}/5.0")
-                st.write(f"Referência: {recommendation['academic_validation'].get('reference', '')}")
+            # Display decision metrics visualization
+            metrics_fig = go.Figure(go.Indicator(
+                mode="gauge+number",
+                value=confidence * 100,
+                domain={'x': [0, 1], 'y': [0, 1]},
+                title={'text': "Confiabilidade da Recomendação"},
+                gauge={
+                    'axis': {'range': [0, 100]},
+                    'steps': [
+                        {'range': [0, 50], 'color': "lightgray"},
+                        {'range': [50, 70], 'color': "gray"},
+                        {'range': [70, 100], 'color': "darkgreen"}
+                    ],
+                    'threshold': {
+                        'line': {'color': "red", 'width': 4},
+                        'thickness': 0.75,
+                        'value': 70
+                    }
+                }
+            ))
+            st.plotly_chart(metrics_fig)
+    
+    with tab4:
+        st.subheader("Explicações Detalhadas")
+        
+        st.write("### Processo de Decisão")
+        st.write("""
+        O sistema utiliza um processo de decisão em múltiplas camadas:
+        1. **Análise de Requisitos**: Avaliação das necessidades específicas do projeto
+        2. **Ponderação de Características**: Aplicação dos pesos definidos
+        3. **Seleção de DLT**: Escolha baseada na pontuação ponderada
+        4. **Recomendação de Algoritmo**: Seleção do algoritmo mais adequado
+        """)
+        
+        st.write("### Validação Acadêmica")
+        if 'academic_validation' in recommendation:
+            st.write(f"""
+            **Referência Principal**: {recommendation['academic_validation'].get('reference', '')}
+            
+            **Validação**: {recommendation['academic_validation'].get('validation', '')}
+            """)
+        
+        st.write("### Interpretação dos Resultados")
+        st.write(f"""
+        - **Confiabilidade**: {confidence:.1%} - {'Alta' if confidence > 0.7 else 'Moderada'}
+        - **Casos de Uso Recomendados**: {recommendation.get('use_cases', '')}
+        - **Número de Algoritmos Compatíveis**: {len(recommendation['possible_algorithms'])}
+        """)
     
     # Save recommendation to database
     if 'username' in st.session_state:
@@ -219,9 +307,25 @@ def run_decision_tree():
         with col2:
             st.markdown(f"**Característica:** {current_question['characteristic']}")
         
-        # Show question
+        # Show question with improved explanation
+        st.markdown(f"### {current_question['text']}")
+        
+        # Add characteristic explanation
+        characteristic_explanations = {
+            "Privacidade": "Avalia a necessidade de controle sobre dados sensíveis de pacientes",
+            "Integração": "Considera a conexão com outros sistemas de saúde",
+            "Volume de Dados": "Analisa a capacidade de processamento necessária",
+            "Eficiência Energética": "Avalia o impacto ambiental e custos operacionais",
+            "Segurança": "Considera a proteção contra ameaças e violações",
+            "Escalabilidade": "Avalia o potencial de crescimento do sistema",
+            "Governança": "Analisa a flexibilidade administrativa necessária",
+            "Interoperabilidade": "Considera a capacidade de comunicação entre sistemas"
+        }
+        
+        st.info(characteristic_explanations[current_question['characteristic']])
+        
         answer = st.radio(
-            current_question["text"],
+            "Selecione sua resposta:",
             ["Sim", "Não"],
             key=f"question_{current_step}"
         )
@@ -233,6 +337,8 @@ def run_decision_tree():
             "Infraestrutura": "Avaliamos requisitos técnicos de segurança e escalabilidade.",
             "Internet": "Por fim, analisamos aspectos de governança e interoperabilidade."
         }
+        st.write("---")
+        st.markdown("#### Sobre esta fase:")
         st.info(phase_explanations[current_phase])
         
         # Handle next button
@@ -249,7 +355,7 @@ def run_decision_tree():
             "governance": float(0.15)
         }
         st.session_state.recommendation = show_recommendation(st.session_state.answers, weights, questions)
-        
+    
     # Show restart button
     if len(st.session_state.answers) > 0:
         if st.button("Reiniciar"):
