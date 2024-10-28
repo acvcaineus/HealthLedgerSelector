@@ -32,23 +32,22 @@ def show_home_page():
     st.title("SeletorDLTSaude")
     st.write("Bem-vindo ao sistema de seleção de DLT para saúde.")
     
-    # Framework explanation
-    st.markdown("""
+    st.markdown('''
         ### Como Funciona
         A aplicação guia você através de um processo estruturado em quatro fases:
         1. **Fase de Aplicação**: Avalia requisitos de privacidade e integração
         2. **Fase de Consenso**: Determina requisitos de segurança
         3. **Fase de Infraestrutura**: Considera escalabilidade e performance
         4. **Fase de Internet**: Define governança e interoperabilidade
-    """)
+    ''')
     
-    # Simple start button
-    if st.button("Iniciar Seleção de DLT"):
+    # Update button logic to properly handle state changes
+    if st.button("Iniciar Seleção de DLT", type="primary"):
+        st.session_state.questionnaire_started = True
         st.session_state.page = 'Framework Proposto'
         st.session_state.answers = {}
         st.session_state.current_phase = 1
         st.session_state.recommendation = None
-        st.session_state.questionnaire_started = True
         st.experimental_rerun()
 
 def show_metrics():
@@ -99,7 +98,10 @@ def main():
             if st.session_state.questionnaire_started:
                 run_decision_tree()
             else:
-                st.warning("Clique em 'Iniciar Seleção de DLT' na página inicial.")
+                st.warning("Por favor, clique em 'Iniciar Seleção de DLT' na página inicial.")
+                if st.button("Voltar para a Página Inicial"):
+                    st.session_state.page = 'Início'
+                    st.experimental_rerun()
         elif st.session_state.page == 'Métricas':
             show_metrics()
         elif st.session_state.page == 'Perfil':
