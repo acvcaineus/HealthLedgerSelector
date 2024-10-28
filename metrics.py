@@ -12,15 +12,9 @@ def calcular_gini(classes):
     - Valor próximo a 0: Indica boa separação entre as classes
     - Valor próximo a 1: Indica maior mistura entre as classes
     """
-    try:
-        total = sum(classes.values())
-        if total == 0:
-            return 0.0
-        gini = 1.0 - sum((float(count) / float(total)) ** 2 for count in classes.values())
-        return float(gini)
-    except Exception as e:
-        print(f"Erro ao calcular índice Gini: {str(e)}")
-        return 0.0
+    total = sum(classes.values())
+    gini = 1 - sum((count / total) ** 2 for count in classes.values())
+    return gini
 
 def calcular_entropia(classes):
     """
@@ -32,16 +26,10 @@ def calcular_entropia(classes):
     - Valor baixo: Indica maior certeza na decisão
     - Valor alto: Indica maior incerteza na decisão
     """
-    try:
-        total = sum(classes.values())
-        if total == 0:
-            return 0.0
-        entropia = -sum((float(count) / float(total)) * math.log2(float(count) / float(total)) 
-                       for count in classes.values() if count != 0)
-        return float(entropia)
-    except Exception as e:
-        print(f"Erro ao calcular entropia: {str(e)}")
-        return 0.0
+    total = sum(classes.values())
+    entropia = -sum((count / total) * math.log2(count / total) 
+                   for count in classes.values() if count != 0)
+    return entropia
 
 def calcular_profundidade_decisoria(decisoes):
     """
@@ -53,14 +41,10 @@ def calcular_profundidade_decisoria(decisoes):
     - Valor baixo: Indica processo decisório mais direto
     - Valor alto: Indica processo decisório mais complexo
     """
-    try:
-        if not decisoes:
-            return 0.0
-        profundidade_total = float(sum(decisoes))
-        return profundidade_total / float(len(decisoes))
-    except Exception as e:
-        print(f"Erro ao calcular profundidade decisória: {str(e)}")
-        return 0.0
+    if not decisoes:
+        return 0
+    profundidade_total = sum(decisoes)
+    return profundidade_total / len(decisoes)
 
 def calcular_pruning(total_nos, nos_podados):
     """
@@ -72,14 +56,37 @@ def calcular_pruning(total_nos, nos_podados):
     - Valor próximo a 0: Pouca simplificação
     - Valor próximo a 1: Alta simplificação
     """
-    try:
-        if total_nos == 0:
-            return 0.0
-        pruning_ratio = float(total_nos - nos_podados) / float(total_nos)
-        return pruning_ratio
-    except Exception as e:
-        print(f"Erro ao calcular taxa de poda: {str(e)}")
-        return 0.0
+    if total_nos == 0:
+        return 0
+    pruning_ratio = (total_nos - nos_podados) / total_nos
+    return pruning_ratio
+
+def calcular_peso_caracteristica(caracteristica, pesos):
+    """
+    Calcula o peso normalizado de uma característica específica.
+    
+    Fórmula: Peso Normalizado = peso_característica / Σ(todos os pesos)
+    Interpretação:
+    - Valor alto: Característica mais relevante
+    - Valor baixo: Característica menos relevante
+    """
+    total_pesos = sum(pesos.values())
+    return pesos.get(caracteristica, 0) / total_pesos if total_pesos > 0 else 0
+
+def calcular_jaccard_similarity(conjunto_a, conjunto_b):
+    """
+    Calcula o índice de similaridade de Jaccard entre dois conjuntos.
+    
+    Fórmula: J(A,B) = |A ∩ B| / |A ∪ B|
+    Interpretação:
+    - Valor próximo a 1: Alta similaridade
+    - Valor próximo a 0: Baixa similaridade
+    """
+    if not conjunto_a or not conjunto_b:
+        return 0
+    intersecao = len(set(conjunto_a) & set(conjunto_b))
+    uniao = len(set(conjunto_a) | set(conjunto_b))
+    return intersecao / uniao if uniao > 0 else 0
 
 def calcular_confiabilidade_recomendacao(scores, threshold=0.7):
     """
@@ -90,21 +97,37 @@ def calcular_confiabilidade_recomendacao(scores, threshold=0.7):
     - Valor > threshold: Alta confiabilidade
     - Valor ≤ threshold: Média confiabilidade
     """
-    try:
-        if not scores:
-            return 0.0
-        scores = [float(s) for s in scores]  # Ensure all scores are float
-        max_score = max(scores)
-        if max_score == 0:
-            return 0.0
-        mean_score = sum(scores) / len(scores)
-        confiabilidade = (max_score - mean_score) / max_score
-        return float(confiabilidade)
-    except Exception as e:
-        print(f"Erro ao calcular confiabilidade: {str(e)}")
-        return 0.0
+    if not scores:
+        return 0
+    max_score = max(scores)
+    mean_score = sum(scores) / len(scores)
+    confiabilidade = (max_score - mean_score) / max_score if max_score > 0 else 0
+    return confiabilidade > threshold
 
-def get_metric_interpretation(metric_name, value):
+def calcular_metricas_desempenho(historico_recomendacoes):
+    """
+    Calcula métricas de desempenho do sistema de recomendação.
+    Retorna precisão, recall e F1-score.
+    
+    Interpretação:
+    - Precisão: Proporção de recomendações corretas
+    - Recall: Proporção de casos positivos identificados
+    - F1-score: Média harmônica entre precisão e recall
+    """
+    if not historico_recomendacoes:
+        return 0, 0, 0
+    
+    true_positives = sum(1 for rec in historico_recomendacoes if rec['acerto'])
+    false_positives = sum(1 for rec in historico_recomendacoes if not rec['acerto'])
+    total = len(historico_recomendacoes)
+    
+    precisao = true_positives / total if total > 0 else 0
+    recall = true_positives / (true_positives + false_positives) if (true_positives + false_positives) > 0 else 0
+    f1 = 2 * (precisao * recall) / (precisao + recall) if (precisao + recall) > 0 else 0
+    
+    return precisao, recall, f1
+
+def get_metric_explanation(metric_name, value):
     """
     Retorna uma explicação detalhada para uma métrica específica.
     
@@ -115,55 +138,36 @@ def get_metric_interpretation(metric_name, value):
     Retorna:
     - Explicação em texto da interpretação do valor
     """
-    try:
-        value = float(value)  # Ensure value is float
-        explanations = {
-            "gini": {
-                "title": "Índice de Gini",
-                "description": "Mede a pureza da classificação",
-                "interpretation": lambda v: "Boa separação entre classes" if v < 0.3 else 
-                                "Separação moderada" if v < 0.6 else 
-                                "Alta mistura entre classes"
-            },
-            "entropy": {
-                "title": "Entropia",
-                "description": "Mede a incerteza da decisão",
-                "interpretation": lambda v: "Alta certeza na decisão" if v < 1 else 
-                                "Certeza moderada" if v < 2 else 
-                                "Alta incerteza na decisão"
-            },
-            "depth": {
-                "title": "Profundidade Decisória",
-                "description": "Complexidade do processo de decisão",
-                "interpretation": lambda v: "Processo simples" if v < 3 else 
-                                "Complexidade moderada" if v < 5 else 
-                                "Processo complexo"
-            },
-            "pruning": {
-                "title": "Taxa de Poda",
-                "description": "Eficácia da simplificação do modelo",
-                "interpretation": lambda v: "Alta simplificação" if v > 0.7 else 
-                                "Simplificação moderada" if v > 0.4 else 
-                                "Baixa simplificação"
-            },
-            "confidence": {
-                "title": "Confiabilidade",
-                "description": "Nível de confiança na recomendação",
-                "interpretation": lambda v: "Alta confiabilidade" if v > 0.7 else 
-                                "Confiabilidade moderada" if v > 0.4 else 
-                                "Baixa confiabilidade"
-            }
+    explanations = {
+        "gini": {
+            "title": "Índice de Gini",
+            "description": "Mede a pureza da classificação",
+            "interpretation": lambda v: "Boa separação entre classes" if v < 0.3 else 
+                            "Separação moderada" if v < 0.6 else 
+                            "Alta mistura entre classes"
+        },
+        "entropy": {
+            "title": "Entropia",
+            "description": "Mede a incerteza da decisão",
+            "interpretation": lambda v: "Alta certeza na decisão" if v < 1 else 
+                            "Certeza moderada" if v < 2 else 
+                            "Alta incerteza na decisão"
+        },
+        "depth": {
+            "title": "Profundidade Decisória",
+            "description": "Complexidade do processo de decisão",
+            "interpretation": lambda v: "Processo simples" if v < 3 else 
+                            "Complexidade moderada" if v < 5 else 
+                            "Processo complexo"
         }
-        
-        if metric_name in explanations:
-            metric = explanations[metric_name]
-            return {
-                "title": metric["title"],
-                "description": metric["description"],
-                "value": value,
-                "interpretation": metric["interpretation"](value)
-            }
-        return None
-    except Exception as e:
-        print(f"Erro ao interpretar métrica: {str(e)}")
-        return None
+    }
+    
+    if metric_name in explanations:
+        metric = explanations[metric_name]
+        return {
+            "title": metric["title"],
+            "description": metric["description"],
+            "value": value,
+            "interpretation": metric["interpretation"](value)
+        }
+    return None

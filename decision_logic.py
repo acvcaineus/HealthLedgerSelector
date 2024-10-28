@@ -1,314 +1,221 @@
 from dlt_data import questions, dlt_classes, consensus_algorithms
 from metrics import calcular_gini, calcular_entropia, calcular_profundidade_decisoria, calcular_pruning, calcular_confiabilidade_recomendacao
 
-# DLT groups with their characteristics and mappings
-dlt_groups = {
-    "Alta Segurança e Controle": {
-        "dlts": ["Hyperledger Fabric", "Bitcoin", "Ethereum (PoW)"],
-        "algorithms": ["PBFT", "PoW"],
-        "characteristics": ["security", "privacy"],
-        "use_cases": "Prontuários eletrônicos, integração de dados sensíveis, sistemas de pagamento descentralizados"
-    },
-    "Alta Eficiência Operacional": {
-        "dlts": ["Quorum", "VeChain"],
-        "algorithms": ["RAFT", "PoA"],
-        "characteristics": ["efficiency", "scalability"],
-        "use_cases": "Sistemas locais de saúde, agendamento de pacientes, redes locais de hospitais"
-    },
-    "Escalabilidade e Governança Flexível": {
-        "dlts": ["Ethereum 2.0", "EOS"],
-        "algorithms": ["PoS", "DPoS"],
-        "characteristics": ["scalability", "governance"],
-        "use_cases": "Monitoramento de saúde pública, redes regionais de saúde, integração de EHRs"
-    },
-    "Alta Escalabilidade em Redes IoT": {
-        "dlts": ["IOTA"],
-        "algorithms": ["Tangle"],
-        "characteristics": ["scalability", "iot_compatibility"],
-        "use_cases": "Monitoramento de dispositivos IoT em saúde, dados em tempo real"
-    }
+consensus_groups = {
+    'Alta Segurança e Controle': ['Practical Byzantine Fault Tolerance (PBFT)', 'Proof of Work (PoW)'],
+    'Alta Eficiência Operacional': ['Raft Consensus', 'Proof of Authority (PoA)'],
+    'Escalabilidade e Governança Flexível': ['Proof of Stake (PoS)', 'Delegated Proof of Stake (DPoS)'],
+    'Alta Escalabilidade em Redes IoT': ['Tangle'],
+    'Alta Segurança e Descentralização de Dados Críticos': ['Proof of Work (PoW)', 'Proof of Stake (PoS)']
 }
 
-# Academic validation scores and references
 academic_scores = {
     "Hyperledger Fabric": {
         "score": 4.5,
-        "reference": "Mehmood et al. (2025) - BLPCA-ledger: A lightweight plenum consensus protocols for consortium blockchain",
-        "validation": "Alta segurança e resiliência contra falhas bizantinas"
+        "citations": 128,
+        "reference": "Mehmood et al. (2025) - BLPCA-ledger",
+        "validation": "Implementado em hospitais e sistemas de saúde"
     },
     "VeChain": {
         "score": 4.2,
-        "reference": "Popoola et al. (2024) - A critical literature review of security and privacy in smart home healthcare",
-        "validation": "Simplicidade e eficiência em redes permissionadas menores"
+        "citations": 89,
+        "reference": "Popoola et al. (2024)",
+        "validation": "Usado em cadeias de suprimentos médicos"
     },
     "Quorum": {
         "score": 4.0,
-        "reference": "Mehmood et al. (2025) - BLPCA-ledger",
-        "validation": "Alta escalabilidade e governança flexível"
+        "citations": 76,
+        "reference": "Mehmood et al. (2025)",
+        "validation": "Testado em redes hospitalares"
     },
     "IOTA": {
         "score": 4.3,
-        "reference": "Salim et al. (2024) - Privacy-preserving and scalable federated blockchain scheme",
-        "validation": "Alta escalabilidade e eficiência para IoT"
-    },
-    "Ethereum 2.0": {
-        "score": 4.4,
-        "reference": "Nawaz et al. (2024) - Hyperledger sawtooth based supply chain traceability system",
-        "validation": "Alta escalabilidade e eficiência energética"
-    },
-    "Bitcoin": {
-        "score": 4.5,
-        "reference": "Liu et al. (2024) - A systematic study on blockchain in healthcare",
-        "validation": "Alta segurança e descentralização"
-    },
-    "Ethereum (PoW)": {
-        "score": 4.2,
-        "reference": "Makhdoom et al. (2024) - PrivySeC: A secure framework for data sharing",
-        "validation": "Segurança robusta e suporte a contratos inteligentes"
-    },
-    "EOS": {
-        "score": 4.1,
-        "reference": "Wang et al. (2024) - Blockchain for healthcare data management",
-        "validation": "Alta escalabilidade e governança democrática"
+        "citations": 95,
+        "reference": "Salim et al. (2024)",
+        "validation": "Implementado em sistemas IoT de saúde"
     }
 }
 
-def normalize_scores(scores):
-    """Normalize scores to 0-1 range"""
-    max_score = max(scores.values()) if scores.values() else 1.0
-    return {k: float(v/max_score) for k, v in scores.items()}
-
-def calculate_characteristic_scores(answers):
-    """Calculate scores for each characteristic based on user answers"""
-    scores = {
-        "security": float(0.0),
-        "privacy": float(0.0),
-        "efficiency": float(0.0),
-        "scalability": float(0.0),
-        "governance": float(0.0),
-        "iot_compatibility": float(0.0)
-    }
-    
-    if answers.get("privacy") == "Sim":
-        scores["privacy"] += float(2.0)
-        scores["security"] += float(1.0)
-    
-    if answers.get("integration") == "Sim":
-        scores["scalability"] += float(1.0)
-        scores["efficiency"] += float(1.0)
-    
-    if answers.get("data_volume") == "Sim":
-        scores["scalability"] += float(2.0)
-    
-    if answers.get("energy_efficiency") == "Sim":
-        scores["efficiency"] += float(2.0)
-    
-    if answers.get("network_security") == "Sim":
-        scores["security"] += float(2.0)
-    
-    if answers.get("scalability") == "Sim":
-        scores["scalability"] += float(1.0)
-        scores["iot_compatibility"] += float(1.0)
-    
-    if answers.get("governance_flexibility") == "Sim":
-        scores["governance"] += float(2.0)
-    
-    if answers.get("interoperability") == "Sim":
-        scores["iot_compatibility"] += float(1.0)
-        scores["scalability"] += float(1.0)
-    
-    # Normalize scores before returning
-    return normalize_scores(scores)
-
-def create_evaluation_matrix(answers, characteristic_scores):
-    """Create evaluation matrix based on characteristic scores and DLT groups"""
-    matrix = {}
-    
-    for group_name, group_data in dlt_groups.items():
-        for dlt in group_data["dlts"]:
-            matrix[dlt] = {
-                "group": group_name,
-                "score": float(0),
-                "metrics": {
-                    "security": float(0),
-                    "privacy": float(0),
-                    "efficiency": float(0),
-                    "scalability": float(0),
-                    "governance": float(0),
-                    "iot_compatibility": float(0)
-                }
+def create_evaluation_matrix(answers):
+    matrix = {
+        "DLT Permissionada Privada": {
+            "score": 0,
+            "metrics": {
+                "security": 0,
+                "scalability": 0,
+                "energy_efficiency": 0,
+                "governance": 0,
+                "academic_validation": 0
             }
-            
-            # Calculate scores based on DLT characteristics
-            base_score = 3.0  # Base score for all metrics
-            for characteristic in group_data["characteristics"]:
-                matrix[dlt]["metrics"][characteristic] = float(base_score + characteristic_scores[characteristic])
-            
-            # Normalize metrics to 0-1 range
-            max_metric = max(matrix[dlt]["metrics"].values())
-            if max_metric > 0:
-                matrix[dlt]["metrics"] = {k: float(v/max_metric) for k, v in matrix[dlt]["metrics"].items()}
-            
-            # Add academic validation if available
-            if dlt in academic_scores:
-                matrix[dlt]["academic_validation"] = academic_scores[dlt]
-    
+        },
+        "DLT Pública Permissionless": {
+            "score": 0,
+            "metrics": {
+                "security": 0,
+                "scalability": 0,
+                "energy_efficiency": 0,
+                "governance": 0,
+                "academic_validation": 0
+            }
+        },
+        "DLT Permissionada Simples": {
+            "score": 0,
+            "metrics": {
+                "security": 0,
+                "scalability": 0,
+                "energy_efficiency": 0,
+                "governance": 0,
+                "academic_validation": 0
+            }
+        },
+        "DLT Híbrida": {
+            "score": 0,
+            "metrics": {
+                "security": 0,
+                "scalability": 0,
+                "energy_efficiency": 0,
+                "governance": 0,
+                "academic_validation": 0
+            }
+        },
+        "DLT com Consenso Delegado": {
+            "score": 0,
+            "metrics": {
+                "security": 0,
+                "scalability": 0,
+                "energy_efficiency": 0,
+                "governance": 0,
+                "academic_validation": 0
+            }
+        },
+        "DLT Pública": {
+            "score": 0,
+            "metrics": {
+                "security": 0,
+                "scalability": 0,
+                "energy_efficiency": 0,
+                "governance": 0,
+                "academic_validation": 0
+            }
+        }
+    }
+
+    for question_id, answer in answers.items():
+        if question_id == "privacy" and answer == "Sim":
+            matrix["DLT Permissionada Privada"]["metrics"]["security"] += 2
+            matrix["DLT Permissionada Privada"]["metrics"]["academic_validation"] += academic_scores.get("Hyperledger Fabric", {}).get("score", 0)
+        elif question_id == "integration" and answer == "Sim":
+            matrix["DLT Híbrida"]["metrics"]["scalability"] += 2
+            matrix["DLT Híbrida"]["metrics"]["academic_validation"] += academic_scores.get("Quorum", {}).get("score", 0)
+        elif question_id == "data_volume" and answer == "Sim":
+            matrix["DLT Pública"]["metrics"]["scalability"] += 2
+            matrix["DLT Pública"]["metrics"]["academic_validation"] += academic_scores.get("IOTA", {}).get("score", 0)
+        elif question_id == "energy_efficiency" and answer == "Sim":
+            matrix["DLT Permissionada Simples"]["metrics"]["energy_efficiency"] += 2
+            matrix["DLT Permissionada Simples"]["metrics"]["academic_validation"] += academic_scores.get("VeChain", {}).get("score", 0)
+        elif question_id == "network_security" and answer == "Sim":
+            matrix["DLT Pública Permissionless"]["metrics"]["security"] += 2
+        elif question_id == "scalability" and answer == "Sim":
+            matrix["DLT com Consenso Delegado"]["metrics"]["scalability"] += 2
+        elif question_id == "governance_flexibility" and answer == "Sim":
+            matrix["DLT Híbrida"]["metrics"]["governance"] += 2
+        elif question_id == "interoperability" and answer == "Sim":
+            matrix["DLT Pública"]["metrics"]["scalability"] += 2
+
+    # Calculate final scores
+    for dlt in matrix:
+        total = sum(float(value) for value in matrix[dlt]["metrics"].values())
+        matrix[dlt]["score"] = total / len(matrix[dlt]["metrics"])
+
     return matrix
 
-def select_consensus_group(answers, characteristic_scores, weights):
-    """Select consensus group based on user answers and characteristic scores"""
-    group_scores = {}
-    
-    # Initialize scores for each group
-    for group_name in dlt_groups.keys():
-        group_scores[group_name] = float(0.0)
-    
-    # Score based on answers
-    if answers.get("privacy") == "Sim":
-        group_scores["Alta Segurança e Controle"] += float(2.0)
-    if answers.get("energy_efficiency") == "Sim":
-        group_scores["Alta Eficiência Operacional"] += float(1.5)
-    if answers.get("scalability") == "Sim":
-        group_scores["Escalabilidade e Governança Flexível"] += float(1.5)
-    if answers.get("interoperability") == "Sim":
-        group_scores["Alta Escalabilidade em Redes IoT"] += float(1.0)
-    
-    # Add weighted characteristic scores
-    for group_name, group_data in dlt_groups.items():
-        for char in group_data["characteristics"]:
-            group_scores[group_name] += float(characteristic_scores[char]) * float(weights.get(char, 0.25))
-    
-    return max(group_scores.items(), key=lambda x: float(x[1]))[0]
-
-def match_dlt_with_algorithms(dlt_name, consensus_group):
-    """Match DLT with compatible consensus algorithms"""
-    compatible_algorithms = []
-    
-    # Get all possible algorithms for the DLT from reference table
-    for group_name, group_data in dlt_groups.items():
-        if dlt_name in group_data["dlts"]:
-            compatible_algorithms.extend(group_data["algorithms"])
-    
-    # Filter algorithms based on consensus group
-    group_algorithms = dlt_groups[consensus_group]["algorithms"]
-    return list(set(compatible_algorithms) & set(group_algorithms))
-
 def get_recommendation(answers, weights):
-    """Get DLT recommendation based on user answers and weights using dynamic selection"""
-    try:
-        # Calculate characteristic scores
-        characteristic_scores = calculate_characteristic_scores(answers)
-        
-        # First select consensus group based on answers and characteristics
-        recommended_group = select_consensus_group(answers, characteristic_scores, weights)
-        
-        # Get possible DLTs for the group
-        possible_dlts = dlt_groups[recommended_group]["dlts"]
-        
-        # Score each DLT based on characteristics
-        dlt_scores = {}
-        for dlt in possible_dlts:
-            score = float(0)
-            for char, char_score in characteristic_scores.items():
-                score += float(char_score) * float(weights.get(char, 0.25))
-            dlt_scores[dlt] = score
-        
-        # Select best DLT
-        recommended_dlt = max(dlt_scores.items(), key=lambda x: float(x[1]))[0]
-        
-        # Get compatible algorithms for the selected DLT
-        compatible_algorithms = match_dlt_with_algorithms(recommended_dlt, recommended_group)
-        
-        # Select best algorithm from compatible ones
-        if compatible_algorithms:
-            algorithm_scores = {}
-            for alg in compatible_algorithms:
-                if alg in consensus_algorithms:
-                    score = float(sum(
-                        float(consensus_algorithms[alg][metric]) * float(weights.get(metric, 0.25))
-                        for metric in weights.keys()
-                    ))
-                    algorithm_scores[alg] = score
-            recommended_algorithm = max(algorithm_scores.items(), key=lambda x: float(x[1]))[0]
-        else:
-            recommended_algorithm = dlt_groups[recommended_group]["algorithms"][0]
-        
-        # Create evaluation matrix and calculate confidence
-        evaluation_matrix = create_evaluation_matrix(answers, characteristic_scores)
-        
-        # Fix confidence calculation
-        weighted_scores = {dlt: float(sum(
-            float(data["metrics"][metric]) * float(weights.get(metric, 0.25))
-            for metric in weights.keys()
-            if metric in data["metrics"]  # Only include metrics that exist
-        )) for dlt, data in evaluation_matrix.items()}
+    evaluation_matrix = create_evaluation_matrix(answers)
+    
+    # Calculate weighted scores
+    weighted_scores = {}
+    for dlt, data in evaluation_matrix.items():
+        weighted_score = (
+            float(data["metrics"]["security"]) * float(weights["security"]) +
+            float(data["metrics"]["scalability"]) * float(weights["scalability"]) +
+            float(data["metrics"]["energy_efficiency"]) * float(weights["energy_efficiency"]) +
+            float(data["metrics"]["governance"]) * float(weights["governance"]) +
+            float(data["metrics"]["academic_validation"]) * 0.1  # Academic validation weight
+        )
+        weighted_scores[dlt] = float(weighted_score)
 
-        confidence_scores = list(weighted_scores.values())
-        if confidence_scores:
-            max_score = max(confidence_scores)
-            mean_score = sum(confidence_scores) / len(confidence_scores)
-            confidence_value = (max_score - mean_score) / max_score if max_score > 0 else 0.0
-        else:
-            confidence_value = 0.0
+    # Find DLT with maximum weighted score
+    recommended_dlt = max(weighted_scores.items(), key=lambda x: float(x[1]))[0]
 
-        is_reliable = confidence_value > 0.7
-        
-        return {
-            "dlt": recommended_dlt,
-            "consensus_group": recommended_group,
-            "consensus": recommended_algorithm,
-            "algorithms": compatible_algorithms,
-            "possible_algorithms": compatible_algorithms,
-            "evaluation_matrix": evaluation_matrix,
-            "confidence": is_reliable,
-            "confidence_value": confidence_value,
-            "academic_validation": academic_scores.get(recommended_dlt, academic_scores["Hyperledger Fabric"]),
-            "use_cases": dlt_groups[recommended_group]["use_cases"]
-        }
-    except Exception as e:
-        return {
-            "error": str(e),
-            "dlt": "Hyperledger Fabric",
-            "consensus_group": "Alta Segurança e Controle",
-            "consensus": "PBFT",
-            "algorithms": ["PBFT"],
-            "possible_algorithms": ["PBFT"],
-            "evaluation_matrix": {},
-            "confidence": False,
-            "confidence_value": float(0.0),
-            "academic_validation": academic_scores["Hyperledger Fabric"],
-            "use_cases": dlt_groups["Alta Segurança e Controle"]["use_cases"]
-        }
+    # Get consensus group based on DLT type
+    group_mapping = {
+        "DLT Permissionada Privada": "Alta Segurança e Controle",
+        "DLT Pública Permissionless": "Alta Segurança e Descentralização de Dados Críticos",
+        "DLT Permissionada Simples": "Alta Eficiência Operacional",
+        "DLT Híbrida": "Escalabilidade e Governança Flexível",
+        "DLT com Consenso Delegado": "Escalabilidade e Governança Flexível",
+        "DLT Pública": "Alta Escalabilidade em Redes IoT"
+    }
+
+    recommended_group = group_mapping.get(recommended_dlt, "Alta Segurança e Controle")
+    
+    # Calculate confidence score and value
+    confidence_scores = [float(score) for score in weighted_scores.values()]
+    confidence_value = max(confidence_scores) - (sum(confidence_scores) / len(confidence_scores))
+    is_reliable = confidence_value > 0.7
+
+    return {
+        "dlt": recommended_dlt,
+        "consensus_group": recommended_group,
+        "consensus": select_final_algorithm(recommended_group, weights),
+        "algorithms": consensus_groups[recommended_group],
+        "evaluation_matrix": evaluation_matrix,
+        "confidence": is_reliable,
+        "confidence_value": confidence_value,
+        "academic_validation": academic_scores.get(recommended_dlt, {})
+    }
 
 def compare_algorithms(consensus_group):
-    """Compare algorithms within a consensus group"""
-    try:
-        algorithms = []
-        for group_data in dlt_groups.values():
-            if any(alg in consensus_group for alg in group_data["algorithms"]):
-                algorithms.extend(group_data["algorithms"])
-        
-        comparison_data = {
-            "Segurança": {},
-            "Escalabilidade": {},
-            "Eficiência Energética": {},
-            "Governança": {}
-        }
-        
-        for alg in set(algorithms):
-            if alg in consensus_algorithms:
-                data = consensus_algorithms[alg]
-                comparison_data["Segurança"][alg] = float(data.get("security", 3))
-                comparison_data["Escalabilidade"][alg] = float(data.get("scalability", 3))
-                comparison_data["Eficiência Energética"][alg] = float(data.get("energy_efficiency", 3))
-                comparison_data["Governança"][alg] = float(data.get("governance", 3))
-        
-        return comparison_data
-    except Exception as e:
-        return {
-            "Segurança": {},
-            "Escalabilidade": {},
-            "Eficiência Energética": {},
-            "Governança": {},
-            "error": str(e)
-        }
+    algorithms = consensus_groups[consensus_group]
+    comparison_data = {
+        "Segurança": {},
+        "Escalabilidade": {},
+        "Eficiência Energética": {},
+        "Governança": {}
+    }
+
+    for alg in algorithms:
+        alg_data = consensus_algorithms.get(alg, {})
+        comparison_data["Segurança"][alg] = float(alg_data.get("security", 3))
+        comparison_data["Escalabilidade"][alg] = float(alg_data.get("scalability", 3))
+        comparison_data["Eficiência Energética"][alg] = float(alg_data.get("energy_efficiency", 3))
+        comparison_data["Governança"][alg] = float(alg_data.get("governance", 3))
+
+    return comparison_data
+
+def select_final_algorithm(consensus_group, priorities):
+    comparison_data = compare_algorithms(consensus_group)
+    algorithms = consensus_groups.get(consensus_group, [])
+    
+    if not algorithms:
+        return "No suitable algorithm found"
+    
+    scores = {alg: 0.0 for alg in algorithms}
+    
+    metric_mapping = {
+        "security": "Segurança",
+        "scalability": "Escalabilidade",
+        "energy_efficiency": "Eficiência Energética",
+        "governance": "Governança"
+    }
+    
+    for alg in algorithms:
+        for metric, priority in priorities.items():
+            metric_name = metric_mapping.get(metric)
+            if metric_name and metric_name in comparison_data and alg in comparison_data[metric_name]:
+                scores[alg] += float(comparison_data[metric_name][alg]) * float(priority)
+    
+    # Find algorithm with maximum score
+    if scores:
+        return max(scores.items(), key=lambda x: float(x[1]))[0]
+    return "No suitable algorithm found"
