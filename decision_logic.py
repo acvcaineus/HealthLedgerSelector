@@ -132,76 +132,100 @@ def create_evaluation_matrix(answers, characteristic_scores):
                     "iot_compatibility": float(0)
                 },
                 "use_cases": group_data["use_cases"],
-                "algorithms": group_data["algorithms"],
-                "possible_algorithms": group_data["algorithms"]
+                "algorithms": group_data["algorithms"]
             }
             
             # Calculate scores based on DLT characteristics
             for characteristic in group_data["characteristics"]:
                 matrix[dlt]["metrics"][characteristic] = float(characteristic_scores[characteristic])
             
-            # Add academic validation score if available
+            # Add academic validation if available
             if dlt in academic_scores:
                 matrix[dlt]["academic_validation"] = academic_scores[dlt]
     
     return matrix
 
-def select_consensus_group(characteristic_scores, weights):
-    """Select the most suitable consensus group based on weighted characteristics"""
-    group_scores = {
-        "Alta Segurança e Controle": float(0.0),
-        "Alta Eficiência Operacional": float(0.0),
-        "Escalabilidade e Governança Flexível": float(0.0),
-        "Alta Escalabilidade em Redes IoT": float(0.0)
-    }
+def select_consensus_group(answers, characteristic_scores, weights):
+    """Select consensus group based on user answers and characteristic scores"""
+    group_scores = {}
     
-    # Calculate scores for each group based on their primary characteristics
+    # Initialize scores for each group
+    for group_name in dlt_groups.keys():
+        group_scores[group_name] = float(0.0)
+    
+    # Score based on answers
+    if answers.get("privacy") == "Sim":
+        group_scores["Alta Segurança e Controle"] += float(2.0)
+    if answers.get("energy_efficiency") == "Sim":
+        group_scores["Alta Eficiência Operacional"] += float(1.5)
+    if answers.get("scalability") == "Sim":
+        group_scores["Escalabilidade e Governança Flexível"] += float(1.5)
+    if answers.get("interoperability") == "Sim":
+        group_scores["Alta Escalabilidade em Redes IoT"] += float(1.0)
+    
+    # Add weighted characteristic scores
     for group_name, group_data in dlt_groups.items():
-        score = float(sum(
-            characteristic_scores[char] * weights.get(char, 0.25)
-            for char in group_data["characteristics"]
-        ))
-        group_scores[group_name] = score
+        for char in group_data["characteristics"]:
+            group_scores[group_name] += float(characteristic_scores[char]) * float(weights.get(char, 0.25))
     
-    # Return the group with highest score
     return max(group_scores.items(), key=lambda x: float(x[1]))[0]
 
-def select_algorithm_from_group(consensus_group, characteristic_scores, weights):
-    """Select the most suitable algorithm from within a consensus group"""
-    possible_algorithms = dlt_groups[consensus_group]["algorithms"]
-    algorithm_scores = {}
+def match_dlt_with_algorithms(dlt_name, consensus_group):
+    """Match DLT with compatible consensus algorithms"""
+    compatible_algorithms = []
     
-    for algorithm in possible_algorithms:
-        if algorithm in consensus_algorithms:
-            score = float(
-                float(consensus_algorithms[algorithm]["security"]) * float(weights["security"]) +
-                float(consensus_algorithms[algorithm]["scalability"]) * float(weights["scalability"]) +
-                float(consensus_algorithms[algorithm]["energy_efficiency"]) * float(weights["energy_efficiency"]) +
-                float(consensus_algorithms[algorithm]["governance"]) * float(weights["governance"])
-            )
-            algorithm_scores[algorithm] = score
+    # Get all possible algorithms for the DLT from reference table
+    for group_name, group_data in dlt_groups.items():
+        if dlt_name in group_data["dlts"]:
+            compatible_algorithms.extend(group_data["algorithms"])
     
-    return max(algorithm_scores.items(), key=lambda x: float(x[1]))[0] if algorithm_scores else possible_algorithms[0]
+    # Filter algorithms based on consensus group
+    group_algorithms = dlt_groups[consensus_group]["algorithms"]
+    return list(set(compatible_algorithms) & set(group_algorithms))
 
 def get_recommendation(answers, weights):
-    """Get DLT recommendation based on user answers and weights using two-step process"""
+    """Get DLT recommendation based on user answers and weights using dynamic selection"""
     try:
         # Calculate characteristic scores
         characteristic_scores = calculate_characteristic_scores(answers)
         
-        # First select consensus group
-        recommended_group = select_consensus_group(characteristic_scores, weights)
+        # First select consensus group based on answers and characteristics
+        recommended_group = select_consensus_group(answers, characteristic_scores, weights)
         
-        # Then select specific algorithm from that group
-        recommended_algorithm = select_algorithm_from_group(recommended_group, characteristic_scores, weights)
+        # Get possible DLTs for the group
+        possible_dlts = dlt_groups[recommended_group]["dlts"]
         
-        # Select DLT based on the chosen group
-        recommended_dlt = dlt_groups[recommended_group]["dlts"][0]  # Choose first DLT in group as default
+        # Score each DLT based on characteristics
+        dlt_scores = {}
+        for dlt in possible_dlts:
+            score = float(0)
+            # Calculate score based on DLT characteristics and user answers
+            for char, char_score in characteristic_scores.items():
+                score += float(char_score) * float(weights.get(char, 0.25))
+            dlt_scores[dlt] = score
         
-        # Create evaluation matrix
+        # Select best DLT
+        recommended_dlt = max(dlt_scores.items(), key=lambda x: float(x[1]))[0]
+        
+        # Get compatible algorithms for the selected DLT
+        compatible_algorithms = match_dlt_with_algorithms(recommended_dlt, recommended_group)
+        
+        # Select best algorithm from compatible ones
+        if compatible_algorithms:
+            algorithm_scores = {}
+            for alg in compatible_algorithms:
+                if alg in consensus_algorithms:
+                    score = float(sum(
+                        float(consensus_algorithms[alg][metric]) * float(weights.get(metric, 0.25))
+                        for metric in weights.keys()
+                    ))
+                    algorithm_scores[alg] = score
+            recommended_algorithm = max(algorithm_scores.items(), key=lambda x: float(x[1]))[0]
+        else:
+            recommended_algorithm = dlt_groups[recommended_group]["algorithms"][0]
+        
+        # Create evaluation matrix and calculate confidence
         evaluation_matrix = create_evaluation_matrix(answers, characteristic_scores)
-        
-        # Calculate confidence value
         weighted_scores = {dlt: float(sum(
             float(data["metrics"][metric]) * float(weights.get(metric, 0.25))
             for metric in weights.keys()
@@ -215,16 +239,17 @@ def get_recommendation(answers, weights):
             "dlt": recommended_dlt,
             "consensus_group": recommended_group,
             "consensus": recommended_algorithm,
-            "algorithms": dlt_groups[recommended_group]["algorithms"],
-            "possible_algorithms": dlt_groups[recommended_group]["algorithms"],
+            "algorithms": compatible_algorithms,
+            "possible_algorithms": compatible_algorithms,
             "evaluation_matrix": evaluation_matrix,
             "confidence": is_reliable,
             "confidence_value": confidence_value,
-            "academic_validation": academic_scores.get(str(recommended_dlt), academic_scores["Hyperledger Fabric"]),
+            "academic_validation": academic_scores.get(recommended_dlt, academic_scores["Hyperledger Fabric"]),
             "use_cases": dlt_groups[recommended_group]["use_cases"]
         }
     except Exception as e:
         return {
+            "error": str(e),
             "dlt": "Hyperledger Fabric",
             "consensus_group": "Alta Segurança e Controle",
             "consensus": "PBFT",
@@ -234,8 +259,7 @@ def get_recommendation(answers, weights):
             "confidence": False,
             "confidence_value": float(0.0),
             "academic_validation": academic_scores["Hyperledger Fabric"],
-            "use_cases": dlt_groups["Alta Segurança e Controle"]["use_cases"],
-            "error": str(e)
+            "use_cases": dlt_groups["Alta Segurança e Controle"]["use_cases"]
         }
 
 def compare_algorithms(consensus_group):
