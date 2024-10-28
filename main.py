@@ -6,7 +6,7 @@ from decision_tree import run_decision_tree
 from decision_logic import compare_algorithms, consensus_algorithms
 from database import get_user_recommendations
 from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_decisoria, 
-                    calcular_pruning, calcular_confiabilidade_recomendacao, get_metric_interpretation)
+                    calcular_pruning, calcular_confiabilidade_recomendacao)
 from utils import init_session_state
 
 def show_metrics():
@@ -127,7 +127,14 @@ def show_metrics():
 def show_home_page():
     st.title("SeletorDLTSaude - Sistema de Seleção de DLT para Saúde")
     
-    st.markdown("""
+    try:
+        # Load and display the reference DLT table
+        reference_data = pd.read_csv('Pasted-DLT-Tipo-de-DLT-Grupo-de-Algoritmo-Algoritmo-de-Consenso-Principais-Caracter-sticas-do-Algoritmo-Est-1729763052900.txt', sep='\t')
+        st.dataframe(reference_data, use_container_width=True)
+    except Exception as e:
+        st.warning("Tabela de referência não disponível no momento.")
+    
+    st.markdown('''
     ### Bem-vindo ao SeletorDLTSaude
     
     Este sistema ajuda você a escolher a melhor tecnologia de ledger distribuído (DLT) 
@@ -138,10 +145,14 @@ def show_home_page():
     2. Receba recomendações personalizadas
     3. Analise métricas detalhadas
     4. Compare diferentes soluções
-    """)
+    ''')
     
-    if st.button("Iniciar Seleção"):
+    # Add call-to-action button with proper state management
+    if st.button("Iniciar Seleção de DLT", key="start_selection"):
         st.session_state.page = "Framework Proposto"
+        st.session_state.current_phase = "Aplicação"  # Reset phase
+        st.session_state.answers = {}  # Reset answers
+        st.session_state.characteristic_scores = {}  # Reset scores
         st.experimental_rerun()
 
 def show_user_profile():
