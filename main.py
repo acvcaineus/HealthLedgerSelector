@@ -22,6 +22,7 @@ def init_session_state():
             st.session_state.recommendation = None
             st.session_state.current_phase = 1
             st.session_state.phase_complete = False
+            st.session_state.questionnaire_started = False
     except Exception as e:
         st.error(f"Error initializing session state: {str(e)}")
         st.session_state.error = str(e)
@@ -111,12 +112,15 @@ def show_home_page():
     st.markdown("### Iniciar Processo de Seleção")
     st.info("🔍 Ao clicar no botão abaixo, você iniciará o processo guiado de seleção de DLT.")
     
-    if st.button("Iniciar Seleção de DLT", type="primary"):
-        st.session_state.page = 'Framework Proposto'
-        st.session_state.answers = {}  # Reset answers
-        st.session_state.current_phase = 1  # Reset phase
-        st.session_state.recommendation = None  # Reset recommendation
-        st.experimental_rerun()
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("Iniciar Seleção de DLT", type="primary", key="start_questionnaire"):
+            st.session_state.page = 'Framework Proposto'
+            st.session_state.answers = {}  # Reset answers
+            st.session_state.current_phase = 1  # Reset phase
+            st.session_state.recommendation = None  # Reset recommendation
+            st.session_state.questionnaire_started = True  # Set questionnaire as started
+            st.experimental_rerun()
 
 def show_metrics():
     """Display enhanced metrics and recommendation results"""
@@ -239,8 +243,14 @@ def main():
             show_home_page()
         elif st.session_state.page == 'Framework Proposto':
             from decision_tree import run_decision_tree
-            with st.spinner('Carregando questionário...'):
-                run_decision_tree()
+            if st.session_state.questionnaire_started:
+                with st.spinner('Carregando questionário...'):
+                    run_decision_tree()
+            else:
+                st.warning("Por favor, clique em 'Iniciar Seleção de DLT' na página inicial para começar o questionário.")
+                if st.button("Voltar para a Página Inicial"):
+                    st.session_state.page = 'Início'
+                    st.experimental_rerun()
         elif st.session_state.page == 'Métricas':
             show_metrics()
         elif st.session_state.page == 'Perfil':
