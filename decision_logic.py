@@ -1,7 +1,7 @@
 from dlt_data import questions, dlt_classes, consensus_algorithms
 from metrics import calcular_gini, calcular_entropia, calcular_profundidade_decisoria, calcular_pruning, calcular_confiabilidade_recomendacao
 
-# Updated DLT groups and mappings from reference table
+# DLT groups with their characteristics and mappings
 dlt_groups = {
     "Alta Segurança e Controle": {
         "dlts": ["Hyperledger Fabric", "Bitcoin", "Ethereum (PoW)"],
@@ -11,7 +11,7 @@ dlt_groups = {
     },
     "Alta Eficiência Operacional": {
         "dlts": ["Quorum", "VeChain"],
-        "algorithms": ["RAFT", "PoA"],  # VeChain uses PoA, Quorum uses RAFT
+        "algorithms": ["RAFT", "PoA"],
         "characteristics": ["efficiency", "scalability"],
         "use_cases": "Sistemas locais de saúde, agendamento de pacientes, redes locais de hospitais"
     },
@@ -73,6 +73,11 @@ academic_scores = {
     }
 }
 
+def normalize_scores(scores):
+    """Normalize scores to 0-1 range"""
+    max_score = max(scores.values()) if scores.values() else 1.0
+    return {k: float(v/max_score) for k, v in scores.items()}
+
 def calculate_characteristic_scores(answers):
     """Calculate scores for each characteristic based on user answers"""
     scores = {
@@ -112,7 +117,8 @@ def calculate_characteristic_scores(answers):
         scores["iot_compatibility"] += float(1.0)
         scores["scalability"] += float(1.0)
     
-    return scores
+    # Normalize scores before returning
+    return normalize_scores(scores)
 
 def create_evaluation_matrix(answers, characteristic_scores):
     """Create evaluation matrix based on characteristic scores and DLT groups"""
@@ -130,14 +136,18 @@ def create_evaluation_matrix(answers, characteristic_scores):
                     "scalability": float(0),
                     "governance": float(0),
                     "iot_compatibility": float(0)
-                },
-                "use_cases": group_data["use_cases"],
-                "algorithms": group_data["algorithms"]
+                }
             }
             
             # Calculate scores based on DLT characteristics
+            base_score = 3.0  # Base score for all metrics
             for characteristic in group_data["characteristics"]:
-                matrix[dlt]["metrics"][characteristic] = float(characteristic_scores[characteristic])
+                matrix[dlt]["metrics"][characteristic] = float(base_score + characteristic_scores[characteristic])
+            
+            # Normalize metrics to 0-1 range
+            max_metric = max(matrix[dlt]["metrics"].values())
+            if max_metric > 0:
+                matrix[dlt]["metrics"] = {k: float(v/max_metric) for k, v in matrix[dlt]["metrics"].items()}
             
             # Add academic validation if available
             if dlt in academic_scores:
@@ -199,7 +209,6 @@ def get_recommendation(answers, weights):
         dlt_scores = {}
         for dlt in possible_dlts:
             score = float(0)
-            # Calculate score based on DLT characteristics and user answers
             for char, char_score in characteristic_scores.items():
                 score += float(char_score) * float(weights.get(char, 0.25))
             dlt_scores[dlt] = score
@@ -226,13 +235,22 @@ def get_recommendation(answers, weights):
         
         # Create evaluation matrix and calculate confidence
         evaluation_matrix = create_evaluation_matrix(answers, characteristic_scores)
+        
+        # Fix confidence calculation
         weighted_scores = {dlt: float(sum(
             float(data["metrics"][metric]) * float(weights.get(metric, 0.25))
             for metric in weights.keys()
+            if metric in data["metrics"]  # Only include metrics that exist
         )) for dlt, data in evaluation_matrix.items()}
-        
+
         confidence_scores = list(weighted_scores.values())
-        confidence_value = float(max(confidence_scores) - (sum(confidence_scores) / len(confidence_scores))) if confidence_scores else float(0)
+        if confidence_scores:
+            max_score = max(confidence_scores)
+            mean_score = sum(confidence_scores) / len(confidence_scores)
+            confidence_value = (max_score - mean_score) / max_score if max_score > 0 else 0.0
+        else:
+            confidence_value = 0.0
+
         is_reliable = confidence_value > 0.7
         
         return {
