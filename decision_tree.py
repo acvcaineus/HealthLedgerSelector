@@ -91,81 +91,73 @@ def update_characteristic_scores(response, characteristics):
             else:
                 st.session_state.characteristic_scores[char] += 1.0
 
-def show_characteristic_analysis(analysis):
-    """Display detailed analysis of characteristics"""
-    if not analysis:
-        st.warning("Análise de características não disponível")
-        return
-
-    # Create radar chart for characteristics
-    characteristics = list(analysis.keys())
-    values = list(analysis.values())
-
-    fig = go.Figure(data=go.Scatterpolar(
-        r=values,
-        theta=characteristics,
-        fill='toself',
-        name='Características'
-    ))
-
-    fig.update_layout(
-        polar=dict(
-            radialaxis=dict(
-                visible=True,
-                range=[0, max(values)]
-            )
-        ),
-        showlegend=True,
-        title="Análise de Características"
-    )
-    st.plotly_chart(fig)
-
 def show_detailed_recommendation(recommendation):
-    """Display detailed recommendation with multiple tabs"""
+    """Display detailed recommendation with enhanced metrics"""
     st.header("Recomendação Final")
     
+    # Show the selected DLT group and explanation
+    st.subheader("Grupo de DLT Selecionado")
     col1, col2 = st.columns(2)
     with col1:
-        st.subheader("Grupo de Algoritmos")
         st.info(recommendation['consensus_group'])
         st.markdown("### DLT Recomendada")
         st.info(recommendation['dlt'])
+    with col2:
         st.markdown("### Algoritmo de Consenso")
         st.info(recommendation['consensus'])
+        if 'algorithms' in recommendation:
+            st.markdown("#### Algoritmos Compatíveis")
+            for algo in recommendation['algorithms']:
+                st.write(f"- {algo}")
     
-    with col2:
-        st.subheader("Características Priorizadas")
-        for char, score in recommendation.get('characteristic_scores', {}).items():
-            st.metric(char, f"{score:.2f}")
+    # Show characteristics and metrics
+    st.markdown("---")
+    st.subheader("Análise de Características")
     
-    # Show evaluation matrix
-    if 'evaluation_matrix' in recommendation:
-        st.subheader("Matriz de Avaliação")
-        matrix_df = pd.DataFrame.from_dict(
-            {k: v['metrics'] for k, v in recommendation['evaluation_matrix'].items()},
-            orient='index'
+    # Display characteristic scores in a radar chart
+    if 'evaluation_matrix' in recommendation and recommendation['dlt'] in recommendation['evaluation_matrix']:
+        metrics = recommendation['evaluation_matrix'][recommendation['dlt']]['metrics']
+        
+        fig = go.Figure(data=go.Scatterpolar(
+            r=list(metrics.values()),
+            theta=list(metrics.keys()),
+            fill='toself',
+            name='Características'
+        ))
+        
+        fig.update_layout(
+            polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
+            showlegend=True,
+            title="Análise de Características da DLT"
         )
-        st.dataframe(
-            matrix_df.style.background_gradient(cmap='RdYlGn', axis=None),
-            use_container_width=True
-        )
+        st.plotly_chart(fig)
     
-    # Show confidence and validation
-    confidence = recommendation.get('confidence_value', 0)
-    st.metric("Índice de Confiança", f"{confidence:.1%}")
+    # Show confidence metrics
+    st.markdown("---")
+    st.subheader("Métricas de Confiança")
     
-    if confidence > 0.7:
-        st.success("Alta confiabilidade na recomendação")
-    else:
-        st.warning("Confiabilidade moderada - considere revisar os requisitos")
+    conf_col1, conf_col2 = st.columns(2)
+    with conf_col1:
+        confidence = recommendation.get('confidence_value', 0)
+        st.metric("Índice de Confiança", f"{confidence:.1%}")
+        
+        if confidence > 0.7:
+            st.success("Alta confiabilidade na recomendação")
+        else:
+            st.warning("Confiabilidade moderada - considere revisar os requisitos")
     
-    # Show academic validation if available
-    if 'academic_validation' in recommendation:
-        st.subheader("Validação Acadêmica")
-        validation = recommendation['academic_validation']
-        st.write(f"**Score**: {validation.get('score', 0.0)}/5.0")
-        st.write(f"**Referência**: {validation.get('reference', '')}")
-        st.write(f"**Validação**: {validation.get('validation', '')}")
+    with conf_col2:
+        if 'academic_validation' in recommendation:
+            validation = recommendation['academic_validation']
+            st.metric("Score Acadêmico", f"{validation.get('score', 0)}/5.0")
+            st.write(f"**Referência**: {validation.get('reference', '')}")
+            st.write(f"**Validação**: {validation.get('validation', '')}")
+    
+    # Show use cases
+    if 'use_cases' in recommendation:
+        st.markdown("---")
+        st.subheader("Casos de Uso Recomendados")
+        st.write(recommendation['use_cases'])
 
 def run_decision_tree():
     """Main function to run the decision tree interface"""
@@ -176,49 +168,51 @@ def run_decision_tree():
         st.session_state.current_phase = "Aplicação"
     if 'answers' not in st.session_state:
         st.session_state.answers = {}
+    if 'characteristic_scores' not in st.session_state:
+        st.session_state.characteristic_scores = {}
     
     try:
         # Show current phase and progress
         st.subheader(f"Fase Atual: {st.session_state.current_phase}")
-        current_step = len(st.session_state.answers) + 1
-        
-        # Create progress visualization
-        phases = ["Aplicação", "Consenso", "Infraestrutura", "Internet"]
-        progress = phases.index(st.session_state.current_phase) / len(phases)
+        progress = len(st.session_state.answers) / 8  # Total of 8 questions
         st.progress(progress)
         
         # Get current question
         current_question = get_question_for_phase(st.session_state.current_phase)
         
         if current_question:
-            # Show question with explanation
+            # Show question with context
             st.markdown(f"### {current_question['text']}")
             st.info(current_question['explanation'])
             
-            # Get user response
-            response = st.radio(
-                "Selecione sua resposta:",
-                ["Sim", "Não"],
-                key=f"question_{current_step}"
-            )
+            # Get user response with clear options
+            col1, col2 = st.columns(2)
+            with col1:
+                response = st.radio(
+                    "Selecione sua resposta:",
+                    ["Sim", "Não"],
+                    key=f"question_{len(st.session_state.answers) + 1}"
+                )
             
-            # Show characteristic impact
-            st.markdown("#### Impacto desta escolha:")
-            st.write(current_question['impact'])
+            with col2:
+                st.markdown("#### Impacto desta escolha:")
+                st.write(current_question['impact'])
+            
+            # Show progress indicators
+            st.markdown("---")
+            st.markdown(f"**Fase atual:** {st.session_state.current_phase}")
+            st.markdown(f"**Pergunta:** {len(st.session_state.answers) + 1}/8")
             
             if st.button("Próxima Pergunta"):
                 # Store response
-                st.session_state.answers[current_question['id']] = {
-                    'response': response,
-                    'phase': st.session_state.current_phase,
-                    'characteristics': current_question['characteristics']
-                }
+                st.session_state.answers[current_question['id']] = response
                 
-                # Update characteristic scores
+                # Update characteristics
                 update_characteristic_scores(response, current_question['characteristics'])
                 
                 # Move to next phase if needed
-                if len(st.session_state.answers) % 2 == 0:
+                if len(st.session_state.answers) % 2 == 0 and len(st.session_state.answers) < 8:
+                    phases = ["Aplicação", "Consenso", "Infraestrutura", "Internet"]
                     current_index = phases.index(st.session_state.current_phase)
                     if current_index < len(phases) - 1:
                         st.session_state.current_phase = phases[current_index + 1]
@@ -238,9 +232,10 @@ def run_decision_tree():
             st.session_state.recommendation = recommendation
             show_detailed_recommendation(recommendation)
             
+            # Add navigation buttons
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("Ver Métricas Detalhadas"):
+                if st.button("Ver Métricas"):
                     st.session_state.page = "Métricas"
                     st.experimental_rerun()
             with col2:
