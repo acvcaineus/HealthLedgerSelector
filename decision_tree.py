@@ -116,6 +116,7 @@ def show_recommendation(answers, weights, questions):
     st.subheader("Algoritmo de Consenso")
     st.write(f"Grupo de Consenso: {recommendation.get('consensus_group', 'Não disponível')}")
     st.write(f"Algoritmo: {recommendation.get('consensus', 'Não disponível')}")
+    st.write(f"Descrição: {recommendation.get('group_description', '')}")
     
     # Add DLT Evaluation Matrix
     st.subheader("Matriz de Avaliação de DLTs")
@@ -204,25 +205,6 @@ def show_recommendation(answers, weights, questions):
             - Os scores são baseados em validação acadêmica
             ''')
 
-    # Add calculation details
-    st.subheader("Detalhes dos Cálculos")
-    with st.expander("Ver Cálculos Detalhados"):
-        st.markdown("### Pesos das Características")
-        for metric, weight in weights.items():
-            st.metric(
-                label=f"{metric.title()}",
-                value=f"{float(weight):.2%}",
-                help=f"Peso atribuído para {metric}"
-            )
-        
-        st.markdown("### Scores Ponderados")
-        for dlt, score in recommendation['weighted_scores'].items():
-            st.metric(
-                label=dlt,
-                value=f"{float(score):.2f}",
-                help=f"Score final ponderado para {dlt}"
-            )
-
     # Add confidence metrics
     if 'confidence_value' in recommendation:
         st.subheader("Métricas de Confiança")
@@ -234,6 +216,8 @@ def show_recommendation(answers, weights, questions):
                 help="Quanto maior, mais confiável é a recomendação"
             )
             st.progress(conf_val)
+            
+            # Add detailed confidence explanation
             st.markdown(f'''
             ### Interpretação do Índice de Confiança:
             - Abaixo de 60%: Baixa confiança
@@ -242,7 +226,46 @@ def show_recommendation(answers, weights, questions):
             
             Valor atual: {conf_val:.2%} - {'Alta' if conf_val > 0.8 else 'Moderada' if conf_val > 0.6 else 'Baixa'} confiança
             ''')
-
+            
+            st.markdown('''
+            ### Como melhorar a confiança da recomendação:
+            
+            1. **Consistência nas Respostas**
+            - Verifique se suas respostas são consistentes com o caso de uso
+            - Revise respostas que parecem contraditórias
+            
+            2. **Características Priorizadas**
+            - Certifique-se de que as características mais importantes têm peso adequado
+            - Ajuste os pesos se necessário
+            
+            3. **Alinhamento com Requisitos**
+            - Verifique se a DLT recomendada atende todos os requisitos críticos
+            - Considere requisitos não funcionais
+            
+            4. **Validação Acadêmica**
+            - Considere a pontuação de validação acadêmica
+            - Verifique casos de uso similares
+            ''')
+            
+            # Add visualization of confidence components
+            if 'confidence_components' in recommendation:
+                components = recommendation['confidence_components']
+                fig = go.Figure(data=[
+                    go.Bar(
+                        x=list(components.keys()),
+                        y=list(components.values()),
+                        text=[f'{v:.1%}' for v in components.values()],
+                        textposition='auto',
+                    )
+                ])
+                fig.update_layout(
+                    title="Componentes do Índice de Confiança",
+                    xaxis_title="Componente",
+                    yaxis_title="Contribuição",
+                    yaxis=dict(range=[0, 1])
+                )
+                st.plotly_chart(fig, use_container_width=True)
+    
     # Save recommendation if user is authenticated
     if 'username' in st.session_state:
         save_recommendation(
@@ -250,8 +273,6 @@ def show_recommendation(answers, weights, questions):
             "Healthcare",
             recommendation
         )
-    
-    return recommendation
 
 def run_decision_tree():
     if 'answers' not in st.session_state:
@@ -371,8 +392,3 @@ def run_decision_tree():
             "governance": float(0.15)
         }
         st.session_state.recommendation = show_recommendation(st.session_state.answers, weights, questions)
-
-def restart_decision_tree():
-    if st.button("Reiniciar Processo", help="Clique para começar um novo processo de seleção"):
-        st.session_state.answers = {}
-        st.experimental_rerun()
