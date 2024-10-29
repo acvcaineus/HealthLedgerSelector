@@ -1,6 +1,6 @@
 import streamlit as st
 import plotly.graph_objects as go
-from decision_logic import get_recommendation, consensus_algorithms
+from decision_logic import get_recommendation, consensus_algorithms, consensus_groups
 from database import save_recommendation
 import networkx as nx
 from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_decisoria, 
@@ -117,82 +117,174 @@ def show_recommendation(answers, weights, questions):
         </div>
         """, unsafe_allow_html=True)
         
-        # Add collapsible explanations
-        with st.expander("Ver Explicação da DLT Recomendada"):
-            st.write(f"### Por que {recommendation.get('dlt', 'esta DLT')}?")
-            st.write("Esta DLT foi selecionada com base em suas respostas:")
-            for question_id, answer in answers.items():
-                for q in questions:
-                    if q['id'] == question_id:
-                        st.write(f"- {q['text']}: **{answer}**")
-            st.write("\n### Principais Características:")
-            eval_matrix = recommendation.get('evaluation_matrix', {})
-            dlt_metrics = eval_matrix.get(recommendation.get('dlt', ''), {}).get('metrics', {})
-            for metric, value in dlt_metrics.items():
-                if metric != 'academic_validation':
-                    st.write(f"- **{metric}**: {float(value):.2f}")
+        # Enhanced algorithm group explanation
+        with st.expander("Ver Detalhes do Grupo de Algoritmos"):
+            st.write("### Grupo de Algoritmos")
+            group_descriptions = {
+                'Alta Segurança e Controle': """
+                Este grupo é focado em algoritmos que priorizam a segurança e controle rigoroso sobre as transações.
+                
+                **Características principais:**
+                - Alta resistência a ataques bizantinos
+                - Controle preciso sobre os validadores
+                - Ideal para dados sensíveis de saúde
+                
+                **Algoritmos típicos:**
+                - PBFT (Practical Byzantine Fault Tolerance)
+                - Proof of Work (PoW) com restrições
+                """,
+                'Alta Eficiência Operacional': """
+                Grupo otimizado para eficiência e velocidade em redes menores e controladas.
+                
+                **Características principais:**
+                - Baixa latência nas transações
+                - Consumo energético otimizado
+                - Ideal para redes hospitalares locais
+                
+                **Algoritmos típicos:**
+                - Raft Consensus
+                - Proof of Authority (PoA)
+                """,
+                'Escalabilidade e Governança Flexível': """
+                Foco em balancear escalabilidade com flexibilidade na governança.
+                
+                **Características principais:**
+                - Alta capacidade de processamento
+                - Governança adaptável
+                - Ideal para redes regionais de saúde
+                
+                **Algoritmos típicos:**
+                - Proof of Stake (PoS)
+                - Delegated Proof of Stake (DPoS)
+                """,
+                'Alta Escalabilidade em Redes IoT': """
+                Especializado em lidar com grande volume de dispositivos IoT.
+                
+                **Características principais:**
+                - Processamento paralelo eficiente
+                - Baixo consumo por transação
+                - Ideal para monitoramento em tempo real
+                
+                **Algoritmos típicos:**
+                - Tangle (IOTA)
+                - DAG-based consensus
+                """,
+                'Alta Segurança e Descentralização de Dados Críticos': """
+                Máxima segurança e descentralização para dados críticos.
+                
+                **Características principais:**
+                - Descentralização completa
+                - Imutabilidade garantida
+                - Ideal para registros médicos permanentes
+                
+                **Algoritmos típicos:**
+                - Proof of Work (PoW)
+                - Advanced Proof of Stake (PoS)
+                """
+            }
+            
+            # Display group description based on recommended DLT
+            dlt_to_group = {
+                "DLT Permissionada Privada": "Alta Segurança e Controle",
+                "DLT Permissionada Simples": "Alta Eficiência Operacional",
+                "DLT Híbrida": "Escalabilidade e Governança Flexível",
+                "DLT Pública": "Alta Escalabilidade em Redes IoT",
+                "DLT com Consenso Delegado": "Escalabilidade e Governança Flexível",
+                "DLT Pública Permissionless": "Alta Segurança e Descentralização de Dados Críticos"
+            }
+            
+            recommended_group = dlt_to_group.get(recommendation.get('dlt', ''), "Alta Segurança e Controle")
+            st.markdown(group_descriptions.get(recommended_group, "Descrição não disponível"))
         
-        # Add use cases section
-        with st.expander("Ver Casos de Uso Recomendados"):
-            st.write("### Aplicações Recomendadas")
-            use_cases = {
-                "DLT Permissionada Privada": [
-                    "Prontuários Eletrônicos (EMR)",
-                    "Integração de Dados Sensíveis",
-                    "Sistemas de Pagamento Descentralizados"
-                ],
-                "DLT Pública Permissionless": [
-                    "Sistemas de Pagamento Descentralizados",
-                    "Dados Críticos de Saúde Pública",
-                    "Rastreamento de Medicamentos"
-                ],
-                "DLT Permissionada Simples": [
-                    "Sistemas Locais de Saúde",
-                    "Agendamento de Pacientes",
-                    "Redes Locais de Hospitais"
-                ],
-                "DLT Híbrida": [
-                    "Monitoramento de Saúde Pública",
-                    "Redes Regionais de Saúde",
-                    "Integração de EHRs"
-                ],
-                "DLT com Consenso Delegado": [
-                    "Monitoramento de Saúde Pública",
-                    "Redes Regionais de Saúde",
-                    "Integração de EHRs"
-                ],
-                "DLT Pública": [
-                    "Monitoramento IoT em Saúde",
-                    "Dados em Tempo Real",
-                    "Rastreamento de Dispositivos Médicos"
-                ]
-            }
-            
-            recommended_uses = use_cases.get(recommendation.get('dlt', ''), [])
-            for use_case in recommended_uses:
-                st.write(f"- {use_case}")
-            
-            st.write("\n### Exemplos de Implementação")
-            implementation_examples = {
-                "DLT Permissionada Privada": "Guardtime: Aplicado em sistemas de saúde da Estônia",
-                "DLT Pública Permissionless": "MTBC: Gestão de registros eletrônicos de saúde (EHR)",
-                "DLT Permissionada Simples": "ProCredEx: Validação de credenciais de profissionais de saúde",
-                "DLT Híbrida": "Chronicled (Mediledger Project): Rastreamento de medicamentos",
-                "DLT com Consenso Delegado": "Change Healthcare: Gestão de ciclo de receita",
-                "DLT Pública": "Patientory: Compartilhamento de dados via IoT"
-            }
-            
-            example = implementation_examples.get(recommendation.get('dlt', ''), "Exemplo não disponível")
-            st.write(f"**Exemplo Real:** {example}")
-    
-        with st.expander("Ver Explicação do Algoritmo de Consenso"):
-            st.write(f"### Por que {recommendation.get('consensus', 'este algoritmo')}?")
-            st.write("Este algoritmo de consenso foi selecionado pelos seguintes motivos:")
+        # Enhanced consensus algorithm explanation
+        with st.expander("Ver Detalhes do Algoritmo de Consenso"):
             consensus = recommendation.get('consensus', '')
-            if consensus in consensus_algorithms:
-                for metric, value in consensus_algorithms[consensus].items():
-                    st.write(f"- **{metric}**: {float(value):.2f}")
-    
+            st.write(f"### {consensus}")
+            
+            consensus_details = {
+                "Proof of Stake (PoS)": {
+                    "description": """
+                    O Proof of Stake (PoS) é um mecanismo de consenso que seleciona validadores com base em sua participação no sistema.
+                    
+                    **Como funciona:**
+                    - Validadores depositam tokens como garantia
+                    - Chance de validação proporcional ao stake
+                    - Penalidades por comportamento malicioso
+                    
+                    **Vantagens para Saúde:**
+                    - Baixo consumo energético
+                    - Alta escalabilidade
+                    - Segurança proporcional ao valor em stake
+                    
+                    **Aplicações Ideais:**
+                    - Redes de hospitais
+                    - Sistemas de prontuários eletrônicos
+                    - Compartilhamento seguro de dados
+                    """,
+                    "metrics": consensus_algorithms.get("Proof of Stake (PoS)", {})
+                },
+                "Proof of Work (PoW)": {
+                    "description": """
+                    O Proof of Work (PoW) é um mecanismo que requer poder computacional para validar transações.
+                    
+                    **Como funciona:**
+                    - Resolução de puzzles criptográficos
+                    - Competição entre mineradores
+                    - Alta segurança através de trabalho computacional
+                    
+                    **Vantagens para Saúde:**
+                    - Máxima segurança
+                    - Imutabilidade garantida
+                    - Descentralização completa
+                    
+                    **Aplicações Ideais:**
+                    - Registros permanentes
+                    - Auditorias de longo prazo
+                    - Dados críticos de pesquisa
+                    """,
+                    "metrics": consensus_algorithms.get("Proof of Work (PoW)", {})
+                },
+                "Practical Byzantine Fault Tolerance (PBFT)": {
+                    "description": """
+                    PBFT é um protocolo de consenso que oferece alta segurança em redes permissionadas.
+                    
+                    **Como funciona:**
+                    - Votação em múltiplas rodadas
+                    - Tolerância a nós maliciosos
+                    - Consenso rápido e definitivo
+                    
+                    **Vantagens para Saúde:**
+                    - Alta performance
+                    - Finalidade imediata
+                    - Controle de acesso
+                    
+                    **Aplicações Ideais:**
+                    - Redes hospitalares privadas
+                    - Sistemas de autorização
+                    - Registros médicos sensíveis
+                    """,
+                    "metrics": consensus_algorithms.get("Practical Byzantine Fault Tolerance (PBFT)", {})
+                }
+            }
+            
+            if consensus in consensus_details:
+                st.markdown(consensus_details[consensus]["description"])
+                
+                # Show metrics in a more visual way
+                metrics = consensus_details[consensus]["metrics"]
+                if metrics:
+                    st.write("### Métricas do Algoritmo")
+                    cols = st.columns(len(metrics))
+                    for i, (metric, value) in enumerate(metrics.items()):
+                        with cols[i]:
+                            st.metric(
+                                label=metric.replace('_', ' ').title(),
+                                value=f"{float(value):.1f}/5.0",
+                                delta=f"{'Excelente' if float(value) >= 4.5 else 'Bom' if float(value) >= 3.5 else 'Regular'}"
+                            )
+            else:
+                st.warning("Detalhes específicos não disponíveis para este algoritmo de consenso.")
+
     with col2:
         st.subheader("Métricas")
         confidence_score = recommendation.get('confidence', False)
