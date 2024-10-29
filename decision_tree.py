@@ -8,7 +8,6 @@ from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_dec
                     calcular_pruning, calcular_confiabilidade_recomendacao)
 
 def create_progress_animation(current_phase, answers, questions):
-    # [Previous implementation remains unchanged]
     phases = ['Aplicação', 'Consenso', 'Infraestrutura', 'Internet']
     fig = go.Figure()
     
@@ -105,14 +104,6 @@ def create_progress_animation(current_phase, answers, questions):
 def show_recommendation(answers, weights, questions):
     """
     Display and save DLT recommendation based on user answers and weights.
-    
-    Args:
-        answers (dict): User's answers to the questionnaire
-        weights (dict): Weights for different characteristics
-        questions (list): List of questions used in the decision tree
-    
-    Returns:
-        dict: The recommendation object containing DLT and consensus algorithm details
     """
     # Get recommendation
     recommendation = get_recommendation(answers, weights)
@@ -126,47 +117,132 @@ def show_recommendation(answers, weights, questions):
     st.write(f"Grupo de Consenso: {recommendation.get('consensus_group', 'Não disponível')}")
     st.write(f"Algoritmo: {recommendation.get('consensus', 'Não disponível')}")
     
-    # Display characteristics and explanation
-    if 'group_characteristics' in recommendation:
-        st.subheader("Características do Grupo")
-        for metric, value in recommendation['group_characteristics'].items():
-            st.metric(metric.title(), f"{float(value):.1f}/5.0")
-    
-    # Display explanation and academic validation
-    st.subheader("Explicação da Recomendação")
-    st.write(recommendation.get('group_description', 'Descrição não disponível'))
-    
-    if 'academic_validation' in recommendation and recommendation['academic_validation']:
-        st.subheader("Validação Acadêmica")
-        validation = recommendation['academic_validation']
-        st.write(f"Score Acadêmico: {validation.get('score', 'N/A')}/5.0")
-        st.write(f"Citações: {validation.get('citations', 'N/A')}")
-        st.write(f"Referência: {validation.get('reference', 'N/A')}")
-        st.write(f"Validação: {validation.get('validation', 'N/A')}")
-    
-    # Display algorithm comparison if available
-    if recommendation.get('consensus_group'):
-        st.subheader("Comparação de Algoritmos no Grupo")
-        comparison_data = compare_algorithms(recommendation['consensus_group'])
-        if comparison_data:
-            fig = go.Figure()
+    # Add DLT Evaluation Matrix
+    st.subheader("Matriz de Avaliação de DLTs")
+    with st.expander("Ver Matriz de Avaliação de DLTs"):
+        evaluation_matrix = recommendation.get('evaluation_matrix', {})
+        dlt_scores = {
+            metric: [float(data['metrics'][metric]) for data in evaluation_matrix.values()]
+            for metric in ['security', 'scalability', 'energy_efficiency', 'governance']
+        }
+        
+        fig_dlt = go.Figure(data=go.Heatmap(
+            z=list(dlt_scores.values()),
+            x=list(evaluation_matrix.keys()),
+            y=list(dlt_scores.keys()),
+            colorscale='Viridis',
+            hoverongaps=False,
+            hovertemplate="<b>DLT:</b> %{x}<br>" +
+                         "<b>Métrica:</b> %{y}<br>" +
+                         "<b>Score:</b> %{z:.2f}<br>" +
+                         "<extra></extra>"
+        ))
+        st.plotly_chart(fig_dlt, use_container_width=True)
+        st.markdown('''
+        ### Como interpretar a Matriz de DLTs:
+        - Cores mais escuras indicam scores mais altos
+        - Cada linha representa uma métrica diferente
+        - Cada coluna representa uma DLT
+        - Passe o mouse sobre os quadrados para ver os valores exatos
+        ''')
+
+    # Add Algorithm Groups Matrix
+    st.subheader("Matriz de Avaliação dos Grupos de Algoritmos")
+    with st.expander("Ver Matriz de Avaliação dos Grupos"):
+        group_data = {
+            group: data['characteristics']
+            for group, data in consensus_groups.items()
+        }
+        
+        fig_groups = go.Figure(data=go.Heatmap(
+            z=[[float(v) for v in group.values()] for group in group_data.values()],
+            x=list(next(iter(group_data.values())).keys()),
+            y=list(group_data.keys()),
+            colorscale='Viridis',
+            hovertemplate="<b>Grupo:</b> %{y}<br>" +
+                         "<b>Métrica:</b> %{x}<br>" +
+                         "<b>Score:</b> %{z:.2f}<br>" +
+                         "<extra></extra>"
+        ))
+        st.plotly_chart(fig_groups, use_container_width=True)
+        st.markdown('''
+        ### Como interpretar a Matriz de Grupos:
+        - Cada linha representa um grupo de algoritmos
+        - Cada coluna representa uma característica
+        - A intensidade da cor indica o score
+        - Os valores são baseados em pesquisas acadêmicas
+        ''')
+
+    # Add Consensus Algorithms Matrix
+    if 'consensus_group' in recommendation:
+        st.subheader("Matriz de Avaliação dos Algoritmos de Consenso")
+        with st.expander("Ver Matriz de Avaliação dos Algoritmos"):
+            recommended_group = recommendation['consensus_group']
+            algorithms = consensus_groups[recommended_group]['algorithms']
             
-            for algo in comparison_data['Segurança'].keys():
-                fig.add_trace(go.Scatterpolar(
-                    r=[comparison_data[metric][algo] for metric in comparison_data.keys()],
-                    theta=list(comparison_data.keys()),
-                    fill='toself',
-                    name=algo
-                ))
+            algo_data = {
+                algo: consensus_algorithms[algo]
+                for algo in algorithms if algo in consensus_algorithms
+            }
             
-            fig.update_layout(
-                polar=dict(radialaxis=dict(visible=True, range=[0, 5])),
-                showlegend=True,
-                title="Comparação de Características dos Algoritmos"
+            fig_algo = go.Figure(data=go.Heatmap(
+                z=[[float(v) for v in algo.values()] for algo in algo_data.values()],
+                x=list(next(iter(algo_data.values())).keys()),
+                y=list(algo_data.keys()),
+                colorscale='Viridis',
+                hovertemplate="<b>Algoritmo:</b> %{y}<br>" +
+                             "<b>Métrica:</b> %{x}<br>" +
+                             "<b>Score:</b> %{z:.2f}<br>" +
+                             "<extra></extra>"
+            ))
+            st.plotly_chart(fig_algo, use_container_width=True)
+            st.markdown(f'''
+            ### Como interpretar a Matriz de Algoritmos:
+            - Mostra os algoritmos do grupo {recommended_group}
+            - Cada linha é um algoritmo específico
+            - Cada coluna é uma característica
+            - Os scores são baseados em validação acadêmica
+            ''')
+
+    # Add calculation details
+    st.subheader("Detalhes dos Cálculos")
+    with st.expander("Ver Cálculos Detalhados"):
+        st.markdown("### Pesos das Características")
+        for metric, weight in weights.items():
+            st.metric(
+                label=f"{metric.title()}",
+                value=f"{float(weight):.2%}",
+                help=f"Peso atribuído para {metric}"
             )
+        
+        st.markdown("### Scores Ponderados")
+        for dlt, score in recommendation['weighted_scores'].items():
+            st.metric(
+                label=dlt,
+                value=f"{float(score):.2f}",
+                help=f"Score final ponderado para {dlt}"
+            )
+
+    # Add confidence metrics
+    if 'confidence_value' in recommendation:
+        st.subheader("Métricas de Confiança")
+        with st.expander("Ver Métricas de Confiança"):
+            conf_val = float(recommendation['confidence_value'])
+            st.metric(
+                "Índice de Confiança",
+                f"{conf_val:.2%}",
+                help="Quanto maior, mais confiável é a recomendação"
+            )
+            st.progress(conf_val)
+            st.markdown(f'''
+            ### Interpretação do Índice de Confiança:
+            - Abaixo de 60%: Baixa confiança
+            - Entre 60% e 80%: Confiança moderada
+            - Acima de 80%: Alta confiança
             
-            st.plotly_chart(fig)
-    
+            Valor atual: {conf_val:.2%} - {'Alta' if conf_val > 0.8 else 'Moderada' if conf_val > 0.6 else 'Baixa'} confiança
+            ''')
+
     # Save recommendation if user is authenticated
     if 'username' in st.session_state:
         save_recommendation(
