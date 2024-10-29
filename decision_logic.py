@@ -147,14 +147,14 @@ def get_recommendation(answers, weights):
     # Find DLT with maximum weighted score
     recommended_dlt = max(weighted_scores.items(), key=lambda x: float(x[1]))[0]
 
-    # Updated group mapping as requested
+    # Get consensus group based on DLT type
     group_mapping = {
         "DLT Permissionada Privada": "Alta Segurança e Controle",
         "DLT Pública Permissionless": "Alta Segurança e Descentralização de Dados Críticos",
         "DLT Permissionada Simples": "Alta Eficiência Operacional",
         "DLT Híbrida": "Escalabilidade e Governança Flexível",
         "DLT com Consenso Delegado": "Escalabilidade e Governança Flexível",
-        "DLT Pública": "Alta Segurança e Descentralização de Dados Críticos"
+        "DLT Pública": "Alta Escalabilidade em Redes IoT"
     }
 
     recommended_group = group_mapping.get(recommended_dlt, "Alta Segurança e Controle")
