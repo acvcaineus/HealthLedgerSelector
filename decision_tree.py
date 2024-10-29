@@ -96,26 +96,32 @@ def create_progress_animation(current_phase, answers, questions):
 def show_recommendation(answers, weights, questions):
     recommendation = get_recommendation(answers, weights)
     
-    col1, col2 = st.columns([3, 1])
+    st.header("Recomendação de DLT")
+    st.write(f"DLT Recomendada: **{recommendation['dlt']}**")
     
-    with col1:
-        st.header("Recomendação de DLT")
-    
-    with col2:
+    # Save button in a container with custom styling
+    save_container = st.container()
+    with save_container:
         if st.session_state.get('authenticated', False):
-            if st.button("💾 Salvar Recomendação", 
-                        help="Clique para salvar esta recomendação no seu perfil",
-                        key="save_recommendation"):
-                save_recommendation(
-                    st.session_state.username,
-                    "Healthcare",
-                    recommendation
-                )
-                st.success("✅ Recomendação salva com sucesso!")
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                if st.button(
+                    "💾 Salvar Recomendação",
+                    help="Clique para salvar esta recomendação no seu perfil",
+                    key="save_recommendation",
+                    type="primary",  # Makes the button more prominent
+                    use_container_width=True  # Makes the button wider
+                ):
+                    save_recommendation(
+                        st.session_state.username,
+                        "Healthcare",
+                        recommendation
+                    )
+                    st.success("✅ Recomendação salva com sucesso! Você pode acessá-la no seu perfil.")
         else:
-            st.info("Faça login para salvar recomendações")
+            st.warning("⚠️ Faça login para salvar recomendações e acessá-las posteriormente.")
     
-    st.write(f"DLT Recomendada: {recommendation['dlt']}")
+    st.markdown("---")  # Visual separator
     
     st.subheader("Algoritmo de Consenso")
     st.write(f"Grupo de Consenso: {recommendation.get('consensus_group', 'Não disponível')}")
