@@ -119,7 +119,7 @@ def show_recommendation(answers, weights, questions):
             <p><em>{recommendation.get('group_description', '')}</em></p>
         </div>
         """, unsafe_allow_html=True)
-
+        
         # Add detailed characteristic scores section
         st.subheader("Scores por Característica")
         with st.expander("Ver Detalhamento dos Scores"):
@@ -173,31 +173,134 @@ def show_recommendation(answers, weights, questions):
             - Governança: 15% (Flexibilidade administrativa)
             ''')
         
-        # DLT Types comparison matrix
-        st.subheader("Comparação de Tipos de DLT")
-        eval_matrix = recommendation.get('evaluation_matrix', {})
-        if eval_matrix:
-            dlt_comparison_data = []
-            dlts = list(eval_matrix.keys())
+        # Add DLT Evaluation Matrix
+        st.subheader("Matriz de Avaliação de DLTs")
+        with st.expander("Ver Matriz de Avaliação de DLTs"):
+            evaluation_matrix = recommendation.get('evaluation_matrix', {})
+            dlt_matrix_data = []
+            dlt_labels = []
             metrics = ['security', 'scalability', 'energy_efficiency', 'governance']
             
-            for dlt in dlts:
-                dlt_data = eval_matrix[dlt].get('metrics', {})
-                values = [float(dlt_data.get(metric, 0)) for metric in metrics]
-                dlt_comparison_data.append(go.Scatterpolar(
-                    r=values,
-                    theta=metrics,
-                    name=dlt,
-                    fill='toself'
-                ))
+            for dlt, data in evaluation_matrix.items():
+                dlt_labels.append(dlt)
+                row = []
+                for metric in metrics:
+                    value = float(data['metrics'].get(metric, 0))
+                    row.append(value)
+                dlt_matrix_data.append(row)
             
-            fig_dlt = go.Figure(data=dlt_comparison_data)
+            # Create heatmap
+            fig_dlt = go.Figure(data=go.Heatmap(
+                z=dlt_matrix_data,
+                x=['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança'],
+                y=dlt_labels,
+                colorscale='Viridis',
+                hoverongaps=False,
+                hovertemplate="<b>DLT:</b> %{y}<br>" +
+                             "<b>Métrica:</b> %{x}<br>" +
+                             "<b>Score:</b> %{z:.2f}<br>" +
+                             "<extra></extra>"
+            ))
+            
             fig_dlt.update_layout(
-                polar=dict(radialaxis=dict(visible=True, range=[0, 5])),
-                showlegend=True,
-                title="Comparação de Tipos de DLT"
+                title="Matriz de Avaliação das DLTs",
+                height=400
             )
+            
             st.plotly_chart(fig_dlt, use_container_width=True)
+            
+            st.markdown('''
+            ### Como interpretar a Matriz de DLTs:
+            - **Cores mais escuras**: Indicam scores mais altos
+            - **Cores mais claras**: Indicam scores mais baixos
+            - **Métricas avaliadas**: Segurança, Escalabilidade, Eficiência Energética e Governança
+            ''')
+        
+        # Add Algorithm Groups Matrix
+        st.subheader("Matriz de Avaliação dos Grupos de Algoritmos")
+        with st.expander("Ver Matriz de Avaliação dos Grupos de Algoritmos"):
+            group_matrix_data = []
+            group_labels = []
+            
+            for group, data in consensus_groups.items():
+                group_labels.append(group)
+                row = []
+                for metric in metrics:
+                    value = float(data['characteristics'].get(metric, 0))
+                    row.append(value)
+                group_matrix_data.append(row)
+            
+            # Create heatmap
+            fig_groups = go.Figure(data=go.Heatmap(
+                z=group_matrix_data,
+                x=['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança'],
+                y=group_labels,
+                colorscale='Viridis',
+                hoverongaps=False,
+                hovertemplate="<b>Grupo:</b> %{y}<br>" +
+                             "<b>Métrica:</b> %{x}<br>" +
+                             "<b>Score:</b> %{z:.2f}<br>" +
+                             "<extra></extra>"
+            ))
+            
+            fig_groups.update_layout(
+                title="Matriz de Avaliação dos Grupos de Algoritmos",
+                height=400
+            )
+            
+            st.plotly_chart(fig_groups, use_container_width=True)
+            
+            st.markdown('''
+            ### Como interpretar a Matriz de Grupos:
+            - Cada linha representa um grupo de algoritmos
+            - As colunas mostram o desempenho em diferentes métricas
+            - Os valores são médias dos algoritmos no grupo
+            ''')
+        
+        # Add Algorithms Matrix
+        st.subheader("Matriz de Avaliação dos Algoritmos")
+        with st.expander("Ver Matriz de Avaliação dos Algoritmos"):
+            alg_matrix_data = []
+            alg_labels = []
+            
+            recommended_group = recommendation['consensus_group']
+            group_algorithms = consensus_groups[recommended_group]['algorithms']
+            
+            for alg in group_algorithms:
+                if alg in consensus_algorithms:
+                    alg_labels.append(alg)
+                    row = []
+                    for metric in metrics:
+                        value = float(consensus_algorithms[alg].get(metric, 0))
+                        row.append(value)
+                    alg_matrix_data.append(row)
+            
+            # Create heatmap
+            fig_alg = go.Figure(data=go.Heatmap(
+                z=alg_matrix_data,
+                x=['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança'],
+                y=alg_labels,
+                colorscale='Viridis',
+                hoverongaps=False,
+                hovertemplate="<b>Algoritmo:</b> %{y}<br>" +
+                             "<b>Métrica:</b> %{x}<br>" +
+                             "<b>Score:</b> %{z:.2f}<br>" +
+                             "<extra></extra>"
+            ))
+            
+            fig_alg.update_layout(
+                title=f"Matriz de Avaliação dos Algoritmos do Grupo {recommended_group}",
+                height=400
+            )
+            
+            st.plotly_chart(fig_alg, use_container_width=True)
+            
+            st.markdown('''
+            ### Como interpretar a Matriz de Algoritmos:
+            - Mostra apenas os algoritmos do grupo recomendado
+            - Permite comparação direta entre algoritmos
+            - Facilita a visualização dos pontos fortes de cada algoritmo
+            ''')
 
     with col2:
         st.subheader("Métricas de Confiança")
