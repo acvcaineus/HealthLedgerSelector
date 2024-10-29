@@ -37,7 +37,7 @@ def create_progress_animation(current_phase, answers, questions):
             color = '#bdc3c7'  # Gray for pending
             size = 35
             
-        # Create tooltip text with enhanced explanations
+        # Create tooltip text
         tooltip = f"<b>{phase}</b><br>"
         tooltip += f"Progresso: {phase_progress[phase]}/{phase_total[phase]}<br>"
         tooltip += "<br>Características:<br>"
@@ -57,7 +57,7 @@ def create_progress_animation(current_phase, answers, questions):
             showlegend=False
         ))
         
-        # Add phase label with progress and detailed explanation
+        # Add phase label with progress
         fig.add_annotation(
             x=i, y=-0.2,
             text=f"{phase}<br>({phase_progress[phase]}/{phase_total[phase]})",
@@ -65,7 +65,7 @@ def create_progress_animation(current_phase, answers, questions):
             font=dict(size=12)
         )
         
-        # Add connecting lines with phase relationship indicators
+        # Add connecting lines
         if i < len(phases) - 1:
             fig.add_trace(go.Scatter(
                 x=[i, i+1],
@@ -79,7 +79,7 @@ def create_progress_animation(current_phase, answers, questions):
                 showlegend=False
             ))
     
-    # Update layout with enhanced explanations
+    # Update layout
     fig.update_layout(
         showlegend=False,
         height=200,
@@ -101,120 +101,6 @@ def create_progress_animation(current_phase, answers, questions):
     
     return fig
 
-def create_metrics_radar_chart(metrics, weights):
-    fig = go.Figure()
-    
-    # Add metrics trace with enhanced tooltips
-    metric_names = list(metrics.keys())
-    metric_values = [float(metrics[m]) for m in metric_names]
-    
-    fig.add_trace(go.Scatterpolar(
-        r=metric_values,
-        theta=metric_names,
-        fill='toself',
-        name='Métricas Atuais',
-        hovertemplate="<b>%{theta}</b><br>" +
-                     "Valor: %{r:.3f}<br>" +
-                     "Peso: " + "<br>".join([f"{weights.get(m, 'N/A'):.2%}" for m in metric_names]) +
-                     "<extra></extra>"
-    ))
-    
-    fig.update_layout(
-        polar=dict(
-            radialaxis=dict(
-                visible=True,
-                range=[0, 1]
-            )),
-        title="Visão Geral das Métricas",
-        showlegend=True
-    )
-    return fig
-
-def show_metrics():
-    st.header("Métricas Técnicas do Processo de Decisão")
-    
-    if 'recommendation' in st.session_state:
-        rec = st.session_state.recommendation
-        if 'evaluation_matrix' in rec:
-            # Get the evaluation matrix data
-            classes = {k: v['score'] for k, v in rec['evaluation_matrix'].items()}
-            total = sum(classes.values())
-            values = list(classes.values())
-            
-            # Calculate metrics
-            gini = calcular_gini(classes)
-            entropy = calcular_entropia(classes)
-            
-            # Show detailed calculations with enhanced explanations
-            with st.expander("Detalhamento dos Cálculos"):
-                st.write(f'''
-                ### Índice de Gini
-                Valor atual: {gini:.3f}
-                Fórmula: 1 - Σ(pi²) = {1 - sum((v/total)**2 for v in values):.3f}
-                
-                ### Entropia
-                Valor atual: {entropy:.3f} bits
-                Fórmula: -Σ(pi * log2(pi)) = {-sum((v/total)*math.log2(v/total) for v in values if v != 0):.3f}
-                
-                ### Profundidade
-                Valor atual: {len(st.session_state.answers):.2f}
-                Total de nós: {len(st.session_state.answers) * 2 + 1}
-                Nós podados: {(len(st.session_state.answers) * 2 + 1) - len(st.session_state.answers) - 1}
-                
-                ### Taxa de Poda
-                Valor atual: {calcular_pruning(len(st.session_state.answers) * 2 + 1, 
-                            (len(st.session_state.answers) * 2 + 1) - len(st.session_state.answers) - 1):.2%}
-                Fórmula: (total_nós - nós_podados) / total_nós
-                ''')
-            
-            # Show metric weights with detailed explanations
-            st.subheader("Pesos das Métricas")
-            weights = {
-                "security": 0.4,
-                "scalability": 0.25,
-                "energy_efficiency": 0.20,
-                "governance": 0.15
-            }
-            
-            cols = st.columns(len(weights))
-            for i, (metric, weight) in enumerate(weights.items()):
-                with cols[i]:
-                    st.metric(
-                        label=f"Peso de {metric}",
-                        value=f"{float(weight):.2%}",
-                        help=f"Importância relativa da métrica {metric}"
-                    )
-            
-            # Show confidence calculation with enhanced explanations
-            if 'confidence_value' in rec:
-                confidence_value = rec['confidence_value']
-                scores = [float(v['score']) for v in rec['evaluation_matrix'].values()]
-                max_score = max(scores)
-                mean_score = sum(scores) / len(scores)
-                
-                with st.expander("Cálculo de Confiança"):
-                    st.write(f'''
-                    ### Cálculo de Confiança
-                    - Score máximo: {max_score:.3f}
-                    - Score médio: {mean_score:.3f}
-                    - Confiança: {confidence_value:.2%}
-                    - Threshold: 70%
-                    ''')
-            
-            # Create and display radar chart with updated metrics
-            metrics = {
-                "Índice de Gini": gini,
-                "Entropia": entropy / 4.0,  # Normalize to 0-1 range
-                "Profundidade": len(st.session_state.answers) / 8.0,  # Normalize to 0-1 range
-                "Taxa de Poda": calcular_pruning(
-                    len(st.session_state.answers) * 2 + 1,
-                    (len(st.session_state.answers) * 2 + 1) - len(st.session_state.answers) - 1
-                )
-            }
-            
-            fig_radar = create_metrics_radar_chart(metrics, weights)
-            st.plotly_chart(fig_radar, use_container_width=True)
-
 def show_recommendation(answers, weights, questions):
     recommendation = get_recommendation(answers, weights)
     
@@ -233,8 +119,61 @@ def show_recommendation(answers, weights, questions):
             <p><em>{recommendation.get('group_description', '')}</em></p>
         </div>
         """, unsafe_allow_html=True)
+
+        # Add detailed characteristic scores section
+        st.subheader("Scores por Característica")
+        with st.expander("Ver Detalhamento dos Scores"):
+            scores = recommendation.get('evaluation_matrix', {}).get(recommendation['dlt'], {}).get('metrics', {})
+            weights = {
+                "security": 0.4,
+                "scalability": 0.25,
+                "energy_efficiency": 0.20,
+                "governance": 0.15
+            }
+            
+            for metric, weight in weights.items():
+                score = float(scores.get(metric, 0))
+                weighted_score = score * weight
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric(
+                        label=f"{metric.title()}",
+                        value=f"{score:.2f}/5.0",
+                        help=f"Score base para {metric}"
+                    )
+                with col2:
+                    st.metric(
+                        label="Peso",
+                        value=f"{weight:.1%}",
+                        help=f"Peso atribuído para {metric}"
+                    )
+                with col3:
+                    st.metric(
+                        label="Score Ponderado",
+                        value=f"{weighted_score:.2f}",
+                        help=f"Score final após aplicação do peso"
+                    )
+                
+                # Add progress bar to visualize score
+                st.progress(score/5.0, text=f"Score relativo: {score/5.0:.1%}")
+                st.markdown("---")
+            
+            st.markdown('''
+            ### Como interpretar os scores:
+            
+            - **Score Base**: Valor de 0 a 5 atribuído para cada característica
+            - **Peso**: Importância relativa da característica no cálculo final
+            - **Score Ponderado**: Score Base × Peso = Contribuição final
+            
+            #### Pesos das Características:
+            - Segurança: 40% (Maior peso devido à criticidade dos dados de saúde)
+            - Escalabilidade: 25% (Importante para crescimento do sistema)
+            - Eficiência Energética: 20% (Impacto em custos operacionais)
+            - Governança: 15% (Flexibilidade administrativa)
+            ''')
         
-        # DLT Types comparison matrix with enhanced explanations
+        # DLT Types comparison matrix
         st.subheader("Comparação de Tipos de DLT")
         eval_matrix = recommendation.get('evaluation_matrix', {})
         if eval_matrix:
@@ -259,121 +198,7 @@ def show_recommendation(answers, weights, questions):
                 title="Comparação de Tipos de DLT"
             )
             st.plotly_chart(fig_dlt, use_container_width=True)
-            
-            with st.expander("Como interpretar a Comparação de Tipos de DLT?"):
-                st.write('''
-                ### Explicação do Gráfico Radar de DLTs
-                - Cada eixo representa uma característica chave (Segurança, Escalabilidade, etc.)
-                - Valores mais altos (mais distantes do centro) indicam melhor desempenho
-                - A área preenchida mostra o perfil completo de cada DLT
-                
-                ### Por que estas métricas?
-                - **Segurança**: Proteção dos dados e resistência a ataques
-                - **Escalabilidade**: Capacidade de crescimento da rede
-                - **Eficiência Energética**: Consumo de recursos
-                - **Governança**: Facilidade de gestão e controle
-                
-                ### Score Final
-                A DLT recomendada foi escolhida por ter o melhor equilíbrio entre estas características para seu caso.
-                ''')
-        
-        # Consensus Algorithm Groups matrix with enhanced explanations
-        st.subheader("Grupos de Algoritmos de Consenso")
-        consensus_group = recommendation.get('consensus_group')
-        if consensus_group in consensus_groups:
-            group_data = consensus_groups[consensus_group]
-            
-            # Create matrix for consensus group characteristics
-            characteristics = group_data.get('characteristics', {})
-            fig_group = go.Figure(data=[
-                go.Bar(
-                    x=list(characteristics.keys()),
-                    y=[float(v) for v in characteristics.values()],
-                    text=[f"{float(v):.1f}" for v in characteristics.values()],
-                    textposition='auto',
-                )
-            ])
-            fig_group.update_layout(
-                title=f"Características do Grupo: {consensus_group}",
-                yaxis_range=[0, 5],
-                showlegend=False
-            )
-            st.plotly_chart(fig_group, use_container_width=True)
-            
-            with st.expander("Como interpretar os Grupos de Algoritmos?"):
-                st.write(f'''
-                ### Explicação do Gráfico de Barras
-                - Cada barra representa uma característica do grupo {consensus_group}
-                - Altura das barras indica a força em cada aspecto
-                - Valores mais altos (próximos a 5) são melhores
-                
-                ### Razão da Escolha
-                Este grupo foi selecionado porque:
-                - Alinhamento com suas respostas sobre {", ".join(group_data.get('characteristics', {}).keys())}
-                - {group_data.get('description', 'Melhor adequação ao seu caso de uso')}
-                ''')
-        
-        # Combined analytical matrix with enhanced explanations
-        st.subheader("Matriz Analítica Combinada")
-        if eval_matrix:
-            # Prepare data for heatmap
-            matrix_data = []
-            y_labels = []
-            metrics = ['security', 'scalability', 'energy_efficiency', 'governance']
-            
-            for dlt, data in eval_matrix.items():
-                y_labels.append(dlt)
-                row = []
-                for metric in metrics:
-                    try:
-                        row.append(float(data.get('metrics', {}).get(metric, 0)))
-                    except (ValueError, TypeError):
-                        row.append(0.0)
-                matrix_data.append(row)
-            
-            fig_combined = go.Figure(data=go.Heatmap(
-                z=matrix_data,
-                x=metrics,
-                y=y_labels,
-                colorscale=[
-                    [0, "#ff0000"],    # Red for low values
-                    [0.4, "#ffff00"],  # Yellow for medium values
-                    [0.7, "#00ff00"]   # Green for high values
-                ],
-                hoverongaps=False,
-                hovertemplate="<b>DLT:</b> %{y}<br>" +
-                             "<b>Métrica:</b> %{x}<br>" +
-                             "<b>Valor:</b> %{z:.2f}<br>" +
-                             "<extra></extra>"
-            ))
-            
-            fig_combined.update_layout(
-                title="Análise Combinada de Métricas",
-                xaxis_title="Métricas",
-                yaxis_title="DLTs",
-                height=400
-            )
-            st.plotly_chart(fig_combined, use_container_width=True)
-            
-            with st.expander("Como interpretar a Matriz Analítica Combinada?"):
-                st.write('''
-                ### Explicação do Mapa de Calor
-                - Cores mais quentes (vermelho) indicam valores mais baixos
-                - Cores mais frias (verde) indicam valores mais altos
-                - Cada célula mostra o desempenho em uma métrica específica
-                
-                ### Como ler os resultados:
-                - **Linhas**: Diferentes tipos de DLT
-                - **Colunas**: Métricas avaliadas
-                - **Cores**: Intensidade do desempenho
-                
-                ### Processo de Decisão
-                A recomendação final considera:
-                - Pontuação em cada métrica
-                - Peso das características priorizadas
-                - Adequação ao seu caso de uso
-                ''')
-    
+
     with col2:
         st.subheader("Métricas de Confiança")
         confidence_score = recommendation.get('confidence', False)
@@ -385,20 +210,6 @@ def show_recommendation(answers, weights, questions):
             delta_color="normal"
         )
         
-        # Add metrics explanation with enhanced details
-        with st.expander("Como interpretar as métricas?"):
-            st.write("""
-            ### Índice de Confiança
-            Indica a confiabilidade da recomendação baseada em:
-            - Diferença entre scores
-            - Consistência das respostas
-            - Validação acadêmica
-            
-            **Alto** > 70% = Recomendação muito confiável
-            **Médio** ≤ 70% = Recomendação aceitável
-            """)
-        
-        # Academic validation section with enhanced details
         if recommendation.get('academic_validation'):
             with st.expander("Validação Acadêmica"):
                 validation = recommendation['academic_validation']
@@ -406,58 +217,7 @@ def show_recommendation(answers, weights, questions):
                 st.write(f"**Citações:** {validation['citations']}")
                 st.write(f"**Referência:** {validation['reference']}")
                 st.write(f"**Validação:** {validation['validation']}")
-    
-    # Show algorithm comparison with enhanced explanations
-    st.subheader("Comparação de Algoritmos")
-    comparison_data = compare_algorithms(recommendation['consensus_group'])
-    
-    if comparison_data:
-        fig = go.Figure()
-        
-        algorithms = list(comparison_data["Segurança"].keys())
-        metrics = list(comparison_data.keys())
-        
-        for alg in algorithms:
-            values = [comparison_data[metric][alg] for metric in metrics]
-            fig.add_trace(go.Scatterpolar(
-                r=values,
-                theta=metrics,
-                name=alg,
-                fill='toself'
-            ))
-        
-        fig.update_layout(
-            polar=dict(
-                radialaxis=dict(
-                    visible=True,
-                    range=[0, 5]
-                )),
-            showlegend=True,
-            title="Comparação de Algoritmos de Consenso"
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
-        
-        with st.expander("Como interpretar a Comparação de Algoritmos?"):
-            st.write('''
-            ### Explicação do Gráfico Radar de Algoritmos
-            - Cada algoritmo é representado por uma área colorida
-            - Eixos mostram diferentes aspectos de desempenho
-            - Maior área indica melhor desempenho geral
-            
-            ### Critérios de Avaliação:
-            - **Segurança**: Resistência a ataques e falhas
-            - **Escalabilidade**: Capacidade de processamento
-            - **Eficiência**: Uso de recursos
-            - **Governança**: Facilidade de gestão
-            
-            ### Escolha do Algoritmo
-            O algoritmo recomendado apresenta o melhor equilíbrio entre:
-            - Requisitos do seu projeto
-            - Características da DLT escolhida
-            - Pesos atribuídos a cada critério
-            ''')
-    
+
     return recommendation
 
 def run_decision_tree():
@@ -472,7 +232,7 @@ def run_decision_tree():
         st.session_state.answers = {}
         st.experimental_rerun()
 
-    st.markdown("---")  # Add a visual separator after the restart button
+    st.markdown("---")
     
     questions = [
         {
@@ -548,7 +308,7 @@ def run_decision_tree():
     progress_fig = create_progress_animation(current_phase, st.session_state.answers, questions)
     st.plotly_chart(progress_fig, use_container_width=True)
     
-    # Show current phase details with enhanced explanations
+    # Show current phase details
     st.markdown(f"### Fase Atual: {current_phase}")
     st.progress(progress)
 
