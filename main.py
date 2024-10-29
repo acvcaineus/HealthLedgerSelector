@@ -202,7 +202,7 @@ def show_reference_table():
             'DLT Permissionada Privada', 'DLT Permissionada Simples', 'DLT Híbrida',
             'DLT Híbrida', 'DLT com Consenso Delegado', 'DLT com Consenso Delegado',
             'DLT com Consenso Delegado', 'DLT Pública', 'DLT Pública',
-            'DLT Pública Permissionless'
+            'DLT Pública (Permissionless)'
         ],
         'Grupo de Algoritmo': [
             'Alta Segurança e Controle dos dados sensíveis',

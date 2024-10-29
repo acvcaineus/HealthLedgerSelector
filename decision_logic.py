@@ -9,6 +9,14 @@ consensus_groups = {
     'Alta Segurança e Descentralização de Dados Críticos': ['Proof of Work (PoW)', 'Proof of Stake (PoS)']
 }
 
+# New algorithm_specifics dictionary for DLT-specific algorithm metrics
+algorithm_specifics = {
+    "DLT Permissionada Privada": {"RAFT": {"security": 5, "scalability": 4, "energy_efficiency": 3}},
+    "DLT Híbrida": {"RAFT": {"security": 4, "scalability": 5, "energy_efficiency": 4}, 
+                    "IBFT": {"security": 5, "scalability": 4, "energy_efficiency": 3}},
+    "DLT Pública": {"PoW": {"security": 5, "scalability": 3, "energy_efficiency": 1}}
+}
+
 academic_scores = {
     "Hyperledger Fabric": {
         "score": 4.5,
@@ -35,6 +43,21 @@ academic_scores = {
         "validation": "Implementado em sistemas IoT de saúde"
     }
 }
+
+def select_specific_algorithm(dlt_type, priorities):
+    """
+    Selects the most suitable algorithm based on DLT type and user priorities
+    """
+    if dlt_type not in algorithm_specifics:
+        return "No suitable algorithm found"
+    
+    scores = {}
+    for alg, metrics in algorithm_specifics[dlt_type].items():
+        score = sum(metrics[metric] * float(priorities[metric]) 
+                   for metric in priorities if metric in metrics)
+        scores[alg] = score
+
+    return max(scores.items(), key=lambda x: x[1])[0] if scores else "No suitable algorithm found"
 
 def create_evaluation_matrix(answers):
     matrix = {
@@ -147,17 +170,21 @@ def get_recommendation(answers, weights):
     # Find DLT with maximum weighted score
     recommended_dlt = max(weighted_scores.items(), key=lambda x: float(x[1]))[0]
 
-    # Get consensus group based on DLT type
-    group_mapping = {
-        "DLT Permissionada Privada": "Alta Segurança e Controle",
-        "DLT Pública Permissionless": "Alta Segurança e Descentralização de Dados Críticos",
-        "DLT Permissionada Simples": "Alta Eficiência Operacional",
-        "DLT Híbrida": "Escalabilidade e Governança Flexível",
-        "DLT com Consenso Delegado": "Escalabilidade e Governança Flexível",
-        "DLT Pública": "Alta Escalabilidade em Redes IoT"
-    }
-
-    recommended_group = group_mapping.get(recommended_dlt, "Alta Segurança e Controle")
+    # Get consensus using the new select_specific_algorithm function
+    selected_algorithm = select_specific_algorithm(recommended_dlt, weights)
+    
+    # If no specific algorithm is found, use the existing consensus group mapping
+    if selected_algorithm == "No suitable algorithm found":
+        group_mapping = {
+            "DLT Permissionada Privada": "Alta Segurança e Controle",
+            "DLT Pública Permissionless": "Alta Segurança e Descentralização de Dados Críticos",
+            "DLT Permissionada Simples": "Alta Eficiência Operacional",
+            "DLT Híbrida": "Escalabilidade e Governança Flexível",
+            "DLT com Consenso Delegado": "Escalabilidade e Governança Flexível",
+            "DLT Pública": "Alta Escalabilidade em Redes IoT"
+        }
+        recommended_group = group_mapping.get(recommended_dlt, "Alta Segurança e Controle")
+        selected_algorithm = select_final_algorithm(recommended_group, weights)
     
     # Calculate confidence score and value
     confidence_scores = [float(score) for score in weighted_scores.values()]
@@ -166,9 +193,7 @@ def get_recommendation(answers, weights):
 
     return {
         "dlt": recommended_dlt,
-        "consensus_group": recommended_group,
-        "consensus": select_final_algorithm(recommended_group, weights),
-        "algorithms": consensus_groups[recommended_group],
+        "consensus": selected_algorithm,
         "evaluation_matrix": evaluation_matrix,
         "confidence": is_reliable,
         "confidence_value": confidence_value,
