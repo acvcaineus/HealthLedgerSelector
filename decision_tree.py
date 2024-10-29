@@ -1,6 +1,6 @@
 import streamlit as st
 import plotly.graph_objects as go
-from decision_logic import get_recommendation, consensus_algorithms, consensus_groups
+from decision_logic import get_recommendation, consensus_algorithms, consensus_groups, compare_algorithms
 from database import save_recommendation
 import networkx as nx
 from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_decisoria, 
@@ -119,28 +119,97 @@ def show_recommendation(answers, weights, questions):
         </div>
         """, unsafe_allow_html=True)
         
-        # Enhanced algorithm group explanation
-        with st.expander("Detalhes do Grupo de Algoritmos"):
-            st.write("### Características do Grupo")
-            characteristics = recommendation.get('group_characteristics', {})
-            for char, value in characteristics.items():
-                st.metric(
-                    label=char.replace('_', ' ').title(),
-                    value=f"{float(value):.1f}/5.0"
-                )
+        # DLT Types comparison matrix
+        st.subheader("Comparação de Tipos de DLT")
+        eval_matrix = recommendation.get('evaluation_matrix', {})
+        if eval_matrix:
+            dlt_comparison_data = []
+            dlts = list(eval_matrix.keys())
+            metrics = ['security', 'scalability', 'energy_efficiency', 'governance']
             
-            st.write("### Descrição Detalhada")
-            st.markdown(recommendation.get('group_description', 'Descrição não disponível'))
+            for dlt in dlts:
+                dlt_data = eval_matrix[dlt].get('metrics', {})
+                values = [float(dlt_data.get(metric, 0)) for metric in metrics]
+                dlt_comparison_data.append(go.Scatterpolar(
+                    r=values,
+                    theta=metrics,
+                    name=dlt,
+                    fill='toself'
+                ))
+            
+            fig_dlt = go.Figure(data=dlt_comparison_data)
+            fig_dlt.update_layout(
+                polar=dict(radialaxis=dict(visible=True, range=[0, 5])),
+                showlegend=True,
+                title="Comparação de Tipos de DLT"
+            )
+            st.plotly_chart(fig_dlt, use_container_width=True)
         
-        # Academic validation section
-        if recommendation.get('academic_validation'):
-            with st.expander("Validação Acadêmica"):
-                validation = recommendation['academic_validation']
-                st.metric("Score Acadêmico", f"{validation['score']:.1f}/5.0")
-                st.write(f"**Citações:** {validation['citations']}")
-                st.write(f"**Referência:** {validation['reference']}")
-                st.write(f"**Validação:** {validation['validation']}")
-
+        # Consensus Algorithm Groups matrix
+        st.subheader("Grupos de Algoritmos de Consenso")
+        consensus_group = recommendation.get('consensus_group')
+        if consensus_group in consensus_groups:
+            group_data = consensus_groups[consensus_group]
+            
+            # Create matrix for consensus group characteristics
+            characteristics = group_data.get('characteristics', {})
+            fig_group = go.Figure(data=[
+                go.Bar(
+                    x=list(characteristics.keys()),
+                    y=[float(v) for v in characteristics.values()],
+                    text=[f"{float(v):.1f}" for v in characteristics.values()],
+                    textposition='auto',
+                )
+            ])
+            fig_group.update_layout(
+                title=f"Características do Grupo: {consensus_group}",
+                yaxis_range=[0, 5],
+                showlegend=False
+            )
+            st.plotly_chart(fig_group, use_container_width=True)
+        
+        # Combined analytical matrix
+        st.subheader("Matriz Analítica Combinada")
+        if eval_matrix:
+            # Prepare data for heatmap
+            matrix_data = []
+            y_labels = []
+            metrics = ['security', 'scalability', 'energy_efficiency', 'governance']
+            
+            for dlt, data in eval_matrix.items():
+                y_labels.append(dlt)
+                row = []
+                for metric in metrics:
+                    try:
+                        row.append(float(data.get('metrics', {}).get(metric, 0)))
+                    except (ValueError, TypeError):
+                        row.append(0.0)
+                matrix_data.append(row)
+            
+            fig_combined = go.Figure(data=go.Heatmap(
+                z=matrix_data,
+                x=metrics,
+                y=y_labels,
+                colorscale=[
+                    [0, "#ff0000"],    # Red for low values
+                    [0.4, "#ffff00"],  # Yellow for medium values
+                    [0.7, "#00ff00"]   # Green for high values
+                ],
+                hoverongaps=False,
+                hovertemplate="<b>DLT:</b> %{y}<br>" +
+                             "<b>Métrica:</b> %{x}<br>" +
+                             "<b>Valor:</b> %{z:.2f}<br>" +
+                             "<extra></extra>"
+            ))
+            
+            fig_combined.update_layout(
+                title="Análise Combinada de Métricas",
+                xaxis_title="Métricas",
+                yaxis_title="DLTs",
+                height=400
+            )
+            st.plotly_chart(fig_combined, use_container_width=True)
+    
     with col2:
         st.subheader("Métricas de Confiança")
         confidence_score = recommendation.get('confidence', False)
@@ -164,6 +233,15 @@ def show_recommendation(answers, weights, questions):
             **Alto** > 70% = Recomendação muito confiável
             **Médio** ≤ 70% = Recomendação aceitável
             """)
+        
+        # Academic validation section
+        if recommendation.get('academic_validation'):
+            with st.expander("Validação Acadêmica"):
+                validation = recommendation['academic_validation']
+                st.metric("Score Acadêmico", f"{validation['score']:.1f}/5.0")
+                st.write(f"**Citações:** {validation['citations']}")
+                st.write(f"**Referência:** {validation['reference']}")
+                st.write(f"**Validação:** {validation['validation']}")
     
     # Show algorithm comparison
     st.subheader("Comparação de Algoritmos")
