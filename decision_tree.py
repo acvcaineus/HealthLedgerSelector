@@ -11,12 +11,10 @@ def create_progress_animation(current_phase, answers, questions):
     phases = ['Aplicação', 'Consenso', 'Infraestrutura', 'Internet']
     fig = go.Figure()
     
-    # Calculate progress for each phase
     phase_progress = {phase: 0 for phase in phases}
     phase_total = {phase: 0 for phase in phases}
     phase_characteristics = {phase: set() for phase in phases}
     
-    # Collect phase information
     for q in questions:
         phase = q['phase']
         phase_total[phase] += 1
@@ -24,20 +22,17 @@ def create_progress_animation(current_phase, answers, questions):
         if q['id'] in answers:
             phase_progress[phase] += 1
     
-    # Add animated nodes with progress indicators
     for i, phase in enumerate(phases):
-        # Set color and size based on phase status
         if phase == current_phase:
-            color = '#3498db'  # Blue for current
-            size = 45  # Larger for current phase
+            color = '#3498db'
+            size = 45
         elif phase_progress[phase] > 0:
-            color = '#2ecc71'  # Green for completed
+            color = '#2ecc71'
             size = 40
         else:
-            color = '#bdc3c7'  # Gray for pending
+            color = '#bdc3c7'
             size = 35
             
-        # Create tooltip text
         tooltip = f"<b>{phase}</b><br>"
         tooltip += f"Progresso: {phase_progress[phase]}/{phase_total[phase]}<br>"
         tooltip += "<br>Características:<br>"
@@ -57,7 +52,6 @@ def create_progress_animation(current_phase, answers, questions):
             showlegend=False
         ))
         
-        # Add phase label with progress
         fig.add_annotation(
             x=i, y=-0.2,
             text=f"{phase}<br>({phase_progress[phase]}/{phase_total[phase]})",
@@ -65,7 +59,6 @@ def create_progress_animation(current_phase, answers, questions):
             font=dict(size=12)
         )
         
-        # Add connecting lines
         if i < len(phases) - 1:
             fig.add_trace(go.Scatter(
                 x=[i, i+1],
@@ -79,7 +72,6 @@ def create_progress_animation(current_phase, answers, questions):
                 showlegend=False
             ))
     
-    # Update layout
     fig.update_layout(
         showlegend=False,
         height=200,
@@ -102,23 +94,34 @@ def create_progress_animation(current_phase, answers, questions):
     return fig
 
 def show_recommendation(answers, weights, questions):
-    """
-    Display and save DLT recommendation based on user answers and weights.
-    """
-    # Get recommendation
     recommendation = get_recommendation(answers, weights)
     
-    # Display DLT recommendation
-    st.header("Recomendação de DLT")
+    col1, col2 = st.columns([3, 1])
+    
+    with col1:
+        st.header("Recomendação de DLT")
+    
+    with col2:
+        if st.session_state.get('authenticated', False):
+            if st.button("💾 Salvar Recomendação", 
+                        help="Clique para salvar esta recomendação no seu perfil",
+                        key="save_recommendation"):
+                save_recommendation(
+                    st.session_state.username,
+                    "Healthcare",
+                    recommendation
+                )
+                st.success("✅ Recomendação salva com sucesso!")
+        else:
+            st.info("Faça login para salvar recomendações")
+    
     st.write(f"DLT Recomendada: {recommendation['dlt']}")
     
-    # Display consensus group and algorithm
     st.subheader("Algoritmo de Consenso")
     st.write(f"Grupo de Consenso: {recommendation.get('consensus_group', 'Não disponível')}")
     st.write(f"Algoritmo: {recommendation.get('consensus', 'Não disponível')}")
     st.write(f"Descrição: {recommendation.get('group_description', '')}")
     
-    # Add DLT Evaluation Matrix
     st.subheader("Matriz de Avaliação de DLTs")
     with st.expander("Ver Matriz de Avaliação de DLTs"):
         evaluation_matrix = recommendation.get('evaluation_matrix', {})
@@ -147,7 +150,6 @@ def show_recommendation(answers, weights, questions):
         - Passe o mouse sobre os quadrados para ver os valores exatos
         ''')
 
-    # Add Algorithm Groups Matrix
     st.subheader("Matriz de Avaliação dos Grupos de Algoritmos")
     with st.expander("Ver Matriz de Avaliação dos Grupos"):
         group_data = {
@@ -174,7 +176,6 @@ def show_recommendation(answers, weights, questions):
         - Os valores são baseados em pesquisas acadêmicas
         ''')
 
-    # Add Consensus Algorithms Matrix
     if 'consensus_group' in recommendation:
         st.subheader("Matriz de Avaliação dos Algoritmos de Consenso")
         with st.expander("Ver Matriz de Avaliação dos Algoritmos"):
@@ -205,7 +206,6 @@ def show_recommendation(answers, weights, questions):
             - Os scores são baseados em validação acadêmica
             ''')
 
-    # Add confidence metrics
     if 'confidence_value' in recommendation:
         st.subheader("Métricas de Confiança")
         with st.expander("Ver Métricas de Confiança"):
@@ -217,7 +217,6 @@ def show_recommendation(answers, weights, questions):
             )
             st.progress(conf_val)
             
-            # Add detailed confidence explanation
             st.markdown(f'''
             ### Interpretação do Índice de Confiança:
             - Abaixo de 60%: Baixa confiança
@@ -247,7 +246,6 @@ def show_recommendation(answers, weights, questions):
             - Verifique casos de uso similares
             ''')
             
-            # Add visualization of confidence components
             if 'confidence_components' in recommendation:
                 components = recommendation['confidence_components']
                 fig = go.Figure(data=[
@@ -265,14 +263,6 @@ def show_recommendation(answers, weights, questions):
                     yaxis=dict(range=[0, 1])
                 )
                 st.plotly_chart(fig, use_container_width=True)
-    
-    # Save recommendation if user is authenticated
-    if 'username' in st.session_state:
-        save_recommendation(
-            st.session_state.username,
-            "Healthcare",
-            recommendation
-        )
 
 def run_decision_tree():
     if 'answers' not in st.session_state:
@@ -280,7 +270,6 @@ def run_decision_tree():
 
     st.title("Framework de Seleção de DLT")
 
-    # Add restart button at the top with warning
     st.warning("⚠️ Atenção: Reiniciar o processo irá apagar todas as respostas já fornecidas!")
     if st.button("🔄 Reiniciar Processo", help="Clique para começar um novo processo de seleção"):
         st.session_state.answers = {}
@@ -358,11 +347,9 @@ def run_decision_tree():
     current_phase = next((q["phase"] for q in questions if q["id"] not in st.session_state.answers), "Completo")
     progress = len(st.session_state.answers) / len(questions)
     
-    # Show progress animation
     progress_fig = create_progress_animation(current_phase, st.session_state.answers, questions)
     st.plotly_chart(progress_fig, use_container_width=True)
     
-    # Show current phase details
     st.markdown(f"### Fase Atual: {current_phase}")
     st.progress(progress)
 
