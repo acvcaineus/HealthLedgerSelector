@@ -1,5 +1,4 @@
 from dlt_data import questions, dlt_classes, consensus_algorithms
-from metrics import calcular_gini, calcular_entropia, calcular_profundidade_decisoria, calcular_pruning, calcular_confiabilidade_recomendacao
 
 # Updated consensus groups with more detailed characteristics
 consensus_groups = {
@@ -59,7 +58,7 @@ consensus_groups = {
 dlt_consensus_mapping = {
     "DLT Permissionada Privada": {
         'group': "Alta Segurança e Controle",
-        'weight': 1.2,  # Higher weight for better matching
+        'weight': 1.2,
         'characteristics': ['security', 'governance']
     },
     "DLT Pública Permissionless": {
@@ -89,7 +88,7 @@ dlt_consensus_mapping = {
     }
 }
 
-# Academic validation scores for different DLTs
+# Academic validation scores
 academic_scores = {
     "Hyperledger Fabric": {
         "score": 4.5,
@@ -117,7 +116,7 @@ academic_scores = {
     }
 }
 
-def calculate_dlt_score(dlt_type, metrics, weights):
+def calculate_dlt_score(dlt_type, metrics_data, weights):
     """
     Calculate the weighted score for a DLT type considering its characteristics
     and academic validation.
@@ -130,9 +129,9 @@ def calculate_dlt_score(dlt_type, metrics, weights):
     
     # Calculate base score from metrics
     base_score = sum(
-        float(metrics[metric]) * float(weights[metric])
+        float(metrics_data[metric]) * float(weights[metric])
         for metric in mapping['characteristics']
-        if metric in metrics and metric in weights
+        if metric in metrics_data and metric in weights
     )
     
     # Apply group characteristics bonus
@@ -167,46 +166,86 @@ def get_recommendation(answers, weights):
     """
     Get DLT and consensus algorithm recommendations based on user answers and weights.
     """
-    evaluation_matrix = create_evaluation_matrix(answers)
-    
-    # Calculate weighted scores for each DLT
-    weighted_scores = {}
-    for dlt, data in evaluation_matrix.items():
-        score = calculate_dlt_score(dlt, data['metrics'], weights)
-        weighted_scores[dlt] = float(score)
-    
-    # Find DLT with maximum weighted score
-    recommended_dlt = max(weighted_scores.items(), key=lambda x: float(x[1]))[0]
-    
-    # Get corresponding consensus group
-    recommended_group = dlt_consensus_mapping[recommended_dlt]['group']
-    
-    # Select best algorithm from the group
-    recommended_algorithm = select_final_algorithm(recommended_group, weights)
-    
-    # Calculate confidence metrics
-    confidence_scores = list(weighted_scores.values())
-    confidence_value = (max(confidence_scores) - (sum(confidence_scores) / len(confidence_scores))) / max(confidence_scores)
-    is_reliable = confidence_value > 0.7
-    
-    # Get academic validation if available
-    academic_validation = {}
-    for dlt_name, score_data in academic_scores.items():
-        if dlt_name.lower() in recommended_dlt.lower():
-            academic_validation = score_data
-            break
-    
-    return {
-        "dlt": recommended_dlt,
-        "consensus": recommended_algorithm,
-        "consensus_group": recommended_group,
-        "group_description": consensus_groups[recommended_group]['description'],
-        "evaluation_matrix": evaluation_matrix,
-        "confidence": is_reliable,
-        "confidence_value": confidence_value,
-        "academic_validation": academic_validation,
-        "group_characteristics": consensus_groups[recommended_group]['characteristics']
-    }
+    try:
+        evaluation_matrix = create_evaluation_matrix(answers)
+        
+        # Calculate weighted scores for each DLT with error handling
+        weighted_scores = {}
+        for dlt, data in evaluation_matrix.items():
+            try:
+                score = calculate_dlt_score(dlt, data['metrics'], weights)
+                weighted_scores[dlt] = float(score)
+            except (KeyError, ValueError, TypeError) as e:
+                print(f"Error calculating score for {dlt}: {str(e)}")
+                weighted_scores[dlt] = 0.0
+        
+        # Find DLT with maximum weighted score
+        if not weighted_scores:
+            raise ValueError("No valid scores calculated")
+            
+        recommended_dlt = max(weighted_scores.items(), key=lambda x: float(x[1]))[0]
+        
+        # Get corresponding consensus group with error handling
+        recommended_group = "Não disponível"
+        group_description = ""
+        group_characteristics = {}
+        
+        if recommended_dlt in dlt_consensus_mapping:
+            mapping = dlt_consensus_mapping[recommended_dlt]
+            recommended_group = mapping['group']
+            if recommended_group in consensus_groups:
+                group_description = consensus_groups[recommended_group].get('description', '')
+                group_characteristics = consensus_groups[recommended_group].get('characteristics', {})
+        
+        # Select best algorithm from the group
+        recommended_algorithm = "Não disponível"
+        if recommended_group in consensus_groups:
+            recommended_algorithm = select_final_algorithm(recommended_group, weights)
+        
+        # Calculate confidence metrics with error handling
+        confidence_scores = list(weighted_scores.values())
+        confidence_value = 0.0
+        is_reliable = False
+        
+        if confidence_scores:
+            max_score = max(confidence_scores)
+            if max_score > 0:
+                confidence_value = (max_score - (sum(confidence_scores) / len(confidence_scores))) / max_score
+                is_reliable = confidence_value > 0.7
+        
+        # Get academic validation with error handling
+        academic_validation = {}
+        for dlt_name, score_data in academic_scores.items():
+            if dlt_name.lower() in recommended_dlt.lower():
+                academic_validation = score_data
+                break
+        
+        return {
+            "dlt": recommended_dlt,
+            "consensus": recommended_algorithm,
+            "consensus_group": recommended_group,
+            "group_description": group_description,
+            "evaluation_matrix": evaluation_matrix,
+            "confidence": is_reliable,
+            "confidence_value": confidence_value,
+            "academic_validation": academic_validation,
+            "group_characteristics": group_characteristics,
+            "weighted_scores": weighted_scores
+        }
+    except Exception as e:
+        print(f"Error in get_recommendation: {str(e)}")
+        return {
+            "dlt": "Não disponível",
+            "consensus": "Não disponível",
+            "consensus_group": "Não disponível",
+            "group_description": "Não foi possível gerar uma recomendação",
+            "evaluation_matrix": {},
+            "confidence": False,
+            "confidence_value": 0.0,
+            "academic_validation": {},
+            "group_characteristics": {},
+            "weighted_scores": {}
+        }
 
 def create_evaluation_matrix(answers):
     """
@@ -267,7 +306,7 @@ def select_final_algorithm(consensus_group, weights):
     Select the final consensus algorithm based on the group and weights.
     """
     if consensus_group not in consensus_groups:
-        return "No suitable algorithm found"
+        return "Não disponível"
     
     algorithms = consensus_groups[consensus_group]['algorithms']
     scores = {}
@@ -281,7 +320,7 @@ def select_final_algorithm(consensus_group, weights):
             )
             scores[alg] = float(score)
     
-    return max(scores.items(), key=lambda x: float(x[1]))[0] if scores else "No suitable algorithm found"
+    return max(scores.items(), key=lambda x: float(x[1]))[0] if scores else "Não disponível"
 
 def compare_algorithms(consensus_group):
     """
