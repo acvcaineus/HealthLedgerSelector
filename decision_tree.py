@@ -144,6 +144,23 @@ def show_recommendation(answers, weights, questions):
                 title="Comparação de Tipos de DLT"
             )
             st.plotly_chart(fig_dlt, use_container_width=True)
+            
+            with st.expander("Como interpretar a Comparação de Tipos de DLT?"):
+                st.write('''
+                ### Explicação do Gráfico Radar de DLTs
+                - Cada eixo representa uma característica chave (Segurança, Escalabilidade, etc.)
+                - Valores mais altos (mais distantes do centro) indicam melhor desempenho
+                - A área preenchida mostra o perfil completo de cada DLT
+                
+                ### Por que estas métricas?
+                - **Segurança**: Proteção dos dados e resistência a ataques
+                - **Escalabilidade**: Capacidade de crescimento da rede
+                - **Eficiência Energética**: Consumo de recursos
+                - **Governança**: Facilidade de gestão e controle
+                
+                ### Score Final
+                A DLT recomendada foi escolhida por ter o melhor equilíbrio entre estas características para seu caso.
+                ''')
         
         # Consensus Algorithm Groups matrix
         st.subheader("Grupos de Algoritmos de Consenso")
@@ -167,6 +184,19 @@ def show_recommendation(answers, weights, questions):
                 showlegend=False
             )
             st.plotly_chart(fig_group, use_container_width=True)
+            
+            with st.expander("Como interpretar os Grupos de Algoritmos?"):
+                st.write(f'''
+                ### Explicação do Gráfico de Barras
+                - Cada barra representa uma característica do grupo {consensus_group}
+                - Altura das barras indica a força em cada aspecto
+                - Valores mais altos (próximos a 5) são melhores
+                
+                ### Razão da Escolha
+                Este grupo foi selecionado porque:
+                - Alinhamento com suas respostas sobre {", ".join(group_data.get('characteristics', {}).keys())}
+                - {group_data.get('description', 'Melhor adequação ao seu caso de uso')}
+                ''')
         
         # Combined analytical matrix
         st.subheader("Matriz Analítica Combinada")
@@ -209,6 +239,25 @@ def show_recommendation(answers, weights, questions):
                 height=400
             )
             st.plotly_chart(fig_combined, use_container_width=True)
+            
+            with st.expander("Como interpretar a Matriz Analítica Combinada?"):
+                st.write('''
+                ### Explicação do Mapa de Calor
+                - Cores mais quentes (vermelho) indicam valores mais baixos
+                - Cores mais frias (verde) indicam valores mais altos
+                - Cada célula mostra o desempenho em uma métrica específica
+                
+                ### Como ler os resultados:
+                - **Linhas**: Diferentes tipos de DLT
+                - **Colunas**: Métricas avaliadas
+                - **Cores**: Intensidade do desempenho
+                
+                ### Processo de Decisão
+                A recomendação final considera:
+                - Pontuação em cada métrica
+                - Peso das características priorizadas
+                - Adequação ao seu caso de uso
+                ''')
     
     with col2:
         st.subheader("Métricas de Confiança")
@@ -273,6 +322,26 @@ def show_recommendation(answers, weights, questions):
         )
         
         st.plotly_chart(fig, use_container_width=True)
+        
+        with st.expander("Como interpretar a Comparação de Algoritmos?"):
+            st.write('''
+            ### Explicação do Gráfico Radar de Algoritmos
+            - Cada algoritmo é representado por uma área colorida
+            - Eixos mostram diferentes aspectos de desempenho
+            - Maior área indica melhor desempenho geral
+            
+            ### Critérios de Avaliação:
+            - **Segurança**: Resistência a ataques e falhas
+            - **Escalabilidade**: Capacidade de processamento
+            - **Eficiência**: Uso de recursos
+            - **Governança**: Facilidade de gestão
+            
+            ### Escolha do Algoritmo
+            O algoritmo recomendado apresenta o melhor equilíbrio entre:
+            - Requisitos do seu projeto
+            - Características da DLT escolhida
+            - Pesos atribuídos a cada critério
+            ''')
     
     return recommendation
 
