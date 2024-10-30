@@ -5,7 +5,7 @@ from decision_logic import get_recommendation, consensus_algorithms, consensus_g
 from database import save_recommendation
 import networkx as nx
 from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_decisoria, 
-                    calcular_pruning, calcular_confiabilidade_recomendacao)
+                    calcular_pruning, calcular_peso_caracteristica, get_metric_explanation)
 
 def create_progress_animation(current_phase, answers, questions):
     phases = ['Aplicação', 'Consenso', 'Infraestrutura', 'Internet']
@@ -93,182 +93,136 @@ def create_progress_animation(current_phase, answers, questions):
     
     return fig
 
-def show_recommendation(answers, weights, questions):
-    recommendation = get_recommendation(answers, weights)
+def show_metrics():
+    st.header("Métricas Técnicas do Processo de Decisão")
     
-    st.header("Recomendação de DLT")
-    st.write(f"DLT Recomendada: **{recommendation['dlt']}**")
-    
-    # Save button in a container with custom styling
-    save_container = st.container()
-    with save_container:
-        if st.session_state.get('authenticated', False):
-            col1, col2, col3 = st.columns([1, 2, 1])
-            with col2:
-                if st.button(
-                    "💾 Salvar Recomendação",
-                    help="Clique para salvar esta recomendação no seu perfil",
-                    key="save_recommendation",
-                    type="primary",  # Makes the button more prominent
-                    use_container_width=True  # Makes the button wider
-                ):
-                    save_recommendation(
-                        st.session_state.username,
-                        "Healthcare",
-                        recommendation
-                    )
-                    st.success("✅ Recomendação salva com sucesso! Você pode acessá-la no seu perfil.")
-        else:
-            st.warning("⚠️ Faça login para salvar recomendações e acessá-las posteriormente.")
-    
-    st.markdown("---")  # Visual separator
-    
-    st.subheader("Algoritmo de Consenso")
-    st.write(f"Grupo de Consenso: {recommendation.get('consensus_group', 'Não disponível')}")
-    st.write(f"Algoritmo: {recommendation.get('consensus', 'Não disponível')}")
-    st.write(f"Descrição: {recommendation.get('group_description', '')}")
-    
-    st.subheader("Matriz de Avaliação de DLTs")
-    with st.expander("Ver Matriz de Avaliação de DLTs"):
-        evaluation_matrix = recommendation.get('evaluation_matrix', {})
-        dlt_scores = {
-            metric: [float(data['metrics'][metric]) for data in evaluation_matrix.values()]
-            for metric in ['security', 'scalability', 'energy_efficiency', 'governance']
-        }
+    if 'recommendation' in st.session_state and 'answers' in st.session_state:
+        rec = st.session_state.recommendation
+        answers = st.session_state.answers
         
-        fig_dlt = go.Figure(data=go.Heatmap(
-            z=list(dlt_scores.values()),
-            x=list(evaluation_matrix.keys()),
-            y=list(dlt_scores.keys()),
-            colorscale='Viridis',
-            hoverongaps=False,
-            hovertemplate="<b>DLT:</b> %{x}<br>" +
-                         "<b>Métrica:</b> %{y}<br>" +
-                         "<b>Score:</b> %{z:.2f}<br>" +
-                         "<extra></extra>"
-        ))
-        st.plotly_chart(fig_dlt, use_container_width=True)
-        st.markdown('''
-        ### Como interpretar a Matriz de DLTs:
-        - Cores mais escuras indicam scores mais altos
-        - Cada linha representa uma métrica diferente
-        - Cada coluna representa uma DLT
-        - Passe o mouse sobre os quadrados para ver os valores exatos
-        ''')
-
-    st.subheader("Matriz de Avaliação dos Grupos de Algoritmos")
-    with st.expander("Ver Matriz de Avaliação dos Grupos"):
-        group_data = {
-            group: data['characteristics']
-            for group, data in consensus_groups.items()
-        }
-        
-        fig_groups = go.Figure(data=go.Heatmap(
-            z=[[float(v) for v in group.values()] for group in group_data.values()],
-            x=list(next(iter(group_data.values())).keys()),
-            y=list(group_data.keys()),
-            colorscale='Viridis',
-            hovertemplate="<b>Grupo:</b> %{y}<br>" +
-                         "<b>Métrica:</b> %{x}<br>" +
-                         "<b>Score:</b> %{z:.2f}<br>" +
-                         "<extra></extra>"
-        ))
-        st.plotly_chart(fig_groups, use_container_width=True)
-        st.markdown('''
-        ### Como interpretar a Matriz de Grupos:
-        - Cada linha representa um grupo de algoritmos
-        - Cada coluna representa uma característica
-        - A intensidade da cor indica o score
-        - Os valores são baseados em pesquisas acadêmicas
-        ''')
-
-    if 'consensus_group' in recommendation:
-        st.subheader("Matriz de Avaliação dos Algoritmos de Consenso")
-        with st.expander("Ver Matriz de Avaliação dos Algoritmos"):
-            recommended_group = recommendation['consensus_group']
-            algorithms = consensus_groups[recommended_group]['algorithms']
+        # Calculate all metrics
+        if 'evaluation_matrix' in rec:
+            classes = {k: v['score'] for k, v in rec['evaluation_matrix'].items()}
+            gini = calcular_gini(classes)
+            entropy = calcular_entropia(classes)
+            depth = calcular_profundidade_decisoria(list(range(len(answers))))
             
-            algo_data = {
-                algo: consensus_algorithms[algo]
-                for algo in algorithms if algo in consensus_algorithms
+            total_nos = len(answers) * 2 + 1
+            nos_podados = total_nos - len(answers) - 1
+            pruning_metrics = calcular_pruning(total_nos, nos_podados)
+            
+            # Display metrics in organized sections
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.subheader("📊 Métricas de Classificação")
+                gini_exp = get_metric_explanation("gini", gini)
+                st.metric(
+                    label="Índice de Gini",
+                    value=f"{gini:.3f}",
+                    help=gini_exp["description"]
+                )
+                
+                with st.expander("ℹ️ Detalhes do Índice de Gini"):
+                    st.markdown(f"""
+                    **Fórmula:** {gini_exp["formula"]}
+                    
+                    **Interpretação:** {gini_exp["interpretation"]}
+                    
+                    **Valor Atual:** {gini:.3f}
+                    """)
+                
+                entropy_exp = get_metric_explanation("entropy", entropy)
+                st.metric(
+                    label="Entropia",
+                    value=f"{entropy:.3f} bits",
+                    help=entropy_exp["description"]
+                )
+            
+            with col2:
+                st.subheader("🌳 Métricas da Árvore")
+                st.metric(
+                    label="Profundidade da Árvore",
+                    value=f"{depth:.1f}",
+                    help="Número médio de decisões necessárias"
+                )
+                
+                pruning_exp = get_metric_explanation("pruning", pruning_metrics)
+                st.metric(
+                    label="Taxa de Poda",
+                    value=f"{pruning_metrics['pruning_ratio']:.2%}",
+                    help=pruning_exp["description"]
+                )
+            
+            # Priority Characteristic Weights Section
+            st.subheader("⚖️ Pesos das Características")
+            
+            weights = {
+                "security": 0.4,
+                "scalability": 0.25,
+                "energy_efficiency": 0.20,
+                "governance": 0.15
             }
             
-            fig_algo = go.Figure(data=go.Heatmap(
-                z=[[float(v) for v in algo.values()] for algo in algo_data.values()],
-                x=list(next(iter(algo_data.values())).keys()),
-                y=list(algo_data.keys()),
-                colorscale='Viridis',
-                hovertemplate="<b>Algoritmo:</b> %{y}<br>" +
-                             "<b>Métrica:</b> %{x}<br>" +
-                             "<b>Score:</b> %{z:.2f}<br>" +
-                             "<extra></extra>"
-            ))
-            st.plotly_chart(fig_algo, use_container_width=True)
-            st.markdown(f'''
-            ### Como interpretar a Matriz de Algoritmos:
-            - Mostra os algoritmos do grupo {recommended_group}
-            - Cada linha é um algoritmo específico
-            - Cada coluna é uma característica
-            - Os scores são baseados em validação acadêmica
-            ''')
-
-    if 'confidence_value' in recommendation:
-        st.subheader("Métricas de Confiança")
-        with st.expander("Ver Métricas de Confiança"):
-            conf_val = float(recommendation['confidence_value'])
-            st.metric(
-                "Índice de Confiança",
-                f"{conf_val:.2%}",
-                help="Quanto maior, mais confiável é a recomendação"
-            )
-            st.progress(conf_val)
+            characteristic_weights = {}
+            for char in weights.keys():
+                weight_metrics = calcular_peso_caracteristica(char, weights, answers)
+                characteristic_weights[char] = weight_metrics
             
-            st.markdown(f'''
-            ### Interpretação do Índice de Confiança:
-            - Abaixo de 60%: Baixa confiança
-            - Entre 60% e 80%: Confiança moderada
-            - Acima de 80%: Alta confiança
+            # Create weight visualization
+            fig = go.Figure()
             
-            Valor atual: {conf_val:.2%} - {'Alta' if conf_val > 0.8 else 'Moderada' if conf_val > 0.6 else 'Baixa'} confiança
-            ''')
-            
-            st.markdown('''
-            ### Como melhorar a confiança da recomendação:
-            
-            1. **Consistência nas Respostas**
-            - Verifique se suas respostas são consistentes com o caso de uso
-            - Revise respostas que parecem contraditórias
-            
-            2. **Características Priorizadas**
-            - Certifique-se de que as características mais importantes têm peso adequado
-            - Ajuste os pesos se necessário
-            
-            3. **Alinhamento com Requisitos**
-            - Verifique se a DLT recomendada atende todos os requisitos críticos
-            - Considere requisitos não funcionais
-            
-            4. **Validação Acadêmica**
-            - Considere a pontuação de validação acadêmica
-            - Verifique casos de uso similares
-            ''')
-            
-            if 'confidence_components' in recommendation:
-                components = recommendation['confidence_components']
-                fig = go.Figure(data=[
-                    go.Bar(
-                        x=list(components.keys()),
-                        y=list(components.values()),
-                        text=[f'{v:.1%}' for v in components.values()],
-                        textposition='auto',
+            for char, metrics in characteristic_weights.items():
+                fig.add_trace(go.Bar(
+                    name=char.capitalize(),
+                    x=[char],
+                    y=[metrics['peso_ajustado']],
+                    text=[f"{metrics['peso_ajustado']:.2%}"],
+                    textposition='auto',
+                    hovertemplate=(
+                        f"<b>{char.capitalize()}</b><br>" +
+                        "Peso Ajustado: %{y:.2%}<br>" +
+                        f"Impacto das Respostas: {metrics['impacto_respostas']:.2%}<br>" +
+                        f"Confiança: {metrics['confianca']:.2%}"
                     )
-                ])
-                fig.update_layout(
-                    title="Componentes do Índice de Confiança",
-                    xaxis_title="Componente",
-                    yaxis_title="Contribuição",
-                    yaxis=dict(range=[0, 1])
-                )
-                st.plotly_chart(fig, use_container_width=True)
+                ))
+            
+            fig.update_layout(
+                title="Pesos Ajustados das Características",
+                yaxis_title="Peso Relativo",
+                barmode='group',
+                showlegend=True
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Detailed weight analysis
+            with st.expander("📈 Análise Detalhada dos Pesos"):
+                for char, metrics in characteristic_weights.items():
+                    st.markdown(f"""
+                    ### {char.capitalize()}
+                    - **Peso Ajustado:** {metrics['peso_ajustado']:.2%}
+                    - **Impacto das Respostas:** {metrics['impacto_respostas']:.2%}
+                    - **Nível de Confiança:** {metrics['confianca']:.2%}
+                    """)
+            
+            # Pruning Metrics Details
+            with st.expander("🔍 Detalhes das Métricas de Poda"):
+                st.markdown(f"""
+                ### Métricas de Poda Detalhadas
+                
+                1. **Taxa de Poda:** {pruning_metrics['pruning_ratio']:.2%}
+                   - Proporção de nós removidos do modelo
+                
+                2. **Eficiência da Poda:** {pruning_metrics['eficiencia_poda']:.2%}
+                   - Medida de quão eficiente foi o processo de poda
+                
+                3. **Impacto na Complexidade:** {pruning_metrics['impacto_complexidade']:.3f}
+                   - Redução logarítmica na complexidade do modelo
+                
+                ### Interpretação
+                {pruning_exp["interpretation"]}
+                """)
 
 def run_decision_tree():
     if 'answers' not in st.session_state:
@@ -384,4 +338,4 @@ def run_decision_tree():
             "energy_efficiency": float(0.20),
             "governance": float(0.15)
         }
-        st.session_state.recommendation = show_recommendation(st.session_state.answers, weights, questions)
+        st.session_state.recommendation = get_recommendation(st.session_state.answers, weights)

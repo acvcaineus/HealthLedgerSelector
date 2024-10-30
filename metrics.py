@@ -48,100 +48,94 @@ def calcular_profundidade_decisoria(decisoes):
 
 def calcular_pruning(total_nos, nos_podados):
     """
-    Calcula o pruning ratio (proporção de nós podados).
-    Indica a eficácia da simplificação do modelo.
+    Calcula o pruning ratio (proporção de nós podados) e métricas relacionadas.
     
-    Fórmula: Pruning Ratio = (total_nós - nós_podados) / total_nós
-    Interpretação:
-    - Valor próximo a 0: Pouca simplificação
-    - Valor próximo a 1: Alta simplificação
+    Retorna:
+    - pruning_ratio: Proporção de nós removidos
+    - eficiencia_poda: Medida da eficiência da poda
+    - impacto_complexidade: Impacto na complexidade do modelo
     """
     if total_nos == 0:
-        return 0
+        return {
+            'pruning_ratio': 0,
+            'eficiencia_poda': 0,
+            'impacto_complexidade': 0
+        }
+    
     pruning_ratio = (total_nos - nos_podados) / total_nos
-    return pruning_ratio
-
-def calcular_peso_caracteristica(caracteristica, pesos):
-    """
-    Calcula o peso normalizado de uma característica específica.
+    eficiencia_poda = 1 - (nos_podados / total_nos)
+    impacto_complexidade = math.log2(total_nos / (total_nos - nos_podados + 1))
     
-    Fórmula: Peso Normalizado = peso_característica / Σ(todos os pesos)
-    Interpretação:
-    - Valor alto: Característica mais relevante
-    - Valor baixo: Característica menos relevante
+    return {
+        'pruning_ratio': pruning_ratio,
+        'eficiencia_poda': eficiencia_poda,
+        'impacto_complexidade': impacto_complexidade
+    }
+
+def calcular_peso_caracteristica(caracteristica, pesos, respostas):
     """
+    Calcula o peso normalizado e ajustado de uma característica específica.
+    
+    Parâmetros:
+    - caracteristica: Nome da característica
+    - pesos: Dicionário com os pesos base das características
+    - respostas: Dicionário com as respostas do usuário
+    
+    Retorna:
+    - peso_ajustado: Peso final após ajustes baseados nas respostas
+    - impacto_respostas: Fator de impacto das respostas
+    - confianca: Nível de confiança no peso calculado
+    """
+    if not pesos or caracteristica not in pesos:
+        return {
+            'peso_ajustado': 0,
+            'impacto_respostas': 0,
+            'confianca': 0
+        }
+    
+    # Peso base normalizado
     total_pesos = sum(pesos.values())
-    return pesos.get(caracteristica, 0) / total_pesos if total_pesos > 0 else 0
-
-def calcular_jaccard_similarity(conjunto_a, conjunto_b):
-    """
-    Calcula o índice de similaridade de Jaccard entre dois conjuntos.
+    peso_base = pesos[caracteristica] / total_pesos if total_pesos > 0 else 0
     
-    Fórmula: J(A,B) = |A ∩ B| / |A ∪ B|
-    Interpretação:
-    - Valor próximo a 1: Alta similaridade
-    - Valor próximo a 0: Baixa similaridade
-    """
-    if not conjunto_a or not conjunto_b:
-        return 0
-    intersecao = len(set(conjunto_a) & set(conjunto_b))
-    uniao = len(set(conjunto_a) | set(conjunto_b))
-    return intersecao / uniao if uniao > 0 else 0
-
-def calcular_confiabilidade_recomendacao(scores, threshold=0.7):
-    """
-    Calcula a confiabilidade da recomendação baseada nos scores.
+    # Ajuste baseado nas respostas relacionadas
+    relacionadas = {
+        'security': ['privacy', 'network_security'],
+        'scalability': ['data_volume', 'integration'],
+        'energy_efficiency': ['energy_efficiency'],
+        'governance': ['governance_flexibility', 'interoperability']
+    }
     
-    Fórmula: Confiabilidade = (max_score - mean_score) / max_score
-    Interpretação:
-    - Valor > threshold: Alta confiabilidade
-    - Valor ≤ threshold: Média confiabilidade
-    """
-    if not scores:
-        return 0
-    max_score = max(scores)
-    mean_score = sum(scores) / len(scores)
-    confiabilidade = (max_score - mean_score) / max_score if max_score > 0 else 0
-    return confiabilidade > threshold
-
-def calcular_metricas_desempenho(historico_recomendacoes):
-    """
-    Calcula métricas de desempenho do sistema de recomendação.
-    Retorna precisão, recall e F1-score.
+    # Calcula o impacto das respostas
+    respostas_relacionadas = [
+        resp for q_id, resp in respostas.items()
+        if q_id in relacionadas.get(caracteristica, [])
+    ]
     
-    Interpretação:
-    - Precisão: Proporção de recomendações corretas
-    - Recall: Proporção de casos positivos identificados
-    - F1-score: Média harmônica entre precisão e recall
-    """
-    if not historico_recomendacoes:
-        return 0, 0, 0
+    impacto_respostas = sum(1 for resp in respostas_relacionadas if resp == "Sim") / \
+                        len(relacionadas.get(caracteristica, [])) if relacionadas.get(caracteristica) else 0
     
-    true_positives = sum(1 for rec in historico_recomendacoes if rec['acerto'])
-    false_positives = sum(1 for rec in historico_recomendacoes if not rec['acerto'])
-    total = len(historico_recomendacoes)
+    # Ajusta o peso baseado no impacto das respostas
+    peso_ajustado = peso_base * (1 + impacto_respostas * 0.5)
     
-    precisao = true_positives / total if total > 0 else 0
-    recall = true_positives / (true_positives + false_positives) if (true_positives + false_positives) > 0 else 0
-    f1 = 2 * (precisao * recall) / (precisao + recall) if (precisao + recall) > 0 else 0
+    # Calcula o nível de confiança baseado na quantidade de respostas relacionadas
+    confianca = len(respostas_relacionadas) / len(relacionadas.get(caracteristica, [1])) \
+                if relacionadas.get(caracteristica) else 0
     
-    return precisao, recall, f1
+    return {
+        'peso_ajustado': peso_ajustado,
+        'impacto_respostas': impacto_respostas,
+        'confianca': confianca
+    }
 
 def get_metric_explanation(metric_name, value):
     """
     Retorna uma explicação detalhada para uma métrica específica.
-    
-    Parâmetros:
-    - metric_name: Nome da métrica
-    - value: Valor calculado
-    
-    Retorna:
-    - Explicação em texto da interpretação do valor
     """
     explanations = {
         "gini": {
             "title": "Índice de Gini",
             "description": "Mede a pureza da classificação",
+            "formula": "Gini = 1 - Σ(pi²)",
             "interpretation": lambda v: "Boa separação entre classes" if v < 0.3 else 
                             "Separação moderada" if v < 0.6 else 
                             "Alta mistura entre classes"
@@ -149,16 +143,26 @@ def get_metric_explanation(metric_name, value):
         "entropy": {
             "title": "Entropia",
             "description": "Mede a incerteza da decisão",
+            "formula": "Entropia = -Σ(pi * log2(pi))",
             "interpretation": lambda v: "Alta certeza na decisão" if v < 1 else 
                             "Certeza moderada" if v < 2 else 
                             "Alta incerteza na decisão"
         },
-        "depth": {
-            "title": "Profundidade Decisória",
-            "description": "Complexidade do processo de decisão",
-            "interpretation": lambda v: "Processo simples" if v < 3 else 
-                            "Complexidade moderada" if v < 5 else 
-                            "Processo complexo"
+        "pruning": {
+            "title": "Métricas de Poda",
+            "description": "Avalia a eficiência da simplificação do modelo",
+            "formula": "Pruning Ratio = (total_nós - nós_podados) / total_nós",
+            "interpretation": lambda v: "Poda eficiente" if v['pruning_ratio'] > 0.7 else 
+                            "Poda moderada" if v['pruning_ratio'] > 0.4 else 
+                            "Poda limitada"
+        },
+        "characteristic_weight": {
+            "title": "Peso da Característica",
+            "description": "Avalia a importância relativa da característica",
+            "formula": "Peso Ajustado = peso_base * (1 + impacto_respostas * 0.5)",
+            "interpretation": lambda v: "Alta importância" if v['peso_ajustado'] > 0.3 else 
+                            "Importância moderada" if v['peso_ajustado'] > 0.15 else 
+                            "Baixa importância"
         }
     }
     
@@ -167,6 +171,7 @@ def get_metric_explanation(metric_name, value):
         return {
             "title": metric["title"],
             "description": metric["description"],
+            "formula": metric.get("formula", ""),
             "value": value,
             "interpretation": metric["interpretation"](value)
         }

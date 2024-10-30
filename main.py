@@ -6,7 +6,7 @@ from decision_tree import run_decision_tree
 from decision_logic import compare_algorithms, consensus_algorithms
 from database import get_user_recommendations
 from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_decisoria, 
-                    calcular_pruning, calcular_confiabilidade_recomendacao)
+                    calcular_pruning)
 from utils import init_session_state
 
 def create_metrics_radar_chart(gini, entropy, depth, pruning):
@@ -108,14 +108,14 @@ def show_metrics():
                 depth = calcular_profundidade_decisoria(list(range(len(st.session_state.answers))))
                 total_nos = len(st.session_state.answers) * 2 + 1
                 nos_podados = total_nos - len(st.session_state.answers) - 1
-                pruning_ratio = calcular_pruning(total_nos, nos_podados)
+                pruning_metrics = calcular_pruning(total_nos, nos_podados)
                 
                 # Add radar chart
                 fig_radar = create_metrics_radar_chart(
                     gini,
                     entropy,
                     depth / 10,  # Normalize to 0-1 range
-                    pruning_ratio
+                    pruning_metrics['pruning_ratio']
                 )
                 st.plotly_chart(fig_radar, use_container_width=True)
                 
@@ -183,10 +183,10 @@ def show_metrics():
         if 'recommendation' in st.session_state:
             total_nos = len(st.session_state.answers) * 2 + 1
             nos_podados = total_nos - len(st.session_state.answers) - 1
-            pruning_ratio = calcular_pruning(total_nos, nos_podados)
+            pruning_metrics = calcular_pruning(total_nos, nos_podados)
             st.metric(
                 label="Taxa de Poda",
-                value=f"{pruning_ratio:.2%}",
+                value=f"{pruning_metrics['pruning_ratio']:.2%}",
                 help="Porcentagem de nós removidos para simplificação"
             )
 
