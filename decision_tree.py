@@ -5,8 +5,7 @@ from decision_logic import get_recommendation, consensus_algorithms, consensus_g
 from database import save_recommendation
 from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_decisoria, 
                     calcular_pruning, calcular_peso_caracteristica, get_metric_explanation)
-
-# Rest of the existing code...
+from dlt_data import questions
 
 def run_decision_tree():
     if 'answers' not in st.session_state:
@@ -21,7 +20,29 @@ def run_decision_tree():
 
     st.markdown("---")
     
-    # Previous questions code...
+    current_phase = next((q["phase"] for q in questions if q["id"] not in st.session_state.answers), "Completo")
+    progress = len(st.session_state.answers) / len(questions)
+    
+    st.markdown(f"### Fase Atual: {current_phase}")
+    st.progress(progress)
+
+    current_question = None
+    for q in questions:
+        if q["id"] not in st.session_state.answers:
+            current_question = q
+            break
+
+    if current_question:
+        st.subheader(f"Característica: {current_question['characteristic']}")
+        st.info(f"Dica: {current_question['tooltip']}")
+        response = st.radio(
+            current_question["text"],
+            current_question["options"]
+        )
+
+        if st.button("Próxima Pergunta"):
+            st.session_state.answers[current_question["id"]] = response
+            st.experimental_rerun()
 
     if len(st.session_state.answers) == len(questions):
         weights = {
