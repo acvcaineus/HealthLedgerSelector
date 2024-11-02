@@ -8,6 +8,56 @@ from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_dec
                     calcular_pruning, calcular_peso_caracteristica, get_metric_explanation)
 from dlt_data import questions
 
+def show_phase_progress():
+    st.markdown("### Progresso por Fase")
+    
+    # Create a row of connected circles
+    cols = st.columns([1, 0.2, 1, 0.2, 1, 0.2, 1])
+    
+    phases = {
+        "Aplicação": 0,
+        "Consenso": 2,
+        "Infraestrutura": 4,
+        "Internet": 6
+    }
+    
+    for phase_name, col_idx in phases.items():
+        with cols[col_idx]:
+            # Get questions for this phase
+            phase_questions = [q for q in questions if q["phase"] == phase_name]
+            answered = len([q for q in phase_questions if q["id"] in st.session_state.answers])
+            total = len(phase_questions)
+            
+            # Create circle with phase name and progress
+            circle_color = "#2ECC71" if answered == total else "#3498DB"
+            st.markdown(f'''
+                <div style="text-align: center;">
+                    <div style="
+                        width: 60px;
+                        height: 60px;
+                        border-radius: 50%;
+                        background-color: {circle_color};
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        margin: 0 auto;
+                        color: white;
+                    ">●</div>
+                    <p style="margin-top: 8px;">{phase_name}</p>
+                    <p style="color: #666;">({answered}/{total})</p>
+                </div>
+            ''', unsafe_allow_html=True)
+        
+        # Add connecting line except after the last circle
+        if col_idx < 6:
+            with cols[col_idx + 1]:
+                st.markdown('''
+                    <div style="
+                        border-top: 2px dotted #CCC;
+                        margin-top: 30px;
+                    "></div>
+                ''', unsafe_allow_html=True)
+
 def show_dlt_matrix(evaluation_matrix):
     dlt_scores = pd.DataFrame(
         {dlt: data['metrics'] for dlt, data in evaluation_matrix.items()}
@@ -70,6 +120,9 @@ def run_decision_tree():
 
     st.title("Framework de Seleção de DLT")
     
+    # Show phase progress right after the title
+    show_phase_progress()
+    
     # Add phase tracking
     phases = {
         "Aplicação": ["privacy", "integration"],
@@ -98,24 +151,6 @@ def run_decision_tree():
     }
     
     st.info(phase_explanations.get(current_phase, ""))
-
-    # Add Decision Flow Visualization
-    st.subheader("Fluxo do Processo Decisório")
-    with st.expander("Ver Fluxo Decisório", expanded=True):
-        # Create columns for each phase
-        phase_cols = st.columns(4)
-        
-        # Display phases with answers
-        for idx, (phase, questions_ids) in enumerate(phases.items()):
-            with phase_cols[idx]:
-                st.markdown(f"### {phase}")
-                for q_id in questions_ids:
-                    question = next((q for q in questions if q["id"] == q_id), None)
-                    if question:
-                        if q_id in st.session_state.answers:
-                            st.success(f"{question['text']}: {st.session_state.answers[q_id]}")
-                        else:
-                            st.info(f"{question['text']}: Pendente")
 
     # Display current phase questions
     st.subheader("Perguntas da Fase Atual")
