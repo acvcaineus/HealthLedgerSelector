@@ -8,88 +8,76 @@ from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_dec
                     calcular_pruning, calcular_peso_caracteristica, get_metric_explanation)
 
 def create_progress_animation(current_phase, answers, questions):
-    phases = ['Aplicação', 'Consenso', 'Infraestrutura', 'Internet']
+    """Create an animated progress visualization."""
+    phases = ["Aplicação", "Consenso", "Infraestrutura", "Internet"]
+    
+    # Create base figure
     fig = go.Figure()
     
+    # Calculate progress for each phase
     phase_progress = {phase: 0 for phase in phases}
-    phase_total = {phase: 0 for phase in phases}
-    phase_characteristics = {phase: set() for phase in phases}
+    questions_per_phase = {phase: 0 for phase in phases}
     
+    # Count total questions per phase
     for q in questions:
-        phase = q['phase']
-        phase_total[phase] += 1
-        phase_characteristics[phase].add(q['characteristic'])
-        if q['id'] in answers:
-            phase_progress[phase] += 1
+        questions_per_phase[q["phase"]] += 1
     
+    # Calculate answered questions per phase
+    for q in questions:
+        if q["id"] in answers:
+            phase_progress[q["phase"]] += 1
+    
+    # Convert to percentages
+    for phase in phases:
+        if questions_per_phase[phase] > 0:
+            phase_progress[phase] = (phase_progress[phase] / questions_per_phase[phase]) * 100
+    
+    # Colors for different phases
+    colors = {
+        "Aplicação": "#1f77b4",  # Blue
+        "Consenso": "#2ca02c",   # Green
+        "Infraestrutura": "#ff7f0e",  # Orange
+        "Internet": "#d62728"    # Red
+    }
+    
+    # Add bars for each phase
     for i, phase in enumerate(phases):
-        if phase == current_phase:
-            color = '#3498db'
-            size = 45
-        elif phase_progress[phase] > 0:
-            color = '#2ecc71'
-            size = 40
-        else:
-            color = '#bdc3c7'
-            size = 35
-            
-        tooltip = f"<b>{phase}</b><br>"
-        tooltip += f"Progresso: {phase_progress[phase]}/{phase_total[phase]}<br>"
-        tooltip += "<br>Características:<br>"
-        tooltip += "<br>".join([f"- {char}" for char in phase_characteristics[phase]])
-        
-        fig.add_trace(go.Scatter(
-            x=[i], y=[0],
-            mode='markers',
-            marker=dict(
-                size=size,
-                color=color,
-                line=dict(color='white', width=2),
-                symbol='circle'
-            ),
-            hovertext=tooltip,
-            hoverinfo='text',
-            showlegend=False
+        fig.add_trace(go.Bar(
+            name=phase,
+            x=[phase],
+            y=[phase_progress[phase]],
+            marker_color=colors[phase],
+            text=f"{phase_progress[phase]:.0f}%",
+            textposition='auto',
         ))
-        
-        fig.add_annotation(
-            x=i, y=-0.2,
-            text=f"{phase}<br>({phase_progress[phase]}/{phase_total[phase]})",
-            showarrow=False,
-            font=dict(size=12)
-        )
-        
-        if i < len(phases) - 1:
-            fig.add_trace(go.Scatter(
-                x=[i, i+1],
-                y=[0, 0],
-                mode='lines',
-                line=dict(
-                    color='gray',
-                    width=2,
-                    dash='dot'
-                ),
-                showlegend=False
-            ))
     
+    # Update layout
     fig.update_layout(
-        showlegend=False,
-        height=200,
-        margin=dict(l=20, r=20, t=20, b=40),
-        plot_bgcolor='white',
-        xaxis=dict(
-            showgrid=False,
-            zeroline=False,
-            showticklabels=False,
-            range=[-0.5, len(phases)-0.5]
-        ),
-        yaxis=dict(
-            showgrid=False,
-            zeroline=False,
-            showticklabels=False,
-            range=[-0.5, 0.5]
-        )
+        title="Progresso por Fase",
+        yaxis_title="Progresso (%)",
+        yaxis=dict(range=[0, 100]),
+        showlegend=True,
+        barmode='group',
+        height=300
     )
+    
+    # Add phase descriptions
+    descriptions = {
+        "Aplicação": "Questões sobre privacidade e integração",
+        "Consenso": "Questões sobre segurança e escalabilidade",
+        "Infraestrutura": "Questões sobre volume de dados e eficiência",
+        "Internet": "Questões sobre governança e interoperabilidade"
+    }
+    
+    # Add annotations for current phase
+    if current_phase in phases:
+        fig.add_annotation(
+            x=current_phase,
+            y=phase_progress[current_phase],
+            text="Fase Atual",
+            showarrow=True,
+            arrowhead=1
+        )
     
     return fig
 
@@ -100,7 +88,7 @@ def show_metrics():
         rec = st.session_state.recommendation
         answers = st.session_state.answers
         
-        # Calculate all metrics
+        # Calculate metrics
         if 'evaluation_matrix' in rec:
             classes = {k: v['score'] for k, v in rec['evaluation_matrix'].items()}
             gini = calcular_gini(classes)
@@ -195,34 +183,6 @@ def show_metrics():
             )
             
             st.plotly_chart(fig, use_container_width=True)
-            
-            # Detailed weight analysis
-            with st.expander("📈 Análise Detalhada dos Pesos"):
-                for char, metrics in characteristic_weights.items():
-                    st.markdown(f"""
-                    ### {char.capitalize()}
-                    - **Peso Ajustado:** {metrics['peso_ajustado']:.2%}
-                    - **Impacto das Respostas:** {metrics['impacto_respostas']:.2%}
-                    - **Nível de Confiança:** {metrics['confianca']:.2%}
-                    """)
-            
-            # Pruning Metrics Details
-            with st.expander("🔍 Detalhes das Métricas de Poda"):
-                st.markdown(f"""
-                ### Métricas de Poda Detalhadas
-                
-                1. **Taxa de Poda:** {pruning_metrics['pruning_ratio']:.2%}
-                   - Proporção de nós removidos do modelo
-                
-                2. **Eficiência da Poda:** {pruning_metrics['eficiencia_poda']:.2%}
-                   - Medida de quão eficiente foi o processo de poda
-                
-                3. **Impacto na Complexidade:** {pruning_metrics['impacto_complexidade']:.3f}
-                   - Redução logarítmica na complexidade do modelo
-                
-                ### Interpretação
-                {pruning_exp["interpretation"]}
-                """)
 
 def run_decision_tree():
     if 'answers' not in st.session_state:
@@ -339,3 +299,6 @@ def run_decision_tree():
             "governance": float(0.15)
         }
         st.session_state.recommendation = get_recommendation(st.session_state.answers, weights)
+        
+        if st.session_state.recommendation["confidence"]:
+            show_metrics()
