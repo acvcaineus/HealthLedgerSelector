@@ -9,54 +9,89 @@ from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_dec
 from dlt_data import questions
 
 def show_phase_progress():
-    st.markdown("### Progresso por Fase")
+    st.markdown("### Camadas da Pilha de Shermin")
     
-    # Create a row of connected circles
-    cols = st.columns([1, 0.2, 1, 0.2, 1, 0.2, 1])
+    # Create custom CSS for the layer visualization
+    st.markdown('''
+        <style>
+            .layer-container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 20px;
+                margin: 20px 0;
+            }
+            .layer {
+                width: 200px;
+                height: 60px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: bold;
+                position: relative;
+            }
+            .diamond {
+                transform: rotate(45deg);
+                width: 80px;
+                height: 80px;
+                margin: -10px;
+            }
+            .layer-text {
+                transform: rotate(-45deg);
+                text-align: center;
+            }
+            .layer-progress {
+                position: absolute;
+                bottom: -20px;
+                text-align: center;
+                color: #666;
+            }
+            .connection-line {
+                width: 2px;
+                height: 20px;
+                background-color: #CCC;
+                margin: 0 auto;
+            }
+        </style>
+    ''', unsafe_allow_html=True)
     
+    # Define phases and their colors
     phases = {
-        "Aplicação": 0,
-        "Consenso": 2,
-        "Infraestrutura": 4,
-        "Internet": 6
+        "Aplicação": {"color": "#2ECC71", "index": 0},
+        "Consenso": {"color": "#3498DB", "index": 1},
+        "Infraestrutura": {"color": "#9B59B6", "index": 2},
+        "Internet": {"color": "#E74C3C", "index": 3}
     }
     
-    for phase_name, col_idx in phases.items():
-        with cols[col_idx]:
-            # Get questions for this phase
-            phase_questions = [q for q in questions if q["phase"] == phase_name]
-            answered = len([q for q in phase_questions if q["id"] in st.session_state.answers])
-            total = len(phase_questions)
-            
-            # Create circle with phase name and progress
-            circle_color = "#2ECC71" if answered == total else "#3498DB"
-            st.markdown(f'''
-                <div style="text-align: center;">
-                    <div style="
-                        width: 60px;
-                        height: 60px;
-                        border-radius: 50%;
-                        background-color: {circle_color};
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        margin: 0 auto;
-                        color: white;
-                    ">●</div>
-                    <p style="margin-top: 8px;">{phase_name}</p>
-                    <p style="color: #666;">({answered}/{total})</p>
-                </div>
-            ''', unsafe_allow_html=True)
+    # Get current phase
+    current_phase = next((q["phase"] for q in questions if q["id"] not in st.session_state.answers), "Completo")
+    
+    # Create the layer visualization
+    st.markdown('<div class="layer-container">', unsafe_allow_html=True)
+    
+    for phase_name, info in phases.items():
+        # Get questions for this phase
+        phase_questions = [q for q in questions if q["phase"] == phase_name]
+        answered = len([q for q in phase_questions if q["id"] in st.session_state.answers])
+        total = len(phase_questions)
         
-        # Add connecting line except after the last circle
-        if col_idx < 6:
-            with cols[col_idx + 1]:
-                st.markdown('''
-                    <div style="
-                        border-top: 2px dotted #CCC;
-                        margin-top: 30px;
-                    "></div>
-                ''', unsafe_allow_html=True)
+        # Determine if this is the current phase
+        is_current = current_phase == phase_name
+        opacity = "1" if is_current else "0.7"
+        
+        # Create the diamond shape for each layer
+        st.markdown(f'''
+            <div class="layer">
+                <div class="diamond" style="background-color: {info['color']}; opacity: {opacity}">
+                    <div class="layer-text">{phase_name}</div>
+                </div>
+                <div class="layer-progress">({answered}/{total})</div>
+            </div>
+            {('<div class="connection-line"></div>' if info['index'] < len(phases)-1 else '')}
+        ''', unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
 def show_dlt_matrix(evaluation_matrix):
     dlt_scores = pd.DataFrame(
