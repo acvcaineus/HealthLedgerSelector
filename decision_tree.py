@@ -1,8 +1,95 @@
 import streamlit as st
 import plotly.graph_objects as go
-from decision_logic import get_recommendation, consensus_algorithms
+from decision_logic import get_recommendation
 from database import save_recommendation
 from dlt_data import questions
+
+def create_progress_animation(current_phase, answers, questions_list):
+    """Create an animated progress visualization."""
+    phases = ['Aplicação', 'Consenso', 'Infraestrutura', 'Internet']
+    fig = go.Figure()
+    
+    phase_progress = {phase: 0 for phase in phases}
+    phase_total = {phase: 0 for phase in phases}
+    phase_characteristics = {phase: set() for phase in phases}
+    
+    for q in questions_list:
+        phase = q['phase']
+        phase_total[phase] += 1
+        phase_characteristics[phase].add(q['characteristic'])
+        if q['id'] in answers:
+            phase_progress[phase] += 1
+    
+    for i, phase in enumerate(phases):
+        if phase == current_phase:
+            color = '#3498db'
+            size = 45
+        elif phase_progress[phase] > 0:
+            color = '#2ecc71'
+            size = 40
+        else:
+            color = '#bdc3c7'
+            size = 35
+            
+        tooltip = f"<b>{phase}</b><br>"
+        tooltip += f"Progresso: {phase_progress[phase]}/{phase_total[phase]}<br>"
+        tooltip += "<br>Características:<br>"
+        tooltip += "<br>".join([f"- {char}" for char in phase_characteristics[phase]])
+        
+        fig.add_trace(go.Scatter(
+            x=[i], y=[0],
+            mode='markers',
+            marker=dict(
+                size=size,
+                color=color,
+                line=dict(color='white', width=2),
+                symbol='circle'
+            ),
+            hovertext=tooltip,
+            hoverinfo='text',
+            showlegend=False
+        ))
+        
+        fig.add_annotation(
+            x=i, y=-0.2,
+            text=f"{phase}<br>({phase_progress[phase]}/{phase_total[phase]})",
+            showarrow=False,
+            font=dict(size=12)
+        )
+        
+        if i < len(phases) - 1:
+            fig.add_trace(go.Scatter(
+                x=[i, i+1],
+                y=[0, 0],
+                mode='lines',
+                line=dict(
+                    color='gray',
+                    width=2,
+                    dash='dot'
+                ),
+                showlegend=False
+            ))
+    
+    fig.update_layout(
+        showlegend=False,
+        height=200,
+        margin=dict(l=20, r=20, t=20, b=40),
+        plot_bgcolor='white',
+        xaxis=dict(
+            showgrid=False,
+            zeroline=False,
+            showticklabels=False,
+            range=[-0.5, len(phases)-0.5]
+        ),
+        yaxis=dict(
+            showgrid=False,
+            zeroline=False,
+            showticklabels=False,
+            range=[-0.5, 0.5]
+        )
+    )
+    
+    return fig
 
 def create_evaluation_matrices(recommendation):
     if not recommendation or 'evaluation_matrix' not in recommendation:
@@ -20,7 +107,7 @@ def create_evaluation_matrices(recommendation):
     for metric in metrics:
         row = []
         for dlt in dlts:
-            raw_score = recommendation['evaluation_matrix'][dlt]['raw_metrics'][metric]
+            raw_score = recommendation['evaluation_matrix'][dlt]['raw_metrics'].get(metric, 0)
             row.append(raw_score)
         raw_values.append(row)
     
@@ -45,100 +132,6 @@ def create_evaluation_matrices(recommendation):
     )
     
     st.plotly_chart(fig_raw, use_container_width=True)
-    
-    # Create DLT comparison heatmap for weighted scores
-    st.subheader("Comparação de Métricas Ponderadas das DLTs")
-    weighted_values = []
-    for metric in metrics:
-        row = []
-        for dlt in dlts:
-            weighted_score = recommendation['evaluation_matrix'][dlt]['weighted_metrics'][metric]
-            row.append(weighted_score)
-        weighted_values.append(row)
-    
-    # Get DLT types for labels
-    dlt_types = [recommendation['evaluation_matrix'][dlt]['type'] for dlt in dlts]
-    
-    # Create weighted metrics heatmap
-    fig_weighted = go.Figure(data=go.Heatmap(
-        z=weighted_values,
-        x=dlts,
-        y=['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança'],
-        colorscale='RdBu',
-        hoverongaps=False,
-        hovertemplate="<b>DLT:</b> %{x}<br>" +
-                     "<b>Tipo:</b> " + "<br>".join(dlt_types) + "<br>" +
-                     "<b>Métrica:</b> %{y}<br>" +
-                     "<b>Score Ponderado:</b> %{z:.2f}<br>" +
-                     "<extra></extra>"
-    ))
-    
-    fig_weighted.update_layout(
-        title="Scores Ponderados por Tipo de DLT",
-        xaxis_title="DLTs",
-        yaxis_title="Métricas",
-        height=400
-    )
-    
-    st.plotly_chart(fig_weighted, use_container_width=True)
-    
-    # Display final scores
-    st.subheader("Scores Finais")
-    cols = st.columns(len(dlts))
-    for i, dlt in enumerate(dlts):
-        with cols[i]:
-            st.metric(
-                label=dlt,
-                value=f"{recommendation['weighted_scores'][dlt]:.2f}",
-                delta=f"Raw: {recommendation['raw_scores'][dlt]:.2f}",
-                help=f"Score ponderado: {recommendation['weighted_scores'][dlt]:.2f}\n"
-                     f"Score bruto: {recommendation['raw_scores'][dlt]:.2f}\n"
-                     f"Tipo: {recommendation['evaluation_matrix'][dlt]['type']}"
-            )
-    
-    # Add explanation of weighting process
-    with st.expander("ℹ️ Como os Scores são Calculados"):
-        st.markdown("""
-        ### Processo de Ponderação Dinâmica
-        
-        Os scores são calculados usando um sistema de pesos dinâmicos baseados no tipo de DLT:
-        
-        1. **DLT Permissionada Privada**: 
-           - Segurança (35%)
-           - Escalabilidade (20%)
-           - Eficiência Energética (20%)
-           - Governança (25%)
-        
-        2. **DLT Permissionada Simples**:
-           - Segurança (30%)
-           - Escalabilidade (25%)
-           - Eficiência Energética (25%)
-           - Governança (20%)
-        
-        3. **DLT Híbrida**:
-           - Segurança (25%)
-           - Escalabilidade (30%)
-           - Eficiência Energética (25%)
-           - Governança (20%)
-        
-        4. **DLT com Consenso Delegado**:
-           - Segurança (25%)
-           - Escalabilidade (35%)
-           - Eficiência Energética (25%)
-           - Governança (15%)
-        
-        5. **DLT Pública**:
-           - Segurança (40%)
-           - Escalabilidade (20%)
-           - Eficiência Energética (15%)
-           - Governança (25%)
-        
-        6. **DLT Pública Permissionless**:
-           - Segurança (30%)
-           - Escalabilidade (30%)
-           - Eficiência Energética (20%)
-           - Governança (20%)
-        """)
 
 def run_decision_tree():
     """Main function to run the decision tree interface."""
@@ -152,9 +145,16 @@ def run_decision_tree():
         st.session_state.answers = {}
         st.experimental_rerun()
     
-    # Display current progress
-    progress = len(st.session_state.answers) / len(questions)
-    st.progress(progress)
+    # Get current phase
+    current_phase = None
+    for q in questions:
+        if q['id'] not in st.session_state.answers:
+            current_phase = q['phase']
+            break
+    
+    # Display progress animation
+    progress_fig = create_progress_animation(current_phase, st.session_state.answers, questions)
+    st.plotly_chart(progress_fig, use_container_width=True)
     
     # Display current question
     current_question = None

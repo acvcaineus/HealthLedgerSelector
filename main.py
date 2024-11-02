@@ -61,105 +61,91 @@ def show_metrics():
     """Display technical metrics and analysis."""
     st.header("Métricas Técnicas do Processo de Decisão")
     
-    if 'recommendation' in st.session_state and 'answers' in st.session_state:
-        rec = st.session_state.recommendation
+    if 'answers' in st.session_state and len(st.session_state.answers) > 0:
         answers = st.session_state.answers
         
-        if 'evaluation_matrix' in rec:
-            classes = {k: v['score'] for k, v in rec['evaluation_matrix'].items()}
-            gini = calcular_gini(classes)
-            entropy = calcular_entropia(classes)
-            depth = calcular_profundidade_decisoria(list(range(len(answers))))
-            
-            total_nos = len(answers) * 2 + 1
-            nos_podados = total_nos - len(answers) - 1
-            pruning_metrics = calcular_pruning(total_nos, nos_podados)
-            
-            # Display metrics in columns
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.subheader("📊 Métricas de Classificação")
-                st.metric(
-                    label="Índice de Gini",
-                    value=f"{gini:.3f}",
-                    help="Medida de pureza da classificação"
-                )
-                st.metric(
-                    label="Entropia",
-                    value=f"{entropy:.3f} bits",
-                    help="Medida de incerteza na decisão"
-                )
-            
-            with col2:
-                st.subheader("🌳 Métricas da Árvore")
-                st.metric(
-                    label="Profundidade da Árvore",
-                    value=f"{depth:.1f}",
-                    help="Número médio de decisões necessárias"
-                )
-                st.metric(
-                    label="Taxa de Poda",
-                    value=f"{pruning_metrics['pruning_ratio']:.2%}",
-                    help="Proporção de nós removidos"
-                )
-            
-            # Display metrics radar chart
-            fig_radar = create_metrics_radar_chart(
-                gini,
-                entropy,
-                depth / 10,  # Normalize to 0-1 range
-                pruning_metrics['pruning_ratio']
+        # Calculate basic metrics
+        total_nos = len(answers) * 2 + 1
+        nos_podados = total_nos - len(answers) - 1
+        pruning_metrics = calcular_pruning(total_nos, nos_podados)
+        
+        # Create dummy classes for Gini and Entropy calculation
+        classes = {'class_a': len(answers), 'class_b': nos_podados}
+        gini = calcular_gini(classes)
+        entropy = calcular_entropia(classes)
+        depth = calcular_profundidade_decisoria(list(range(len(answers))))
+        
+        # Display metrics in columns
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.subheader("📊 Métricas de Classificação")
+            st.metric(
+                label="Índice de Gini",
+                value=f"{gini:.3f}",
+                help="Medida de pureza da classificação"
             )
-            st.plotly_chart(fig_radar, use_container_width=True)
+            st.metric(
+                label="Entropia",
+                value=f"{entropy:.3f} bits",
+                help="Medida de incerteza na decisão"
+            )
+        
+        with col2:
+            st.subheader("🌳 Métricas da Árvore")
+            st.metric(
+                label="Profundidade da Árvore",
+                value=f"{depth:.1f}",
+                help="Número médio de decisões necessárias"
+            )
+            st.metric(
+                label="Taxa de Poda",
+                value=f"{pruning_metrics['pruning_ratio']:.2%}",
+                help="Proporção de nós removidos"
+            )
+        
+        # Display metrics radar chart
+        fig_radar = create_metrics_radar_chart(
+            gini,
+            entropy,
+            depth / 10,  # Normalize to 0-1 range
+            pruning_metrics['pruning_ratio']
+        )
+        st.plotly_chart(fig_radar, use_container_width=True)
+        
+        # Pruning metrics details
+        with st.expander("🔍 Detalhes das Métricas de Poda"):
+            st.markdown(f"""
+            ### Métricas de Poda Detalhadas
             
-            # Pruning metrics details
-            with st.expander("🔍 Detalhes das Métricas de Poda"):
-                st.markdown(f"""
-                ### Métricas de Poda Detalhadas
-                
-                1. **Taxa de Poda:** {pruning_metrics['pruning_ratio']:.2%}
-                   - Proporção de nós removidos do modelo
-                
-                2. **Eficiência da Poda:** {pruning_metrics['eficiencia_poda']:.2%}
-                   - Medida de quão eficiente foi o processo de poda
-                
-                3. **Impacto na Complexidade:** {pruning_metrics['impacto_complexidade']:.3f}
-                   - Redução logarítmica na complexidade do modelo
-                """)
+            1. **Taxa de Poda:** {pruning_metrics['pruning_ratio']:.2%}
+               - Proporção de nós removidos do modelo
             
-            # Characteristic weights visualization
-            st.subheader("⚖️ Pesos das Características")
-            weights = {
-                "security": 0.4,
-                "scalability": 0.25,
-                "energy_efficiency": 0.20,
-                "governance": 0.15
-            }
+            2. **Eficiência da Poda:** {pruning_metrics['eficiencia_poda']:.2%}
+               - Medida de quão eficiente foi o processo de poda
             
-            characteristic_weights = {}
-            for char in weights.keys():
-                weight_metrics = calcular_peso_caracteristica(char, weights, answers)
-                characteristic_weights[char] = weight_metrics
-            
-            fig_weights = create_characteristic_weights_chart(characteristic_weights)
-            st.plotly_chart(fig_weights)
-            
-            # Explanation of metrics
-            with st.expander("ℹ️ Explicação das Métricas"):
-                st.markdown("""
-                ### Índice de Gini
-                Mede a pureza da classificação. Valores próximos a 0 indicam melhor separação entre as classes.
-                
-                ### Entropia
-                Mede a incerteza na decisão. Valores mais baixos indicam maior certeza nas recomendações.
-                
-                ### Profundidade da Árvore
-                Indica a complexidade do processo decisório. Uma profundidade menor sugere um processo mais direto.
-                
-                ### Taxa de Poda
-                Mostra quanto o modelo foi simplificado. Uma taxa maior indica maior otimização do processo.
-                """)
+            3. **Impacto na Complexidade:** {pruning_metrics['impacto_complexidade']:.3f}
+               - Redução logarítmica na complexidade do modelo
+            """)
+        
+        # Characteristic weights visualization
+        st.subheader("⚖️ Pesos das Características")
+        weights = {
+            "security": 0.4,
+            "scalability": 0.25,
+            "energy_efficiency": 0.20,
+            "governance": 0.15
+        }
+        
+        characteristic_weights = {}
+        for char in weights.keys():
+            weight_metrics = calcular_peso_caracteristica(char, weights, answers)
+            characteristic_weights[char] = weight_metrics
+        
+        fig_weights = create_characteristic_weights_chart(characteristic_weights)
+        st.plotly_chart(fig_weights)
+    else:
+        st.info("Complete o questionário para visualizar as métricas detalhadas.")
 
 def show_home_page():
     st.title("SeletorDLTSaude - Sistema de Seleção de DLT para Saúde")
