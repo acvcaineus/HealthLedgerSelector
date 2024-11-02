@@ -79,30 +79,34 @@ def create_progress_animation(current_phase, answers, questions):
     return fig
 
 def create_evaluation_matrices(recommendation):
-    """Create and display evaluation matrices for DLTs, algorithm groups, and consensus algorithms."""
     if not recommendation or 'evaluation_matrix' not in recommendation:
         return
-    
+        
     st.subheader("🎯 Matrizes de Avaliação")
     
-    # DLT Matrix
+    # DLT Matrix - Fix the metrics data structure
     st.markdown("### Matriz de DLTs")
-    dlt_matrix = pd.DataFrame.from_dict(
-        {k: v['metrics'] for k, v in recommendation['evaluation_matrix'].items()},
-        orient='index'
-    )
-    st.dataframe(dlt_matrix)
-    
-    # Create radar chart for DLT comparison
-    fig_dlt = go.Figure()
+    dlt_data = {}
     metrics = ['security', 'scalability', 'energy_efficiency', 'governance']
     
     for dlt, data in recommendation['evaluation_matrix'].items():
-        values = [data['metrics'].get(m, 0) for m in metrics]
+        dlt_data[dlt] = {
+            metric: float(data['metrics'][metric])
+            for metric in metrics
+        }
+    
+    dlt_df = pd.DataFrame.from_dict(dlt_data, orient='index')
+    dlt_df.columns = ['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança']
+    st.dataframe(dlt_df)
+    
+    # Create radar chart with correct data mapping
+    fig_dlt = go.Figure()
+    for dlt, data in dlt_data.items():
+        values = [data[metric] for metric in metrics]
         values.append(values[0])  # Close the polygon
         fig_dlt.add_trace(go.Scatterpolar(
             r=values,
-            theta=metrics + [metrics[0]],
+            theta=['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança', 'Segurança'],
             name=dlt,
             fill='toself'
         ))
@@ -117,19 +121,63 @@ def create_evaluation_matrices(recommendation):
     # Algorithm Groups Matrix
     if 'consensus_group' in recommendation and recommendation['consensus_group'] in consensus_groups:
         st.markdown("### Matriz de Grupos de Algoritmos")
-        group_data = consensus_groups[recommendation['consensus_group']]['characteristics']
+        group = recommendation['consensus_group']
+        group_data = consensus_groups[group]['characteristics']
         group_df = pd.DataFrame([group_data])
+        group_df.columns = ['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança']
         st.dataframe(group_df)
+        
+        # Create radar chart for group
+        fig_group = go.Figure()
+        values = [group_data[metric] for metric in metrics]
+        values.append(values[0])
+        fig_group.add_trace(go.Scatterpolar(
+            r=values,
+            theta=['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança', 'Segurança'],
+            name=group,
+            fill='toself'
+        ))
+        fig_group.update_layout(
+            polar=dict(radialaxis=dict(visible=True, range=[0, 5])),
+            showlegend=True,
+            title=f"Características do Grupo {group}"
+        )
+        st.plotly_chart(fig_group)
     
     # Consensus Algorithms Matrix
-    if 'consensus' in recommendation:
+    if 'consensus_group' in recommendation:
         st.markdown("### Matriz de Algoritmos de Consenso")
-        consensus_data = {
-            alg: metrics for alg, metrics in consensus_algorithms.items()
-            if alg in consensus_groups[recommendation['consensus_group']]['algorithms']
+        group = recommendation['consensus_group']
+        algorithms = consensus_groups[group]['algorithms']
+        
+        algo_data = {
+            alg: consensus_algorithms[alg]
+            for alg in algorithms
+            if alg in consensus_algorithms
         }
-        consensus_df = pd.DataFrame.from_dict(consensus_data, orient='index')
-        st.dataframe(consensus_df)
+        
+        algo_df = pd.DataFrame.from_dict(algo_data, orient='index')
+        algo_df.columns = ['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança']
+        st.dataframe(algo_df)
+        
+        # Create radar chart for algorithms
+        fig_algo = go.Figure()
+        for alg, data in algo_data.items():
+            values = [float(data[metric]) for metric in metrics]
+            values.append(values[0])
+            fig_algo.add_trace(go.Scatterpolar(
+                r=values,
+                theta=['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança', 'Segurança'],
+                name=alg,
+                fill='toself'
+            ))
+        
+        fig_algo.update_layout(
+            polar=dict(radialaxis=dict(visible=True, range=[0, 5])),
+            showlegend=True,
+            title=f"Comparação dos Algoritmos do Grupo {group}"
+        )
+        st.plotly_chart(fig_algo)
 
 def run_decision_tree():
     if 'answers' not in st.session_state:
