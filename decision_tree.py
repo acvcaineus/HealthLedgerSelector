@@ -104,102 +104,98 @@ def create_evaluation_matrices(recommendation):
     if not recommendation or 'evaluation_matrix' not in recommendation:
         return
         
-    st.subheader("🎯 Matrizes de Avaliação")
+    st.subheader("Matriz de Avaliação Detalhada")
     
-    # DLT Matrix - Fix the metrics data structure
-    st.markdown("### Matriz de DLTs")
-    dlt_data = {}
+    # Create DLT comparison heatmap
+    st.subheader("Comparação Detalhada das DLTs")
     metrics = ['security', 'scalability', 'energy_efficiency', 'governance']
+    weights = {
+        'security': 0.40,
+        'scalability': 0.25,
+        'energy_efficiency': 0.20,
+        'governance': 0.15
+    }
     
-    for dlt, data in recommendation['evaluation_matrix'].items():
-        dlt_data[dlt] = {
-            metric: float(data['metrics'][metric])
-            for metric in metrics
-        }
+    # Prepare data for heatmap
+    dlts = list(recommendation['evaluation_matrix'].keys())
+    metric_values = []
+    weighted_scores = []
     
-    dlt_df = pd.DataFrame.from_dict(dlt_data, orient='index')
-    dlt_df.columns = ['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança']
-    st.dataframe(dlt_df)
+    for metric in metrics:
+        row = []
+        for dlt in dlts:
+            base_score = float(recommendation['evaluation_matrix'][dlt]['metrics'][metric])
+            weighted_score = base_score * weights[metric]
+            row.append(weighted_score)
+        metric_values.append(row)
+        weighted_scores.append(sum(row))
     
-    # Create radar chart with correct data mapping
-    fig_dlt = go.Figure()
-    for dlt, data in dlt_data.items():
-        values = [data[metric] for metric in metrics]
-        values.append(values[0])  # Close the polygon
-        fig_dlt.add_trace(go.Scatterpolar(
-            r=values,
-            theta=['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança', 'Segurança'],
-            name=dlt,
-            fill='toself'
-        ))
+    # Create heatmap
+    fig = go.Figure(data=go.Heatmap(
+        z=metric_values,
+        x=dlts,
+        y=['Segurança (40%)', 'Escalabilidade (25%)', 
+           'Eficiência Energética (20%)', 'Governança (15%)'],
+        colorscale='RdBu',
+        hoverongaps=False,
+        hovertemplate="<b>DLT:</b> %{x}<br>" +
+                     "<b>Métrica:</b> %{y}<br>" +
+                     "<b>Score Ponderado:</b> %{z:.2f}<br>" +
+                     "<extra></extra>"
+    ))
     
-    fig_dlt.update_layout(
-        polar=dict(radialaxis=dict(visible=True, range=[0, 5])),
-        showlegend=True,
-        title="Comparação de DLTs"
+    fig.update_layout(
+        title="Matriz de Avaliação de DLTs com Pesos",
+        xaxis_title="DLTs",
+        yaxis_title="Métricas",
+        height=400
     )
-    st.plotly_chart(fig_dlt)
     
-    # Algorithm Groups Matrix
-    if 'consensus_group' in recommendation and recommendation['consensus_group'] in consensus_groups:
-        st.markdown("### Matriz de Grupos de Algoritmos")
-        group = recommendation['consensus_group']
-        group_data = consensus_groups[group]['characteristics']
-        group_df = pd.DataFrame([group_data])
-        group_df.columns = ['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança']
-        st.dataframe(group_df)
-        
-        # Create radar chart for group
-        fig_group = go.Figure()
-        values = [group_data[metric] for metric in metrics]
-        values.append(values[0])
-        fig_group.add_trace(go.Scatterpolar(
-            r=values,
-            theta=['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança', 'Segurança'],
-            name=group,
-            fill='toself'
-        ))
-        fig_group.update_layout(
-            polar=dict(radialaxis=dict(visible=True, range=[0, 5])),
-            showlegend=True,
-            title=f"Características do Grupo {group}"
-        )
-        st.plotly_chart(fig_group)
+    st.plotly_chart(fig, use_container_width=True)
     
-    # Consensus Algorithms Matrix
-    if 'consensus_group' in recommendation:
-        st.markdown("### Matriz de Algoritmos de Consenso")
-        group = recommendation['consensus_group']
-        algorithms = consensus_groups[group]['algorithms']
-        
-        algo_data = {
-            alg: consensus_algorithms[alg]
-            for alg in algorithms
-            if alg in consensus_algorithms
-        }
-        
-        algo_df = pd.DataFrame.from_dict(algo_data, orient='index')
-        algo_df.columns = ['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança']
-        st.dataframe(algo_df)
-        
-        # Create radar chart for algorithms
-        fig_algo = go.Figure()
-        for alg, data in algo_data.items():
-            values = [float(data[metric]) for metric in metrics]
-            values.append(values[0])
-            fig_algo.add_trace(go.Scatterpolar(
-                r=values,
-                theta=['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança', 'Segurança'],
-                name=alg,
-                fill='toself'
-            ))
-        
-        fig_algo.update_layout(
-            polar=dict(radialaxis=dict(visible=True, range=[0, 5])),
-            showlegend=True,
-            title=f"Comparação dos Algoritmos do Grupo {group}"
+    # Add weighted scores explanation
+    st.markdown("### Pontuação Final Ponderada")
+    for dlt, score in zip(dlts, [sum(row) for row in zip(*metric_values)]):
+        st.metric(
+            label=dlt,
+            value=f"{score:.2f}",
+            help=f"Score ponderado considerando todos os critérios"
         )
-        st.plotly_chart(fig_algo)
+    
+    # Add explanation of weighting process
+    with st.expander("ℹ️ Como os Scores são Calculados"):
+        st.markdown("""
+        ### Processo de Ponderação
+        
+        Os scores são calculados usando um sistema de pesos que reflete a importância relativa de cada métrica:
+        
+        1. **Segurança (40%)**: Maior peso devido à criticidade dos dados de saúde
+        2. **Escalabilidade (25%)**: Importante para garantir crescimento futuro
+        3. **Eficiência Energética (20%)**: Consideração de sustentabilidade
+        4. **Governança (15%)**: Flexibilidade administrativa
+        
+        O score final é calculado multiplicando cada métrica por seu peso correspondente e somando os resultados.
+        """)
+        
+    # Display metric details for recommended DLT
+    if 'dlt' in recommendation:
+        recommended_dlt = recommendation['dlt']
+        st.subheader(f"Análise Detalhada da DLT Recomendada: {recommended_dlt}")
+        
+        if recommended_dlt in recommendation['evaluation_matrix']:
+            metrics_data = recommendation['evaluation_matrix'][recommended_dlt]['metrics']
+            cols = st.columns(4)
+            
+            for i, (metric, weight) in enumerate(weights.items()):
+                with cols[i]:
+                    base_score = float(metrics_data[metric])
+                    weighted_score = base_score * weight
+                    st.metric(
+                        label=metric.replace('_', ' ').title(),
+                        value=f"{base_score:.2f}",
+                        delta=f"Peso: {weighted_score:.2f}",
+                        help=f"Score base: {base_score:.2f}\nPeso: {weight:.2%}\nScore ponderado: {weighted_score:.2f}"
+                    )
 
 def run_decision_tree():
     if 'answers' not in st.session_state:
