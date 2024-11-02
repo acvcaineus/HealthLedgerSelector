@@ -1,5 +1,6 @@
 import streamlit as st
 import plotly.graph_objects as go
+import pandas as pd
 import math
 from decision_logic import get_recommendation, consensus_algorithms, consensus_groups, compare_algorithms
 from database import save_recommendation
@@ -19,21 +20,37 @@ def run_decision_tree():
 
     st.title("Framework de Seleção de DLT")
     
-    # Add warning about restarting
-    st.warning("⚠️ Atenção: Reiniciar o processo irá apagar todas as respostas já fornecidas!")
-    if st.button("🔄 Reiniciar Processo", help="Clique para começar um novo processo de seleção"):
-        st.session_state.answers = {}
-        st.experimental_rerun()
-
-    st.markdown("---")
+    # Add phase tracking
+    phases = {
+        "Aplicação": ["privacy", "integration"],
+        "Consenso": ["data_volume", "network_security"],
+        "Infraestrutura": ["energy_efficiency", "scalability"],
+        "Internet": ["governance_flexibility", "interoperability"]
+    }
     
-    # Use the new get_current_phase function
+    # Show current phase and progress
     current_phase = get_current_phase(questions, st.session_state.answers)
-    progress = len(st.session_state.answers) / len(questions)
+    total_questions = len(questions)
+    answered_questions = len(st.session_state.answers)
+    progress = answered_questions / total_questions
     
+    # Display progress
     st.markdown(f"### Fase Atual: {current_phase}")
-    st.progress(progress)
+    st.progress(progress, text=f"Progresso: {progress:.0%}")
+    
+    # Show phase explanation
+    phase_explanations = {
+        "Aplicação": "Avaliação dos requisitos básicos e características da aplicação",
+        "Consenso": "Definição do mecanismo de consenso e validação",
+        "Infraestrutura": "Análise dos requisitos de infraestrutura e recursos",
+        "Internet": "Avaliação da conectividade e interoperabilidade",
+        "Completo": "Todas as fases foram completadas"
+    }
+    
+    st.info(phase_explanations.get(current_phase, ""))
 
+    # Display current phase questions
+    st.subheader("Perguntas da Fase Atual")
     current_question = None
     for q in questions:
         if q["id"] not in st.session_state.answers:
@@ -41,16 +58,17 @@ def run_decision_tree():
             break
 
     if current_question:
-        st.subheader(f"Característica: {current_question.get('characteristic', 'Não especificada')}")
-        st.info(f"Dica: {current_question.get('tooltip', 'Não disponível')}")
-        response = st.radio(
-            current_question.get("text", "Pergunta não disponível"),
-            current_question.get("options", ["Sim", "Não"])
-        )
+        with st.expander("Detalhes da Pergunta", expanded=True):
+            st.subheader(f"Característica: {current_question.get('characteristic', 'Não especificada')}")
+            st.info(f"Dica: {current_question.get('tooltip', 'Não disponível')}")
+            response = st.radio(
+                current_question.get("text", "Pergunta não disponível"),
+                current_question.get("options", ["Sim", "Não"])
+            )
 
-        if st.button("Próxima Pergunta"):
-            st.session_state.answers[current_question["id"]] = response
-            st.experimental_rerun()
+            if st.button("Próxima Pergunta"):
+                st.session_state.answers[current_question["id"]] = response
+                st.experimental_rerun()
 
     if len(st.session_state.answers) == len(questions):
         weights = {
@@ -82,7 +100,6 @@ def run_decision_tree():
                     if st.button("💾 Salvar Recomendação", 
                                help="Clique para salvar esta recomendação no seu perfil"):
                         try:
-                            # Save the recommendation
                             save_recommendation(
                                 st.session_state.username,
                                 "Healthcare DLT Selection",
@@ -118,3 +135,55 @@ def run_decision_tree():
                     f"{rec.get('confidence_components', {}).get('Consistência', 0):.2%}",
                     help="Consistência das respostas fornecidas"
                 )
+
+            # Add evaluation matrices
+            st.markdown("---")
+            st.subheader("Matrizes de Avaliação")
+            
+            # DLT Matrix
+            with st.expander("Matriz de Avaliação de DLTs", expanded=True):
+                if 'evaluation_matrix' in rec:
+                    dlt_scores = pd.DataFrame(
+                        {dlt: data['metrics'] for dlt, data in rec['evaluation_matrix'].items()}
+                    ).T
+                    
+                    fig = go.Figure(data=go.Heatmap(
+                        z=dlt_scores.values,
+                        x=dlt_scores.columns,
+                        y=dlt_scores.index,
+                        colorscale='Viridis',
+                        hovertemplate="DLT: %{y}<br>Métrica: %{x}<br>Score: %{z:.2f}<extra></extra>"
+                    ))
+                    fig.update_layout(title="Matriz de Avaliação das DLTs")
+                    st.plotly_chart(fig, use_container_width=True)
+                    
+                    st.markdown("""
+                    ### Como interpretar a Matriz de DLTs:
+                    - Cores mais escuras indicam scores mais altos
+                    - Cada linha representa uma DLT diferente
+                    - Cada coluna representa uma característica avaliada
+                    - O mouse sobre as células mostra os valores exatos
+                    """)
+            
+            # Consensus Group Matrix
+            with st.expander("Matriz de Grupos de Algoritmos", expanded=True):
+                if 'consensus_group' in rec:
+                    group_data = consensus_groups[rec['consensus_group']]['characteristics']
+                    group_df = pd.DataFrame([group_data])
+                    
+                    fig = go.Figure(data=go.Heatmap(
+                        z=group_df.values,
+                        x=group_df.columns,
+                        y=[rec['consensus_group']],
+                        colorscale='Viridis',
+                        hovertemplate="Grupo: %{y}<br>Métrica: %{x}<br>Score: %{z:.2f}<extra></extra>"
+                    ))
+                    fig.update_layout(title=f"Características do Grupo {rec['consensus_group']}")
+                    st.plotly_chart(fig, use_container_width=True)
+                    
+                    st.markdown(f"""
+                    ### Características do Grupo de Consenso:
+                    - **Grupo:** {rec['consensus_group']}
+                    - **Descrição:** {consensus_groups[rec['consensus_group']]['description']}
+                    - **Algoritmos:** {', '.join(consensus_groups[rec['consensus_group']]['algorithms'])}
+                    """)
