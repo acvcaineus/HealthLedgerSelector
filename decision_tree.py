@@ -93,10 +93,28 @@ def create_progress_animation(current_phase, answers):
     return fig
 
 def create_evaluation_matrices(recommendation):
+    """Create and display evaluation matrices."""
     if not recommendation or 'evaluation_matrix' not in recommendation:
         return
         
     st.subheader("Matriz de Avaliação Detalhada")
+    
+    # Add CSS for highlighting
+    st.markdown('''
+    <style>
+        .recommended {
+            background-color: #e6f3ff;
+            font-weight: bold;
+        }
+        .metric-high {
+            color: #2ecc71;
+            font-weight: bold;
+        }
+        .metric-low {
+            color: #e74c3c;
+        }
+    </style>
+    ''', unsafe_allow_html=True)
     
     # DLT Matrix Section
     with st.expander("ℹ️ Entenda a Matriz de DLTs"):
@@ -113,34 +131,44 @@ def create_evaluation_matrices(recommendation):
         Os valores são normalizados de 0 a 1, onde 1 representa o melhor desempenho.
         """)
     
+    # Group DLTs by type
+    dlt_by_type = {}
+    for dlt, info in recommendation['evaluation_matrix'].items():
+        dlt_type = info['type']
+        if dlt_type not in dlt_by_type:
+            dlt_by_type[dlt_type] = []
+        dlt_by_type[dlt_type].append(dlt)
+    
     # Create DLT comparison heatmap for weighted scores
-    st.subheader("Comparação de Métricas das DLTs")
+    st.subheader("Comparação de Métricas por Tipo de DLT")
     metrics = ['security', 'scalability', 'energy_efficiency', 'governance']
     metrics_pt = ['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança']
-    dlts = list(recommendation['evaluation_matrix'].keys())
     
     # Prepare data for weighted metrics heatmap
     weighted_values = []
-    for dlt in dlts:
-        row = []
-        for metric in metrics:
-            weighted_score = recommendation['evaluation_matrix'][dlt]['weighted_metrics'][metric]
-            row.append(weighted_score)
-        weighted_values.append(row)
+    dlt_types = []
+    dlt_names = []
     
-    # Get DLT types for labels
-    dlt_types = [recommendation['evaluation_matrix'][dlt]['type'] for dlt in dlts]
+    for dlt_type in sorted(dlt_by_type.keys()):
+        for dlt in dlt_by_type[dlt_type]:
+            row = []
+            for metric in metrics:
+                weighted_score = recommendation['evaluation_matrix'][dlt]['weighted_metrics'][metric]
+                row.append(weighted_score)
+            weighted_values.append(row)
+            dlt_types.append(dlt_type)
+            dlt_names.append(dlt)
     
-    # Create weighted metrics heatmap with swapped axes
+    # Create weighted metrics heatmap
     fig_weighted = go.Figure(data=go.Heatmap(
         z=weighted_values,
-        y=dlts,  # Swapped with x
-        x=metrics_pt,  # Swapped with y
+        y=dlt_names,
+        x=metrics_pt,
         colorscale='RdBu',
         hoverongaps=False,
-        hovertemplate="<b>DLT:</b> %{y}<br>" +  # Updated for swapped axes
+        hovertemplate="<b>DLT:</b> %{y}<br>" +
                      "<b>Tipo:</b> %{customdata}<br>" +
-                     "<b>Métrica:</b> %{x}<br>" +  # Updated for swapped axes
+                     "<b>Métrica:</b> %{x}<br>" +
                      "<b>Score Ponderado:</b> %{z:.2f}<br>" +
                      "<extra></extra>",
         customdata=dlt_types
@@ -148,190 +176,95 @@ def create_evaluation_matrices(recommendation):
     
     fig_weighted.update_layout(
         title="Scores Ponderados por Tipo de DLT",
-        yaxis_title="DLTs",  # Swapped with xaxis
-        xaxis_title="Métricas",  # Swapped with yaxis
-        height=400
+        yaxis_title="DLTs",
+        xaxis_title="Métricas",
+        height=600
     )
     
     st.plotly_chart(fig_weighted, use_container_width=True)
+    st.caption("As DLTs estão agrupadas por tipo para melhor comparação. Cores mais escuras indicam scores mais altos.")
     
-    # Consensus Groups Matrix
-    st.subheader("Matriz de Grupos de Algoritmos de Consenso")
-    with st.expander("ℹ️ Entenda os Grupos de Consenso"):
-        st.markdown("""
-        ### Grupos de Algoritmos de Consenso
-        
-        Os algoritmos são agrupados com base em características similares:
-        
-        1. **Alta Segurança e Controle**
-           - PBFT, PoW
-           - Ideal para dados sensíveis de saúde
-        
-        2. **Alta Eficiência Operacional**
-           - PoA, RAFT
-           - Otimizado para redes menores e controladas
-        
-        3. **Escalabilidade e Governança**
-           - PoS, DPoS
-           - Equilibra performance e descentralização
-        
-        4. **Alta Escalabilidade IoT**
-           - Tangle, DAG
-           - Especializado em dispositivos IoT
-        """)
-    
-    # Create consensus groups comparison
-    consensus_groups = {
-        'Alta Segurança': ['PBFT', 'PoW'],
-        'Alta Eficiência': ['PoA', 'RAFT'],
-        'Escalabilidade': ['PoS', 'DPoS'],
-        'IoT': ['Tangle', 'DAG']
-    }
-    
-    consensus_metrics = {
-        'Segurança': [0.9, 0.7, 0.8, 0.75],
-        'Escalabilidade': [0.7, 0.9, 0.85, 0.95],
-        'Eficiência': [0.8, 0.95, 0.9, 0.85],
-        'Governança': [0.85, 0.8, 0.9, 0.7]
-    }
-    
-    fig_consensus = go.Figure(data=go.Heatmap(
-        z=list(consensus_metrics.values()),
-        y=list(consensus_groups.keys()),  # Swapped with x
-        x=list(consensus_metrics.keys()),  # Swapped with y
-        colorscale='RdBu',
-        hovertemplate="<b>Grupo:</b> %{y}<br>" +  # Updated for swapped axes
-                     "<b>Métrica:</b> %{x}<br>" +  # Updated for swapped axes
-                     "<b>Score:</b> %{z:.2f}<br>" +
-                     "<extra></extra>"
-    ))
-    
-    fig_consensus.update_layout(
-        title="Comparação de Grupos de Consenso",
-        yaxis_title="Grupos de Consenso",  # Swapped with xaxis
-        xaxis_title="Métricas",  # Swapped with yaxis
-        height=400
-    )
-    
-    st.plotly_chart(fig_consensus, use_container_width=True)
-    
-    # Create score comparison table
+    # Create score comparison table with styling
     scores_df = pd.DataFrame({
-        'DLT': dlts,
-        'Score Total': [recommendation['weighted_scores'][dlt] for dlt in dlts],
-        'Segurança': [recommendation['evaluation_matrix'][dlt]['raw_metrics']['security'] for dlt in dlts],
-        'Escalabilidade': [recommendation['evaluation_matrix'][dlt]['raw_metrics']['scalability'] for dlt in dlts],
-        'Eficiência': [recommendation['evaluation_matrix'][dlt]['raw_metrics']['energy_efficiency'] for dlt in dlts],
-        'Governança': [recommendation['evaluation_matrix'][dlt]['raw_metrics']['governance'] for dlt in dlts]
+        'Tipo de DLT': [recommendation['evaluation_matrix'][dlt]['type'] for dlt in dlt_names],
+        'DLT': dlt_names,
+        'Score Total': [recommendation['weighted_scores'][dlt] for dlt in dlt_names],
+        'Segurança': [recommendation['evaluation_matrix'][dlt]['raw_metrics']['security'] for dlt in dlt_names],
+        'Escalabilidade': [recommendation['evaluation_matrix'][dlt]['raw_metrics']['scalability'] for dlt in dlt_names],
+        'Eficiência': [recommendation['evaluation_matrix'][dlt]['raw_metrics']['energy_efficiency'] for dlt in dlt_names],
+        'Governança': [recommendation['evaluation_matrix'][dlt]['raw_metrics']['governance'] for dlt in dlt_names]
     }).sort_values('Score Total', ascending=False)
     
+    # Style the DataFrame
+    def highlight_recommended(row):
+        if row.name == recommendation['dlt']:
+            return ['background-color: #e6f3ff'] * len(row)
+        return [''] * len(row)
+    
+    def highlight_metrics(val):
+        if isinstance(val, float):
+            if val >= 0.8:
+                return 'color: #2ecc71; font-weight: bold'
+            elif val <= 0.4:
+                return 'color: #e74c3c'
+        return ''
+    
+    scores_styled = scores_df.style\
+        .apply(highlight_recommended, axis=1)\
+        .applymap(highlight_metrics, subset=['Segurança', 'Escalabilidade', 'Eficiência', 'Governança'])
+    
     st.subheader("Tabela Comparativa de DLTs")
-    st.table(scores_df)
+    st.table(scores_styled)
+    st.caption("💡 A linha destacada em azul indica a DLT recomendada. Métricas em verde são pontos fortes (≥0.8) e em vermelho são pontos de atenção (≤0.4).")
 
-def display_recommendation_details(recommendation):
-    """Display detailed recommendation information."""
-    st.header("Recomendação")
-    st.write(f"DLT Recomendada: {recommendation['dlt']}")
-    st.write(f"Tipo de DLT: {recommendation['dlt_type']}")
-    
-    # Get consensus group based on DLT type
-    consensus_groups = {
-        "DLT Permissionada Privada": "Alta Segurança e Controle",
-        "DLT Permissionada Simples": "Alta Eficiência Operacional",
-        "DLT Híbrida": "Escalabilidade e Governança Flexível",
-        "DLT com Consenso Delegado": "Alta Escalabilidade em Redes IoT",
-        "DLT Pública": "Alta Segurança e Descentralização",
-        "DLT Pública Permissionless": "Escalabilidade e Governança Flexível"
+def select_consensus_algorithm(dlt_type, answers):
+    """Select the best consensus algorithm based on DLT type and characteristics."""
+    # Define algorithm groups and their algorithms
+    algorithm_groups = {
+        "Alta Segurança e Controle": {
+            "algorithms": ["PBFT", "PoW"],
+            "dlt_types": ["DLT Permissionada Privada", "DLT Pública"]
+        },
+        "Alta Eficiência": {
+            "algorithms": ["PoA", "RAFT"],
+            "dlt_types": ["DLT Permissionada Simples"]
+        },
+        "Escalabilidade e Governança": {
+            "algorithms": ["PoS", "DPoS"],
+            "dlt_types": ["DLT Híbrida", "DLT Pública Permissionless"]
+        },
+        "Alta Escalabilidade IoT": {
+            "algorithms": ["Tangle", "DAG"],
+            "dlt_types": ["DLT com Consenso Delegado"]
+        }
     }
     
-    consensus_group = consensus_groups.get(recommendation['dlt_type'], "Grupo não especificado")
-    st.write(f"Grupo de Consenso: {consensus_group}")
-    st.write(f"Algoritmo de Consenso: {recommendation['consensus']}")
+    # Find matching group for DLT type
+    matching_group = None
+    for group, info in algorithm_groups.items():
+        if dlt_type in info["dlt_types"]:
+            matching_group = group
+            break
     
-    st.subheader("Explicação da Escolha")
-    st.markdown(f"""
-    ### Razões para a Escolha:
-    1. **Características Priorizadas**:
-       - Segurança: {recommendation['evaluation_matrix'][recommendation['dlt']]['raw_metrics']['security']:.2f}
-       - Escalabilidade: {recommendation['evaluation_matrix'][recommendation['dlt']]['raw_metrics']['scalability']:.2f}
-       - Eficiência Energética: {recommendation['evaluation_matrix'][recommendation['dlt']]['raw_metrics']['energy_efficiency']:.2f}
-       - Governança: {recommendation['evaluation_matrix'][recommendation['dlt']]['raw_metrics']['governance']:.2f}
+    if not matching_group:
+        return "Não disponível"
     
-    2. **Compatibilidade com Cenário**:
-       Esta DLT é especialmente adequada para cenários de saúde devido à sua {get_main_strength(recommendation)}
+    # Score algorithms within the matching group
+    algorithm_scores = {}
+    for algorithm in algorithm_groups[matching_group]["algorithms"]:
+        score = 0
+        if "security" in answers and answers["security"] == "Sim":
+            score += 0.4  # Security weight
+        if "scalability" in answers and answers["scalability"] == "Sim":
+            score += 0.3  # Scalability weight
+        if "energy_efficiency" in answers and answers["energy_efficiency"] == "Sim":
+            score += 0.2  # Energy efficiency weight
+        if "governance_flexibility" in answers and answers["governance_flexibility"] == "Sim":
+            score += 0.1  # Governance weight
+        algorithm_scores[algorithm] = score
     
-    3. **Vantagens do Algoritmo**:
-       O algoritmo de consenso {recommendation['consensus']} foi escolhido por sua {get_algorithm_advantages(recommendation)}
-    
-    ### Cenários de Aplicação Recomendados:
-    {get_recommended_scenarios(recommendation)}
-    """)
-
-def get_main_strength(recommendation):
-    """Get the main strength of the recommended DLT."""
-    metrics = recommendation['evaluation_matrix'][recommendation['dlt']]['raw_metrics']
-    max_metric = max(metrics.items(), key=lambda x: x[1])
-    
-    strength_descriptions = {
-        'security': "alta segurança e proteção de dados sensíveis",
-        'scalability': "excelente escalabilidade e capacidade de processamento",
-        'energy_efficiency': "eficiência energética superior",
-        'governance': "governança flexível e controle granular"
-    }
-    
-    return strength_descriptions.get(max_metric[0], "combinação equilibrada de características")
-
-def get_algorithm_advantages(recommendation):
-    """Get the advantages of the recommended consensus algorithm."""
-    algorithm_advantages = {
-        'PBFT': "alta segurança e finalidade imediata, ideal para dados sensíveis de saúde",
-        'PoW': "forte descentralização e segurança",
-        'PoS': "eficiência energética e boa escalabilidade",
-        'DPoS': "alta performance e governança democrática",
-        'PoA': "eficiência em redes permissionadas",
-        'RAFT': "simplicidade e eficiência em redes menores",
-        'Tangle': "escalabilidade superior em ambientes IoT"
-    }
-    
-    return algorithm_advantages.get(recommendation['consensus'], 
-                                  "combinação de características adequadas ao cenário de saúde")
-
-def get_recommended_scenarios(recommendation):
-    """Get recommended scenarios based on DLT type."""
-    scenarios = {
-        "DLT Permissionada Privada": """
-        - Registros médicos eletrônicos (EMR)
-        - Compartilhamento seguro de dados entre hospitais
-        - Gerenciamento de prontuários eletrônicos""",
-        
-        "DLT Permissionada Simples": """
-        - Sistemas locais de saúde
-        - Gerenciamento de agendamentos
-        - Controle de acesso a registros""",
-        
-        "DLT Híbrida": """
-        - Interoperabilidade entre sistemas de saúde
-        - Cadeia de suprimentos farmacêutica
-        - Rastreamento de medicamentos""",
-        
-        "DLT com Consenso Delegado": """
-        - Monitoramento de dispositivos IoT médicos
-        - Coleta de dados em tempo real
-        - Telemedicina""",
-        
-        "DLT Pública": """
-        - Pesquisa médica descentralizada
-        - Compartilhamento global de dados anônimos
-        - Validação de credenciais médicas""",
-        
-        "DLT Pública Permissionless": """
-        - Sistemas de pagamento em saúde
-        - Marketplace de serviços médicos
-        - Gestão de seguros de saúde"""
-    }
-    
-    return scenarios.get(recommendation['dlt_type'], 
-                        "- Aplicações gerais de saúde\n- Sistemas de registro médico\n- Gestão de dados clínicos")
+    # Return the highest scoring algorithm
+    return max(algorithm_scores.items(), key=lambda x: x[1])[0] if algorithm_scores else "Não disponível"
 
 def run_decision_tree():
     """Main function to run the decision tree interface."""
@@ -381,8 +314,10 @@ def run_decision_tree():
     if len(st.session_state.answers) == len(questions):
         recommendation = get_recommendation(st.session_state.answers)
         
-        # Display detailed recommendation
-        display_recommendation_details(recommendation)
+        st.header("Recomendação")
+        st.write(f"DLT Recomendada: {recommendation['dlt']}")
+        st.write(f"Tipo de DLT: {recommendation['dlt_type']}")
+        st.write(f"Algoritmo de Consenso: {recommendation['consensus']}")
         
         # Display evaluation matrices
         create_evaluation_matrices(recommendation)
