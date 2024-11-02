@@ -355,5 +355,20 @@ def run_decision_tree():
         }
         st.session_state.recommendation = get_recommendation(st.session_state.answers, weights)
         
-        if st.session_state.recommendation["confidence"]:
-            show_metrics()
+        # Display recommendation
+        st.header("Recomendação")
+        st.write(f"DLT Recomendada: {st.session_state.recommendation['dlt']}")
+        st.write(f"Algoritmo de Consenso: {st.session_state.recommendation['consensus']}")
+        
+        # Add save button for authenticated users
+        if st.session_state.get('authenticated', False):
+            if st.button("💾 Salvar Recomendação"):
+                save_recommendation(
+                    st.session_state.username,
+                    "Healthcare",
+                    st.session_state.recommendation
+                )
+                st.success("Recomendação salva com sucesso!")
+        
+        # Show metrics and analyses
+        show_metrics()
