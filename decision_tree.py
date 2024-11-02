@@ -4,7 +4,7 @@ from decision_logic import get_recommendation
 from database import save_recommendation
 from dlt_data import questions
 
-def create_progress_animation(current_phase, answers, questions_list):
+def create_progress_animation(current_phase, answers):
     """Create an animated progress visualization."""
     phases = ['Aplicação', 'Consenso', 'Infraestrutura', 'Internet']
     fig = go.Figure()
@@ -13,7 +13,7 @@ def create_progress_animation(current_phase, answers, questions_list):
     phase_total = {phase: 0 for phase in phases}
     phase_characteristics = {phase: set() for phase in phases}
     
-    for q in questions_list:
+    for q in questions:
         phase = q['phase']
         phase_total[phase] += 1
         phase_characteristics[phase].add(q['characteristic'])
@@ -97,41 +97,181 @@ def create_evaluation_matrices(recommendation):
         
     st.subheader("Matriz de Avaliação Detalhada")
     
-    # Create DLT comparison heatmap for raw scores
-    st.subheader("Comparação de Métricas Brutas das DLTs")
+    # DLT Matrix Section
+    with st.expander("ℹ️ Entenda a Matriz de DLTs"):
+        st.markdown("""
+        ### Matriz de Avaliação de DLTs
+        
+        Esta matriz mostra a comparação detalhada entre diferentes DLTs baseada em quatro métricas principais:
+        
+        - **Segurança**: Capacidade de proteger dados e transações
+        - **Escalabilidade**: Capacidade de crescer mantendo o desempenho
+        - **Eficiência Energética**: Consumo de energia por transação
+        - **Governança**: Flexibilidade e controle do sistema
+        
+        Os valores são normalizados de 0 a 1, onde 1 representa o melhor desempenho.
+        """)
+    
+    # Create DLT comparison heatmap for weighted scores
+    st.subheader("Comparação de Métricas das DLTs")
     metrics = ['security', 'scalability', 'energy_efficiency', 'governance']
     dlts = list(recommendation['evaluation_matrix'].keys())
     
-    # Prepare data for raw metrics heatmap
-    raw_values = []
+    # Prepare data for weighted metrics heatmap
+    weighted_values = []
     for metric in metrics:
         row = []
         for dlt in dlts:
-            raw_score = recommendation['evaluation_matrix'][dlt]['raw_metrics'].get(metric, 0)
-            row.append(raw_score)
-        raw_values.append(row)
+            weighted_score = recommendation['evaluation_matrix'][dlt]['weighted_metrics'][metric]
+            row.append(weighted_score)
+        weighted_values.append(row)
     
-    # Create raw metrics heatmap
-    fig_raw = go.Figure(data=go.Heatmap(
-        z=raw_values,
+    # Get DLT types for labels
+    dlt_types = [recommendation['evaluation_matrix'][dlt]['type'] for dlt in dlts]
+    
+    # Create weighted metrics heatmap
+    fig_weighted = go.Figure(data=go.Heatmap(
+        z=weighted_values,
         x=dlts,
         y=['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança'],
         colorscale='RdBu',
         hoverongaps=False,
         hovertemplate="<b>DLT:</b> %{x}<br>" +
+                     "<b>Tipo:</b> %{customdata}<br>" +
                      "<b>Métrica:</b> %{y}<br>" +
-                     "<b>Valor:</b> %{z:.2f}<br>" +
-                     "<extra></extra>"
+                     "<b>Score Ponderado:</b> %{z:.2f}<br>" +
+                     "<extra></extra>",
+        customdata=[dlt_types for _ in range(len(metrics))]
     ))
     
-    fig_raw.update_layout(
-        title="Valores Brutos das Métricas",
+    fig_weighted.update_layout(
+        title="Scores Ponderados por Tipo de DLT",
         xaxis_title="DLTs",
         yaxis_title="Métricas",
         height=400
     )
     
-    st.plotly_chart(fig_raw, use_container_width=True)
+    st.plotly_chart(fig_weighted, use_container_width=True)
+    
+    # Consensus Groups Matrix
+    st.subheader("Matriz de Grupos de Algoritmos de Consenso")
+    with st.expander("ℹ️ Entenda os Grupos de Consenso"):
+        st.markdown("""
+        ### Grupos de Algoritmos de Consenso
+        
+        Os algoritmos são agrupados com base em características similares:
+        
+        1. **Alta Segurança e Controle**
+           - PBFT, PoW
+           - Ideal para dados sensíveis de saúde
+        
+        2. **Alta Eficiência Operacional**
+           - PoA, RAFT
+           - Otimizado para redes menores e controladas
+        
+        3. **Escalabilidade e Governança**
+           - PoS, DPoS
+           - Equilibra performance e descentralização
+        
+        4. **Alta Escalabilidade IoT**
+           - Tangle, DAG
+           - Especializado em dispositivos IoT
+        """)
+    
+    # Create consensus groups comparison
+    consensus_groups = {
+        'Alta Segurança': ['PBFT', 'PoW'],
+        'Alta Eficiência': ['PoA', 'RAFT'],
+        'Escalabilidade': ['PoS', 'DPoS'],
+        'IoT': ['Tangle', 'DAG']
+    }
+    
+    consensus_metrics = {
+        'Segurança': [0.9, 0.7, 0.8, 0.75],
+        'Escalabilidade': [0.7, 0.9, 0.85, 0.95],
+        'Eficiência': [0.8, 0.95, 0.9, 0.85],
+        'Governança': [0.85, 0.8, 0.9, 0.7]
+    }
+    
+    fig_consensus = go.Figure(data=go.Heatmap(
+        z=list(consensus_metrics.values()),
+        x=list(consensus_groups.keys()),
+        y=list(consensus_metrics.keys()),
+        colorscale='RdBu',
+        hovertemplate="<b>Grupo:</b> %{x}<br>" +
+                     "<b>Métrica:</b> %{y}<br>" +
+                     "<b>Score:</b> %{z:.2f}<br>" +
+                     "<extra></extra>"
+    ))
+    
+    fig_consensus.update_layout(
+        title="Comparação de Grupos de Consenso",
+        xaxis_title="Grupos de Consenso",
+        yaxis_title="Métricas",
+        height=400
+    )
+    
+    st.plotly_chart(fig_consensus, use_container_width=True)
+    
+    # Consensus Algorithms Matrix
+    st.subheader("Matriz de Algoritmos de Consenso")
+    with st.expander("ℹ️ Entenda os Algoritmos de Consenso"):
+        st.markdown("""
+        ### Algoritmos de Consenso Específicos
+        
+        Cada algoritmo tem características únicas:
+        
+        - **PBFT**: Alta segurança, ideal para dados sensíveis
+        - **PoW**: Máxima descentralização, alto custo energético
+        - **PoS**: Eficiente energeticamente, boa escalabilidade
+        - **DPoS**: Alta performance, governança democrática
+        - **PoA**: Eficiente para redes permissionadas
+        - **Tangle**: Otimizado para IoT, alta escalabilidade
+        
+        A escolha depende dos requisitos específicos do projeto de saúde.
+        """)
+    
+    # Create specific algorithms comparison
+    algorithm_metrics = {
+        'Tempo de Confirmação': [1, 600, 15, 0.5],
+        'Throughput (TPS)': [3000, 7, 100000, 4000],
+        'Custo Energético': [0.001, 885, 0.01, 0.1],
+        'Descentralização': [5, 10, 8, 7]
+    }
+    
+    fig_algorithms = go.Figure(data=go.Heatmap(
+        z=list(algorithm_metrics.values()),
+        x=['PBFT', 'PoW', 'PoS', 'DPoS'],
+        y=list(algorithm_metrics.keys()),
+        colorscale='RdBu',
+        hovertemplate="<b>Algoritmo:</b> %{x}<br>" +
+                     "<b>Métrica:</b> %{y}<br>" +
+                     "<b>Valor:</b> %{z}<br>" +
+                     "<extra></extra>"
+    ))
+    
+    fig_algorithms.update_layout(
+        title="Comparação de Algoritmos de Consenso",
+        xaxis_title="Algoritmos",
+        yaxis_title="Métricas",
+        height=400
+    )
+    
+    st.plotly_chart(fig_algorithms, use_container_width=True)
+    
+    # Display final scores
+    st.subheader("Scores Finais")
+    cols = st.columns(len(dlts))
+    for i, dlt in enumerate(dlts):
+        with cols[i]:
+            st.metric(
+                label=dlt,
+                value=f"{recommendation['weighted_scores'][dlt]:.2f}",
+                delta=f"Raw: {recommendation['raw_scores'][dlt]:.2f}",
+                help=f"Score ponderado: {recommendation['weighted_scores'][dlt]:.2f}\n"
+                     f"Score bruto: {recommendation['raw_scores'][dlt]:.2f}\n"
+                     f"Tipo: {recommendation['evaluation_matrix'][dlt]['type']}"
+            )
 
 def run_decision_tree():
     """Main function to run the decision tree interface."""
@@ -153,8 +293,9 @@ def run_decision_tree():
             break
     
     # Display progress animation
-    progress_fig = create_progress_animation(current_phase, st.session_state.answers, questions)
-    st.plotly_chart(progress_fig, use_container_width=True)
+    if current_phase:
+        progress_fig = create_progress_animation(current_phase, st.session_state.answers)
+        st.plotly_chart(progress_fig, use_container_width=True)
     
     # Display current question
     current_question = None
