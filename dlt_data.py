@@ -60,35 +60,27 @@ consensus_algorithms = {
 questions = [
     {
         "id": "privacy",
-        "phase": "Aplicação",
         "text": "A privacidade dos dados do paciente é crítica?",
         "options": ["Sim", "Não"],
-        "characteristic": "Segurança",
-        "tooltip": "Considere os requisitos de privacidade dos dados dos pacientes"
+        "characteristics": ["Segurança", "Privacidade"]
     },
     {
         "id": "integration",
-        "phase": "Aplicação",
         "text": "É necessária integração com outros sistemas de saúde?",
         "options": ["Sim", "Não"],
-        "characteristic": "Interoperabilidade",
-        "tooltip": "Avalie a necessidade de integração com sistemas existentes"
+        "characteristics": ["Interoperabilidade", "Escalabilidade"]
     },
     {
         "id": "data_volume",
-        "phase": "Consenso",
         "text": "O sistema precisa lidar com grandes volumes de registros médicos?",
         "options": ["Sim", "Não"],
-        "characteristic": "Escalabilidade",
-        "tooltip": "Considere o volume de dados que o sistema precisará processar"
+        "characteristics": ["Escalabilidade", "Desempenho"]
     },
     {
         "id": "energy_efficiency",
-        "phase": "Infraestrutura",
         "text": "A eficiência energética é uma preocupação importante?",
         "options": ["Sim", "Não"],
-        "characteristic": "Eficiência Energética",
-        "tooltip": "Avalie o impacto do consumo de energia do sistema"
+        "characteristics": ["Eficiência Energética", "Sustentabilidade"]
     }
 ]
 

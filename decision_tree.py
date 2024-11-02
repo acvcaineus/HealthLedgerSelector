@@ -1,106 +1,235 @@
 import streamlit as st
 import plotly.graph_objects as go
-import pandas as pd
 import math
 from decision_logic import get_recommendation, consensus_algorithms, consensus_groups, compare_algorithms
 from database import save_recommendation
+import networkx as nx
 from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_decisoria, 
                     calcular_pruning, calcular_peso_caracteristica, get_metric_explanation)
-from dlt_data import questions
 
-def show_phase_progress():
-    st.markdown("### Progresso por Fase")
+def create_progress_animation(current_phase, answers, questions):
+    phases = ['Aplicação', 'Consenso', 'Infraestrutura', 'Internet']
+    fig = go.Figure()
     
-    # Create connected circles visualization with custom CSS
-    st.markdown('''
-        <style>
-            .phase-container {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                gap: 10px;
-                margin: 20px 0;
-            }
-            .phase-circle {
-                width: 60px;
-                height: 60px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: white;
-                font-weight: bold;
-                position: relative;
-            }
-            .phase-name {
-                text-align: center;
-                margin-top: 8px;
-                font-size: 14px;
-            }
-            .phase-progress {
-                text-align: center;
-                color: #666;
-                font-size: 12px;
-            }
-            .connection-line {
-                flex-grow: 1;
-                height: 2px;
-                background-color: #CCC;
-                position: relative;
-                top: -30px;
-            }
-        </style>
-    ''', unsafe_allow_html=True)
+    phase_progress = {phase: 0 for phase in phases}
+    phase_total = {phase: 0 for phase in phases}
+    phase_characteristics = {phase: set() for phase in phases}
     
-    phases = {
-        "Aplicação": "#2ECC71",
-        "Consenso": "#3498DB",
-        "Infraestrutura": "#9B59B6",
-        "Internet": "#E74C3C"
-    }
+    for q in questions:
+        phase = q['phase']
+        phase_total[phase] += 1
+        phase_characteristics[phase].add(q['characteristic'])
+        if q['id'] in answers:
+            phase_progress[phase] += 1
     
-    st.markdown('<div class="phase-container">', unsafe_allow_html=True)
-    current_phase = next((q["phase"] for q in questions if q["id"] not in st.session_state.answers), "Completo")
-    
-    for idx, (phase_name, color) in enumerate(phases.items()):
-        phase_questions = [q for q in questions if q["phase"] == phase_name]
-        answered = len([q for q in phase_questions if q["id"] in st.session_state.answers])
-        total = len(phase_questions)
+    for i, phase in enumerate(phases):
+        if phase == current_phase:
+            color = '#3498db'
+            size = 45
+        elif phase_progress[phase] > 0:
+            color = '#2ecc71'
+            size = 40
+        else:
+            color = '#bdc3c7'
+            size = 35
+            
+        tooltip = f"<b>{phase}</b><br>"
+        tooltip += f"Progresso: {phase_progress[phase]}/{phase_total[phase]}<br>"
+        tooltip += "<br>Características:<br>"
+        tooltip += "<br>".join([f"- {char}" for char in phase_characteristics[phase]])
         
-        opacity = "1" if phase_name == current_phase else "0.7"
-        st.markdown(f'''
-            <div style="text-align: center;">
-                <div class="phase-circle" style="background-color: {color}; opacity: {opacity};">●</div>
-                <div class="phase-name">{phase_name}</div>
-                <div class="phase-progress">({answered}/{total})</div>
-            </div>
-            {('<div class="connection-line"></div>' if idx < len(phases)-1 else '')}
-        ''', unsafe_allow_html=True)
+        fig.add_trace(go.Scatter(
+            x=[i], y=[0],
+            mode='markers',
+            marker=dict(
+                size=size,
+                color=color,
+                line=dict(color='white', width=2),
+                symbol='circle'
+            ),
+            hovertext=tooltip,
+            hoverinfo='text',
+            showlegend=False
+        ))
+        
+        fig.add_annotation(
+            x=i, y=-0.2,
+            text=f"{phase}<br>({phase_progress[phase]}/{phase_total[phase]})",
+            showarrow=False,
+            font=dict(size=12)
+        )
+        
+        if i < len(phases) - 1:
+            fig.add_trace(go.Scatter(
+                x=[i, i+1],
+                y=[0, 0],
+                mode='lines',
+                line=dict(
+                    color='gray',
+                    width=2,
+                    dash='dot'
+                ),
+                showlegend=False
+            ))
     
-    st.markdown('</div>', unsafe_allow_html=True)
+    fig.update_layout(
+        showlegend=False,
+        height=200,
+        margin=dict(l=20, r=20, t=20, b=40),
+        plot_bgcolor='white',
+        xaxis=dict(
+            showgrid=False,
+            zeroline=False,
+            showticklabels=False,
+            range=[-0.5, len(phases)-0.5]
+        ),
+        yaxis=dict(
+            showgrid=False,
+            zeroline=False,
+            showticklabels=False,
+            range=[-0.5, 0.5]
+        )
+    )
+    
+    return fig
 
-def show_dlt_matrix(evaluation_matrix):
-    dlt_scores = pd.DataFrame(
-        {dlt: data['metrics'] for dlt, data in evaluation_matrix.items()}
-    ).T
+def show_metrics():
+    st.header("Métricas Técnicas do Processo de Decisão")
     
-    fig = go.Figure(data=go.Heatmap(
-        z=dlt_scores.values,
-        x=dlt_scores.columns,
-        y=dlt_scores.index,
-        colorscale='Viridis',
-        hovertemplate="DLT: %{y}<br>Métrica: %{x}<br>Score: %{z:.2f}<extra></extra>"
-    ))
-    fig.update_layout(title="Matriz de Avaliação das DLTs")
-    st.plotly_chart(fig, use_container_width=True)
+    if 'recommendation' in st.session_state and 'answers' in st.session_state:
+        rec = st.session_state.recommendation
+        answers = st.session_state.answers
+        
+        # Calculate all metrics
+        if 'evaluation_matrix' in rec:
+            classes = {k: v['score'] for k, v in rec['evaluation_matrix'].items()}
+            gini = calcular_gini(classes)
+            entropy = calcular_entropia(classes)
+            depth = calcular_profundidade_decisoria(list(range(len(answers))))
+            
+            total_nos = len(answers) * 2 + 1
+            nos_podados = total_nos - len(answers) - 1
+            pruning_metrics = calcular_pruning(total_nos, nos_podados)
+            
+            # Display metrics in organized sections
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.subheader("📊 Métricas de Classificação")
+                gini_exp = get_metric_explanation("gini", gini)
+                st.metric(
+                    label="Índice de Gini",
+                    value=f"{gini:.3f}",
+                    help=gini_exp["description"]
+                )
+                
+                with st.expander("ℹ️ Detalhes do Índice de Gini"):
+                    st.markdown(f"""
+                    **Fórmula:** {gini_exp["formula"]}
+                    
+                    **Interpretação:** {gini_exp["interpretation"]}
+                    
+                    **Valor Atual:** {gini:.3f}
+                    """)
+                
+                entropy_exp = get_metric_explanation("entropy", entropy)
+                st.metric(
+                    label="Entropia",
+                    value=f"{entropy:.3f} bits",
+                    help=entropy_exp["description"]
+                )
+            
+            with col2:
+                st.subheader("🌳 Métricas da Árvore")
+                st.metric(
+                    label="Profundidade da Árvore",
+                    value=f"{depth:.1f}",
+                    help="Número médio de decisões necessárias"
+                )
+                
+                pruning_exp = get_metric_explanation("pruning", pruning_metrics)
+                st.metric(
+                    label="Taxa de Poda",
+                    value=f"{pruning_metrics['pruning_ratio']:.2%}",
+                    help=pruning_exp["description"]
+                )
+            
+            # Priority Characteristic Weights Section
+            st.subheader("⚖️ Pesos das Características")
+            
+            weights = {
+                "security": 0.4,
+                "scalability": 0.25,
+                "energy_efficiency": 0.20,
+                "governance": 0.15
+            }
+            
+            characteristic_weights = {}
+            for char in weights.keys():
+                weight_metrics = calcular_peso_caracteristica(char, weights, answers)
+                characteristic_weights[char] = weight_metrics
+            
+            # Create weight visualization
+            fig = go.Figure()
+            
+            for char, metrics in characteristic_weights.items():
+                fig.add_trace(go.Bar(
+                    name=char.capitalize(),
+                    x=[char],
+                    y=[metrics['peso_ajustado']],
+                    text=[f"{metrics['peso_ajustado']:.2%}"],
+                    textposition='auto',
+                    hovertemplate=(
+                        f"<b>{char.capitalize()}</b><br>" +
+                        "Peso Ajustado: %{y:.2%}<br>" +
+                        f"Impacto das Respostas: {metrics['impacto_respostas']:.2%}<br>" +
+                        f"Confiança: {metrics['confianca']:.2%}"
+                    )
+                ))
+            
+            fig.update_layout(
+                title="Pesos Ajustados das Características",
+                yaxis_title="Peso Relativo",
+                barmode='group',
+                showlegend=True
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Detailed weight analysis
+            with st.expander("📈 Análise Detalhada dos Pesos"):
+                for char, metrics in characteristic_weights.items():
+                    st.markdown(f"""
+                    ### {char.capitalize()}
+                    - **Peso Ajustado:** {metrics['peso_ajustado']:.2%}
+                    - **Impacto das Respostas:** {metrics['impacto_respostas']:.2%}
+                    - **Nível de Confiança:** {metrics['confianca']:.2%}
+                    """)
+            
+            # Pruning Metrics Details
+            with st.expander("🔍 Detalhes das Métricas de Poda"):
+                st.markdown(f"""
+                ### Métricas de Poda Detalhadas
+                
+                1. **Taxa de Poda:** {pruning_metrics['pruning_ratio']:.2%}
+                   - Proporção de nós removidos do modelo
+                
+                2. **Eficiência da Poda:** {pruning_metrics['eficiencia_poda']:.2%}
+                   - Medida de quão eficiente foi o processo de poda
+                
+                3. **Impacto na Complexidade:** {pruning_metrics['impacto_complexidade']:.3f}
+                   - Redução logarítmica na complexidade do modelo
+                
+                ### Interpretação
+                {pruning_exp["interpretation"]}
+                """)
 
 def run_decision_tree():
     if 'answers' not in st.session_state:
         st.session_state.answers = {}
 
     st.title("Framework de Seleção de DLT")
-    
-    # Add warning about restarting
+
     st.warning("⚠️ Atenção: Reiniciar o processo irá apagar todas as respostas já fornecidas!")
     if st.button("🔄 Reiniciar Processo", help="Clique para começar um novo processo de seleção"):
         st.session_state.answers = {}
@@ -108,129 +237,105 @@ def run_decision_tree():
 
     st.markdown("---")
     
-    # Show DLT Selection Table
-    st.subheader("Tabela de Seleção de DLT")
-    dlt_df = pd.DataFrame({
-        'Grupo': ['Alta Segurança e Controle', 'Alta Eficiência Operacional', 'Escalabilidade e Governança', 'Alta Escalabilidade IoT'],
-        'DLTs': ['Hyperledger Fabric, Bitcoin', 'Quorum, VeChain', 'Ethereum 2.0, EOS', 'IOTA'],
-        'Algoritmos': ['PBFT, PoW', 'RAFT, PoA', 'PoS, DPoS', 'Tangle'],
-        'Características': ['Segurança máxima, Privacidade', 'Eficiência, Baixa latência', 'Escalabilidade, Flexibilidade', 'IoT, Tempo real']
-    })
-    st.table(dlt_df)
-    
-    st.markdown("---")
-    
-    # Create the dynamic decision tree visualization
-    st.subheader("Árvore de Decisão")
-    
-    # Get current phase and progress
+    questions = [
+        {
+            "id": "privacy",
+            "phase": "Aplicação",
+            "characteristic": "Privacidade",
+            "text": "A privacidade dos dados do paciente é crítica?",
+            "options": ["Sim", "Não"],
+            "tooltip": "Considere requisitos de LGPD e HIPAA"
+        },
+        {
+            "id": "integration",
+            "phase": "Aplicação",
+            "characteristic": "Integração",
+            "text": "É necessária integração com outros sistemas de saúde?",
+            "options": ["Sim", "Não"],
+            "tooltip": "Considere interoperabilidade com sistemas existentes"
+        },
+        {
+            "id": "data_volume",
+            "phase": "Infraestrutura",
+            "characteristic": "Volume de Dados",
+            "text": "O sistema precisa lidar com grandes volumes de registros?",
+            "options": ["Sim", "Não"],
+            "tooltip": "Considere o volume de transações esperado"
+        },
+        {
+            "id": "energy_efficiency",
+            "phase": "Infraestrutura",
+            "characteristic": "Eficiência Energética",
+            "text": "A eficiência energética é uma preocupação importante?",
+            "options": ["Sim", "Não"],
+            "tooltip": "Considere o consumo de energia do sistema"
+        },
+        {
+            "id": "network_security",
+            "phase": "Consenso",
+            "characteristic": "Segurança",
+            "text": "É necessário alto nível de segurança na rede?",
+            "options": ["Sim", "Não"],
+            "tooltip": "Considere requisitos de segurança"
+        },
+        {
+            "id": "scalability",
+            "phase": "Consenso",
+            "characteristic": "Escalabilidade",
+            "text": "A escalabilidade é uma característica chave?",
+            "options": ["Sim", "Não"],
+            "tooltip": "Considere necessidades futuras de crescimento"
+        },
+        {
+            "id": "governance_flexibility",
+            "phase": "Internet",
+            "characteristic": "Governança",
+            "text": "A governança do sistema precisa ser flexível?",
+            "options": ["Sim", "Não"],
+            "tooltip": "Considere necessidades de adaptação"
+        },
+        {
+            "id": "interoperability",
+            "phase": "Internet",
+            "characteristic": "Interoperabilidade",
+            "text": "A interoperabilidade com outros sistemas é importante?",
+            "options": ["Sim", "Não"],
+            "tooltip": "Considere integração com outras redes"
+        }
+    ]
+
     current_phase = next((q["phase"] for q in questions if q["id"] not in st.session_state.answers), "Completo")
-    total_questions = len(questions)
-    answered_questions = len(st.session_state.answers)
+    progress = len(st.session_state.answers) / len(questions)
     
-    # Show phase progress
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        st.markdown(f"### Fase Atual: {current_phase}")
-        progress = answered_questions / total_questions
-        st.progress(progress, text=f"Progresso: {int(progress * 100)}%")
+    progress_fig = create_progress_animation(current_phase, st.session_state.answers, questions)
+    st.plotly_chart(progress_fig, use_container_width=True)
     
-    with col2:
-        st.metric(
-            "Questões Respondidas",
-            f"{answered_questions}/{total_questions}",
-            help="Número de questões respondidas vs. total"
-        )
-    
-    # Show current phase explanation
-    phase_explanations = {
-        "Aplicação": "Avaliação dos requisitos básicos e características da aplicação",
-        "Consenso": "Definição do mecanismo de consenso e validação",
-        "Infraestrutura": "Análise dos requisitos de infraestrutura e recursos",
-        "Internet": "Avaliação da conectividade e interoperabilidade",
-        "Completo": "Todas as fases foram completadas"
-    }
-    st.info(phase_explanations.get(current_phase, ""))
-    
-    # Show phase progress visualization
-    show_phase_progress()
-    
-    # Display current question or recommendation
+    st.markdown(f"### Fase Atual: {current_phase}")
+    st.progress(progress)
+
     current_question = None
     for q in questions:
         if q["id"] not in st.session_state.answers:
             current_question = q
             break
-    
+
     if current_question:
-        with st.expander("Detalhes da Pergunta", expanded=True):
-            st.subheader(f"Característica: {current_question.get('characteristic', 'Não especificada')}")
-            st.info(f"Dica: {current_question.get('tooltip', 'Não disponível')}")
-            
-            response = st.radio(
-                current_question.get("text", "Pergunta não disponível"),
-                current_question.get("options", ["Sim", "Não"])
-            )
-            
-            if st.button("Próxima Pergunta"):
-                st.session_state.answers[current_question["id"]] = response
-                st.experimental_rerun()
-    else:
+        st.subheader(f"Característica: {current_question['characteristic']}")
+        st.info(f"Dica: {current_question['tooltip']}")
+        response = st.radio(
+            current_question["text"],
+            current_question["options"]
+        )
+
+        if st.button("Próxima Pergunta"):
+            st.session_state.answers[current_question["id"]] = response
+            st.experimental_rerun()
+
+    if len(st.session_state.answers) == len(questions):
         weights = {
             "security": float(0.4),
             "scalability": float(0.25),
             "energy_efficiency": float(0.20),
             "governance": float(0.15)
         }
-        
-        recommendation = get_recommendation(st.session_state.answers, weights)
-        
-        if recommendation and recommendation.get('dlt') != "Não disponível":
-            st.success("Recomendação Gerada com Sucesso!")
-            
-            # Calculate metrics
-            if 'evaluation_matrix' in recommendation:
-                classes = {k: v['score'] for k, v in recommendation['evaluation_matrix'].items()}
-                gini = calcular_gini(classes)
-                entropy = calcular_entropia(classes)
-                depth = calcular_profundidade_decisoria(list(range(len(st.session_state.answers))))
-                total_nos = len(st.session_state.answers) * 2 + 1
-                nos_podados = total_nos - len(st.session_state.answers) - 1
-                pruning_metrics = calcular_pruning(total_nos, nos_podados)
-            
-            # Display recommendation with metrics
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                st.subheader("DLT Recomendada")
-                st.write(f"**Tipo de DLT:** {recommendation.get('dlt', 'Não disponível')}")
-                st.write(f"**Algoritmo de Consenso:** {recommendation.get('consensus', 'Não disponível')}")
-                st.write(f"**Grupo de Consenso:** {recommendation.get('consensus_group', 'Não disponível')}")
-                st.write(f"**Descrição:** {recommendation.get('group_description', 'Não disponível')}")
-                
-                # Display metrics
-                st.subheader("Métricas de Decisão")
-                metrics_col1, metrics_col2 = st.columns(2)
-                with metrics_col1:
-                    st.metric("Índice de Gini", f"{gini:.3f}")
-                    st.metric("Profundidade da Árvore", f"{depth:.1f}")
-                with metrics_col2:
-                    st.metric("Entropia", f"{entropy:.3f}")
-                    st.metric("Taxa de Poda", f"{pruning_metrics['pruning_ratio']:.2%}")
-            
-            with col2:
-                if st.session_state.get('authenticated') and st.session_state.get('username'):
-                    if st.button("💾 Salvar Recomendação", help="Clique para salvar esta recomendação"):
-                        try:
-                            save_recommendation(
-                                st.session_state.username,
-                                "Healthcare DLT Selection",
-                                recommendation
-                            )
-                            st.success("✅ Recomendação salva com sucesso!")
-                        except Exception as e:
-                            st.error(f"Erro ao salvar recomendação: {str(e)}")
-                else:
-                    st.info("📝 Faça login para salvar recomendações")
-            
-            # Show evaluation matrix
-            show_dlt_matrix(recommendation.get('evaluation_matrix', {}))
+        st.session_state.recommendation = get_recommendation(st.session_state.answers, weights)
