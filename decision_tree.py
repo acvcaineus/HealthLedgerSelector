@@ -1,12 +1,8 @@
 import streamlit as st
 import plotly.graph_objects as go
-import math
 import pandas as pd
 from decision_logic import get_recommendation, consensus_algorithms, consensus_groups, compare_algorithms
 from database import save_recommendation
-import networkx as nx
-from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_decisoria, 
-                    calcular_pruning, calcular_peso_caracteristica, get_metric_explanation)
 
 def create_progress_animation(current_phase, answers, questions):
     """Create an animated progress visualization."""
@@ -134,110 +130,6 @@ def create_evaluation_matrices(recommendation):
         }
         consensus_df = pd.DataFrame.from_dict(consensus_data, orient='index')
         st.dataframe(consensus_df)
-
-def show_metrics():
-    st.header("Métricas Técnicas do Processo de Decisão")
-    
-    if 'recommendation' in st.session_state and 'answers' in st.session_state:
-        rec = st.session_state.recommendation
-        answers = st.session_state.answers
-        
-        # Calculate all metrics
-        if 'evaluation_matrix' in rec:
-            classes = {k: v['score'] for k, v in rec['evaluation_matrix'].items()}
-            gini = calcular_gini(classes)
-            entropy = calcular_entropia(classes)
-            depth = calcular_profundidade_decisoria(list(range(len(answers))))
-            
-            # Calculate pruning metrics
-            total_nos = len(answers) * 2 + 1
-            nos_podados = total_nos - len(answers) - 1
-            pruning_metrics = calcular_pruning(total_nos, nos_podados)
-            
-            # Display metrics in columns
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.subheader("📊 Métricas de Classificação")
-                st.metric(
-                    label="Índice de Gini",
-                    value=f"{gini:.3f}",
-                    help="Medida de pureza da classificação"
-                )
-                st.metric(
-                    label="Entropia",
-                    value=f"{entropy:.3f} bits",
-                    help="Medida de incerteza na decisão"
-                )
-            
-            with col2:
-                st.subheader("🌳 Métricas da Árvore")
-                st.metric(
-                    label="Profundidade da Árvore",
-                    value=f"{depth:.1f}",
-                    help="Número médio de decisões necessárias"
-                )
-                st.metric(
-                    label="Taxa de Poda",
-                    value=f"{pruning_metrics['pruning_ratio']:.2%}",
-                    help="Proporção de nós removidos"
-                )
-            
-            # Pruning Metrics Details
-            with st.expander("🔍 Detalhes das Métricas de Poda"):
-                st.markdown(f"""
-                ### Métricas de Poda Detalhadas
-                
-                1. **Taxa de Poda:** {pruning_metrics['pruning_ratio']:.2%}
-                   - Proporção de nós removidos do modelo
-                
-                2. **Eficiência da Poda:** {pruning_metrics['eficiencia_poda']:.2%}
-                   - Medida de quão eficiente foi o processo de poda
-                
-                3. **Impacto na Complexidade:** {pruning_metrics['impacto_complexidade']:.3f}
-                   - Redução logarítmica na complexidade do modelo
-                """)
-            
-            # Characteristic Weights Visualization
-            st.subheader("⚖️ Pesos das Características")
-            weights = {
-                "security": 0.4,
-                "scalability": 0.25,
-                "energy_efficiency": 0.20,
-                "governance": 0.15
-            }
-            
-            characteristic_weights = {}
-            for char in weights.keys():
-                weight_metrics = calcular_peso_caracteristica(char, weights, answers)
-                characteristic_weights[char] = weight_metrics
-            
-            # Create radar chart for characteristic weights
-            fig = go.Figure()
-            
-            # Prepare data for radar chart
-            chars = list(characteristic_weights.keys())
-            values = [characteristic_weights[char]['peso_ajustado'] for char in chars]
-            values.append(values[0])  # Close the polygon
-            chars.append(chars[0])  # Close the polygon
-            
-            fig.add_trace(go.Scatterpolar(
-                r=values,
-                theta=chars,
-                fill='toself',
-                name='Pesos Ajustados'
-            ))
-            
-            fig.update_layout(
-                polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
-                showlegend=True,
-                title="Distribuição dos Pesos das Características"
-            )
-            
-            st.plotly_chart(fig)
-            
-            # Display evaluation matrices
-            create_evaluation_matrices(rec)
 
 def run_decision_tree():
     if 'answers' not in st.session_state:
@@ -370,5 +262,5 @@ def run_decision_tree():
                 )
                 st.success("Recomendação salva com sucesso!")
         
-        # Show metrics and analyses
-        show_metrics()
+        # Show evaluation matrices
+        create_evaluation_matrices(st.session_state.recommendation)
