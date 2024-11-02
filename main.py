@@ -60,7 +60,6 @@ def create_gini_comparison(classes):
 def show_metrics():
     st.header("Métricas Técnicas do Processo de Decisão")
     
-    # Gini Index Section
     st.subheader("1. Índice de Gini")
     
     with st.expander("Como interpretar o Índice de Gini?"):
@@ -81,7 +80,6 @@ def show_metrics():
         - $n$ é o número total de classes
         """)
     
-    # Example calculation and visualizations
     if 'recommendation' in st.session_state:
         rec = st.session_state.recommendation
         if 'evaluation_matrix' in rec:
@@ -110,11 +108,10 @@ def show_metrics():
                 nos_podados = total_nos - len(st.session_state.answers) - 1
                 pruning_metrics = calcular_pruning(total_nos, nos_podados)
                 
-                # Add radar chart
                 fig_radar = create_metrics_radar_chart(
                     gini,
                     entropy,
-                    depth / 10,  # Normalize to 0-1 range
+                    depth / 10,
                     pruning_metrics['pruning_ratio']
                 )
                 st.plotly_chart(fig_radar, use_container_width=True)
@@ -131,7 +128,6 @@ def show_metrics():
                     Quanto maior a área preenchida, melhor o desempenho geral do modelo.
                     """)
                 
-                # Add Gini comparison
                 fig_gini = create_gini_comparison(classes)
                 st.plotly_chart(fig_gini, use_container_width=True)
                 
@@ -146,7 +142,6 @@ def show_metrics():
                     Uma distribuição mais uniforme indica maior incerteza na recomendação.
                     """)
 
-    # Entropy Section
     st.subheader("2. Entropia")
     with st.expander("Como interpretar a Entropia?"):
         st.markdown("""
@@ -166,7 +161,6 @@ def show_metrics():
         - Logaritmo na base 2 é usado para medir em bits
         """)
     
-    # Decision Tree Metrics
     st.subheader("3. Métricas da Árvore de Decisão")
     col1, col2 = st.columns(2)
     
@@ -191,7 +185,6 @@ def show_metrics():
             )
 
 def show_reference_table():
-    # Updated table structure with data from the provided file
     dlt_data = {
         'DLT': [
             'Hyperledger Fabric', 'Corda', 'Quorum', 'VeChain', 'IOTA',
@@ -254,13 +247,39 @@ def show_home_page():
 def show_user_profile():
     st.header(f"Perfil do Usuário: {st.session_state.username}")
     recommendations = get_user_recommendations(st.session_state.username)
+    
     if recommendations:
         st.subheader("Últimas Recomendações")
         for rec in recommendations:
-            st.write(f"DLT: {rec['dlt']}")
-            st.write(f"Consenso: {rec['consensus']}")
-            st.write(f"Data: {rec['timestamp']}")
+            with st.expander(f"Recomendação de {rec['timestamp']}", expanded=True):
+                col1, col2 = st.columns([3, 1])
+                
+                with col1:
+                    st.write(f"**DLT:** {rec['dlt']}")
+                    st.write(f"**Algoritmo de Consenso:** {rec['consensus']}")
+                    st.write(f"**Data:** {rec['timestamp']}")
+                
+                with col2:
+                    if st.button("💾 Salvar Recomendação", 
+                               key=f"save_rec_{rec['id']}",
+                               help="Clique para salvar esta recomendação novamente"):
+                        try:
+                            from database import save_recommendation
+                            save_recommendation(
+                                st.session_state.username,
+                                "Healthcare DLT Selection",
+                                {
+                                    'dlt': rec['dlt'],
+                                    'consensus': rec['consensus'],
+                                    'timestamp': rec['timestamp']
+                                }
+                            )
+                            st.success("✅ Recomendação salva com sucesso!")
+                        except Exception as e:
+                            st.error(f"Erro ao salvar recomendação: {str(e)}")
             st.markdown("---")
+    else:
+        st.info("Você ainda não tem recomendações salvas. Use o Framework Proposto para gerar recomendações.")
 
 def main():
     st.set_page_config(page_title="SeletorDLTSaude", page_icon="🏥", layout="wide")
