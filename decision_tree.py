@@ -2,6 +2,7 @@ import streamlit as st
 import plotly.graph_objects as go
 from decision_logic import get_recommendation, consensus_algorithms
 from database import save_recommendation
+from dlt_data import questions
 
 def create_evaluation_matrices(recommendation):
     if not recommendation or 'evaluation_matrix' not in recommendation:
