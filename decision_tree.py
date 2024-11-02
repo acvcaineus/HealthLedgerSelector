@@ -1,6 +1,7 @@
 import streamlit as st
 import plotly.graph_objects as go
 import math
+import pandas as pd
 from decision_logic import get_recommendation, consensus_algorithms, consensus_groups, compare_algorithms
 from database import save_recommendation
 import networkx as nx
@@ -81,6 +82,59 @@ def create_progress_animation(current_phase, answers, questions):
     
     return fig
 
+def create_evaluation_matrices(recommendation):
+    """Create and display evaluation matrices for DLTs, algorithm groups, and consensus algorithms."""
+    if not recommendation or 'evaluation_matrix' not in recommendation:
+        return
+    
+    st.subheader("🎯 Matrizes de Avaliação")
+    
+    # DLT Matrix
+    st.markdown("### Matriz de DLTs")
+    dlt_matrix = pd.DataFrame.from_dict(
+        {k: v['metrics'] for k, v in recommendation['evaluation_matrix'].items()},
+        orient='index'
+    )
+    st.dataframe(dlt_matrix)
+    
+    # Create radar chart for DLT comparison
+    fig_dlt = go.Figure()
+    metrics = ['security', 'scalability', 'energy_efficiency', 'governance']
+    
+    for dlt, data in recommendation['evaluation_matrix'].items():
+        values = [data['metrics'].get(m, 0) for m in metrics]
+        values.append(values[0])  # Close the polygon
+        fig_dlt.add_trace(go.Scatterpolar(
+            r=values,
+            theta=metrics + [metrics[0]],
+            name=dlt,
+            fill='toself'
+        ))
+    
+    fig_dlt.update_layout(
+        polar=dict(radialaxis=dict(visible=True, range=[0, 5])),
+        showlegend=True,
+        title="Comparação de DLTs"
+    )
+    st.plotly_chart(fig_dlt)
+    
+    # Algorithm Groups Matrix
+    if 'consensus_group' in recommendation and recommendation['consensus_group'] in consensus_groups:
+        st.markdown("### Matriz de Grupos de Algoritmos")
+        group_data = consensus_groups[recommendation['consensus_group']]['characteristics']
+        group_df = pd.DataFrame([group_data])
+        st.dataframe(group_df)
+    
+    # Consensus Algorithms Matrix
+    if 'consensus' in recommendation:
+        st.markdown("### Matriz de Algoritmos de Consenso")
+        consensus_data = {
+            alg: metrics for alg, metrics in consensus_algorithms.items()
+            if alg in consensus_groups[recommendation['consensus_group']]['algorithms']
+        }
+        consensus_df = pd.DataFrame.from_dict(consensus_data, orient='index')
+        st.dataframe(consensus_df)
+
 def show_metrics():
     st.header("Métricas Técnicas do Processo de Decisão")
     
@@ -88,43 +142,32 @@ def show_metrics():
         rec = st.session_state.recommendation
         answers = st.session_state.answers
         
-        # Calculate metrics
+        # Calculate all metrics
         if 'evaluation_matrix' in rec:
             classes = {k: v['score'] for k, v in rec['evaluation_matrix'].items()}
             gini = calcular_gini(classes)
             entropy = calcular_entropia(classes)
             depth = calcular_profundidade_decisoria(list(range(len(answers))))
             
+            # Calculate pruning metrics
             total_nos = len(answers) * 2 + 1
             nos_podados = total_nos - len(answers) - 1
             pruning_metrics = calcular_pruning(total_nos, nos_podados)
             
-            # Display metrics in organized sections
+            # Display metrics in columns
             col1, col2 = st.columns(2)
             
             with col1:
                 st.subheader("📊 Métricas de Classificação")
-                gini_exp = get_metric_explanation("gini", gini)
                 st.metric(
                     label="Índice de Gini",
                     value=f"{gini:.3f}",
-                    help=gini_exp["description"]
+                    help="Medida de pureza da classificação"
                 )
-                
-                with st.expander("ℹ️ Detalhes do Índice de Gini"):
-                    st.markdown(f"""
-                    **Fórmula:** {gini_exp["formula"]}
-                    
-                    **Interpretação:** {gini_exp["interpretation"]}
-                    
-                    **Valor Atual:** {gini:.3f}
-                    """)
-                
-                entropy_exp = get_metric_explanation("entropy", entropy)
                 st.metric(
                     label="Entropia",
                     value=f"{entropy:.3f} bits",
-                    help=entropy_exp["description"]
+                    help="Medida de incerteza na decisão"
                 )
             
             with col2:
@@ -134,17 +177,29 @@ def show_metrics():
                     value=f"{depth:.1f}",
                     help="Número médio de decisões necessárias"
                 )
-                
-                pruning_exp = get_metric_explanation("pruning", pruning_metrics)
                 st.metric(
                     label="Taxa de Poda",
                     value=f"{pruning_metrics['pruning_ratio']:.2%}",
-                    help=pruning_exp["description"]
+                    help="Proporção de nós removidos"
                 )
             
-            # Priority Characteristic Weights Section
-            st.subheader("⚖️ Pesos das Características")
+            # Pruning Metrics Details
+            with st.expander("🔍 Detalhes das Métricas de Poda"):
+                st.markdown(f"""
+                ### Métricas de Poda Detalhadas
+                
+                1. **Taxa de Poda:** {pruning_metrics['pruning_ratio']:.2%}
+                   - Proporção de nós removidos do modelo
+                
+                2. **Eficiência da Poda:** {pruning_metrics['eficiencia_poda']:.2%}
+                   - Medida de quão eficiente foi o processo de poda
+                
+                3. **Impacto na Complexidade:** {pruning_metrics['impacto_complexidade']:.3f}
+                   - Redução logarítmica na complexidade do modelo
+                """)
             
+            # Characteristic Weights Visualization
+            st.subheader("⚖️ Pesos das Características")
             weights = {
                 "security": 0.4,
                 "scalability": 0.25,
@@ -157,32 +212,32 @@ def show_metrics():
                 weight_metrics = calcular_peso_caracteristica(char, weights, answers)
                 characteristic_weights[char] = weight_metrics
             
-            # Create weight visualization
+            # Create radar chart for characteristic weights
             fig = go.Figure()
             
-            for char, metrics in characteristic_weights.items():
-                fig.add_trace(go.Bar(
-                    name=char.capitalize(),
-                    x=[char],
-                    y=[metrics['peso_ajustado']],
-                    text=[f"{metrics['peso_ajustado']:.2%}"],
-                    textposition='auto',
-                    hovertemplate=(
-                        f"<b>{char.capitalize()}</b><br>" +
-                        "Peso Ajustado: %{y:.2%}<br>" +
-                        f"Impacto das Respostas: {metrics['impacto_respostas']:.2%}<br>" +
-                        f"Confiança: {metrics['confianca']:.2%}"
-                    )
-                ))
+            # Prepare data for radar chart
+            chars = list(characteristic_weights.keys())
+            values = [characteristic_weights[char]['peso_ajustado'] for char in chars]
+            values.append(values[0])  # Close the polygon
+            chars.append(chars[0])  # Close the polygon
+            
+            fig.add_trace(go.Scatterpolar(
+                r=values,
+                theta=chars,
+                fill='toself',
+                name='Pesos Ajustados'
+            ))
             
             fig.update_layout(
-                title="Pesos Ajustados das Características",
-                yaxis_title="Peso Relativo",
-                barmode='group',
-                showlegend=True
+                polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
+                showlegend=True,
+                title="Distribuição dos Pesos das Características"
             )
             
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig)
+            
+            # Display evaluation matrices
+            create_evaluation_matrices(rec)
 
 def run_decision_tree():
     if 'answers' not in st.session_state:
