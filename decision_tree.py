@@ -52,9 +52,6 @@ def show_phase_progress():
         </style>
     ''', unsafe_allow_html=True)
     
-    # Create a row of connected circles
-    st.markdown('<div class="phase-container">', unsafe_allow_html=True)
-    
     phases = {
         "Aplicação": "#2ECC71",
         "Consenso": "#3498DB",
@@ -62,15 +59,14 @@ def show_phase_progress():
         "Internet": "#E74C3C"
     }
     
+    st.markdown('<div class="phase-container">', unsafe_allow_html=True)
     current_phase = next((q["phase"] for q in questions if q["id"] not in st.session_state.answers), "Completo")
     
     for idx, (phase_name, color) in enumerate(phases.items()):
-        # Get questions for this phase
         phase_questions = [q for q in questions if q["phase"] == phase_name]
         answered = len([q for q in phase_questions if q["id"] in st.session_state.answers])
         total = len(phase_questions)
         
-        # Create circle with phase name and progress
         opacity = "1" if phase_name == current_phase else "0.7"
         st.markdown(f'''
             <div style="text-align: center;">
@@ -101,18 +97,72 @@ def show_dlt_matrix(evaluation_matrix):
 def run_decision_tree():
     if 'answers' not in st.session_state:
         st.session_state.answers = {}
-        
+
     st.title("Framework de Seleção de DLT")
+    
+    # Add warning about restarting
+    st.warning("⚠️ Atenção: Reiniciar o processo irá apagar todas as respostas já fornecidas!")
+    if st.button("🔄 Reiniciar Processo", help="Clique para começar um novo processo de seleção"):
+        st.session_state.answers = {}
+        st.experimental_rerun()
+
+    st.markdown("---")
+    
+    # Show DLT Selection Table
+    st.subheader("Tabela de Seleção de DLT")
+    dlt_df = pd.DataFrame({
+        'Grupo': ['Alta Segurança e Controle', 'Alta Eficiência Operacional', 'Escalabilidade e Governança', 'Alta Escalabilidade IoT'],
+        'DLTs': ['Hyperledger Fabric, Bitcoin', 'Quorum, VeChain', 'Ethereum 2.0, EOS', 'IOTA'],
+        'Algoritmos': ['PBFT, PoW', 'RAFT, PoA', 'PoS, DPoS', 'Tangle'],
+        'Características': ['Segurança máxima, Privacidade', 'Eficiência, Baixa latência', 'Escalabilidade, Flexibilidade', 'IoT, Tempo real']
+    })
+    st.table(dlt_df)
+    
+    st.markdown("---")
+    
+    # Create the dynamic decision tree visualization
+    st.subheader("Árvore de Decisão")
+    
+    # Get current phase and progress
+    current_phase = next((q["phase"] for q in questions if q["id"] not in st.session_state.answers), "Completo")
+    total_questions = len(questions)
+    answered_questions = len(st.session_state.answers)
+    
+    # Show phase progress
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.markdown(f"### Fase Atual: {current_phase}")
+        progress = answered_questions / total_questions
+        st.progress(progress, text=f"Progresso: {int(progress * 100)}%")
+    
+    with col2:
+        st.metric(
+            "Questões Respondidas",
+            f"{answered_questions}/{total_questions}",
+            help="Número de questões respondidas vs. total"
+        )
+    
+    # Show current phase explanation
+    phase_explanations = {
+        "Aplicação": "Avaliação dos requisitos básicos e características da aplicação",
+        "Consenso": "Definição do mecanismo de consenso e validação",
+        "Infraestrutura": "Análise dos requisitos de infraestrutura e recursos",
+        "Internet": "Avaliação da conectividade e interoperabilidade",
+        "Completo": "Todas as fases foram completadas"
+    }
+    st.info(phase_explanations.get(current_phase, ""))
+    
+    # Show phase progress visualization
     show_phase_progress()
     
+    # Display current question or recommendation
     current_question = None
     for q in questions:
         if q["id"] not in st.session_state.answers:
             current_question = q
             break
-            
+    
     if current_question:
-        st.subheader(f"Fase: {current_question['phase']}")
         with st.expander("Detalhes da Pergunta", expanded=True):
             st.subheader(f"Característica: {current_question.get('characteristic', 'Não especificada')}")
             st.info(f"Dica: {current_question.get('tooltip', 'Não disponível')}")
@@ -125,7 +175,6 @@ def run_decision_tree():
             if st.button("Próxima Pergunta"):
                 st.session_state.answers[current_question["id"]] = response
                 st.experimental_rerun()
-                
     else:
         weights = {
             "security": float(0.4),
@@ -139,18 +188,38 @@ def run_decision_tree():
         if recommendation and recommendation.get('dlt') != "Não disponível":
             st.success("Recomendação Gerada com Sucesso!")
             
-            col1, col2 = st.columns([3, 1])
+            # Calculate metrics
+            if 'evaluation_matrix' in recommendation:
+                classes = {k: v['score'] for k, v in recommendation['evaluation_matrix'].items()}
+                gini = calcular_gini(classes)
+                entropy = calcular_entropia(classes)
+                depth = calcular_profundidade_decisoria(list(range(len(st.session_state.answers))))
+                total_nos = len(st.session_state.answers) * 2 + 1
+                nos_podados = total_nos - len(st.session_state.answers) - 1
+                pruning_metrics = calcular_pruning(total_nos, nos_podados)
             
+            # Display recommendation with metrics
+            col1, col2 = st.columns([3, 1])
             with col1:
                 st.subheader("DLT Recomendada")
                 st.write(f"**Tipo de DLT:** {recommendation.get('dlt', 'Não disponível')}")
                 st.write(f"**Algoritmo de Consenso:** {recommendation.get('consensus', 'Não disponível')}")
                 st.write(f"**Grupo de Consenso:** {recommendation.get('consensus_group', 'Não disponível')}")
                 st.write(f"**Descrição:** {recommendation.get('group_description', 'Não disponível')}")
+                
+                # Display metrics
+                st.subheader("Métricas de Decisão")
+                metrics_col1, metrics_col2 = st.columns(2)
+                with metrics_col1:
+                    st.metric("Índice de Gini", f"{gini:.3f}")
+                    st.metric("Profundidade da Árvore", f"{depth:.1f}")
+                with metrics_col2:
+                    st.metric("Entropia", f"{entropy:.3f}")
+                    st.metric("Taxa de Poda", f"{pruning_metrics['pruning_ratio']:.2%}")
             
             with col2:
                 if st.session_state.get('authenticated') and st.session_state.get('username'):
-                    if st.button("💾 Salvar Recomendação"):
+                    if st.button("💾 Salvar Recomendação", help="Clique para salvar esta recomendação"):
                         try:
                             save_recommendation(
                                 st.session_state.username,
@@ -163,4 +232,5 @@ def run_decision_tree():
                 else:
                     st.info("📝 Faça login para salvar recomendações")
             
+            # Show evaluation matrix
             show_dlt_matrix(recommendation.get('evaluation_matrix', {}))
