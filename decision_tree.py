@@ -5,76 +5,98 @@ from decision_logic import get_recommendation, consensus_algorithms, consensus_g
 from database import save_recommendation
 
 def create_progress_animation(current_phase, answers, questions):
-    """Create an animated progress visualization."""
-    phases = ["Aplicação", "Consenso", "Infraestrutura", "Internet"]
-    
-    # Create base figure
+    """Create an animated progress visualization with improved features."""
+    phases = ['Aplicação', 'Consenso', 'Infraestrutura', 'Internet']
     fig = go.Figure()
     
-    # Calculate progress for each phase
+    # Initialize progress tracking for each phase
     phase_progress = {phase: 0 for phase in phases}
-    questions_per_phase = {phase: 0 for phase in phases}
+    phase_total = {phase: 0 for phase in phases}
+    phase_characteristics = {phase: set() for phase in phases}
     
-    # Count total questions per phase
+    # Calculate progress and collect characteristics for each phase
     for q in questions:
-        questions_per_phase[q["phase"]] += 1
+        phase = q['phase']
+        phase_total[phase] += 1
+        phase_characteristics[phase].add(q['characteristic'])
+        if q['id'] in answers:
+            phase_progress[phase] += 1
     
-    # Calculate answered questions per phase
-    for q in questions:
-        if q["id"] in answers:
-            phase_progress[q["phase"]] += 1
-    
-    # Convert to percentages
-    for phase in phases:
-        if questions_per_phase[phase] > 0:
-            phase_progress[phase] = (phase_progress[phase] / questions_per_phase[phase]) * 100
-    
-    # Colors for different phases
-    colors = {
-        "Aplicação": "#1f77b4",  # Blue
-        "Consenso": "#2ca02c",   # Green
-        "Infraestrutura": "#ff7f0e",  # Orange
-        "Internet": "#d62728"    # Red
-    }
-    
-    # Add bars for each phase
+    # Create visualization elements for each phase
     for i, phase in enumerate(phases):
-        fig.add_trace(go.Bar(
-            name=phase,
-            x=[phase],
-            y=[phase_progress[phase]],
-            marker_color=colors[phase],
-            text=f"{phase_progress[phase]:.0f}%",
-            textposition='auto',
+        # Dynamic styling based on phase status
+        if phase == current_phase:
+            color = '#3498db'  # Blue for current phase
+            size = 45
+        elif phase_progress[phase] > 0:
+            color = '#2ecc71'  # Green for completed phases
+            size = 40
+        else:
+            color = '#bdc3c7'  # Gray for upcoming phases
+            size = 35
+            
+        # Create detailed tooltip with phase information
+        tooltip = f"<b>{phase}</b><br>"
+        tooltip += f"Progresso: {phase_progress[phase]}/{phase_total[phase]}<br>"
+        tooltip += "<br>Características:<br>"
+        tooltip += "<br>".join([f"- {char}" for char in phase_characteristics[phase]])
+        
+        # Add phase marker
+        fig.add_trace(go.Scatter(
+            x=[i], y=[0],
+            mode='markers',
+            marker=dict(
+                size=size,
+                color=color,
+                line=dict(color='white', width=2),
+                symbol='circle'
+            ),
+            hovertext=tooltip,
+            hoverinfo='text',
+            showlegend=False
         ))
-    
-    # Update layout
-    fig.update_layout(
-        title="Progresso por Fase",
-        yaxis_title="Progresso (%)",
-        yaxis=dict(range=[0, 100]),
-        showlegend=True,
-        barmode='group',
-        height=300
-    )
-    
-    # Add phase descriptions
-    descriptions = {
-        "Aplicação": "Questões sobre privacidade e integração",
-        "Consenso": "Questões sobre segurança e escalabilidade",
-        "Infraestrutura": "Questões sobre volume de dados e eficiência",
-        "Internet": "Questões sobre governança e interoperabilidade"
-    }
-    
-    # Add annotations for current phase
-    if current_phase in phases:
+        
+        # Add phase label with progress
         fig.add_annotation(
-            x=current_phase,
-            y=phase_progress[current_phase],
-            text="Fase Atual",
-            showarrow=True,
-            arrowhead=1
+            x=i, y=-0.2,
+            text=f"{phase}<br>({phase_progress[phase]}/{phase_total[phase]})",
+            showarrow=False,
+            font=dict(size=12)
         )
+        
+        # Add connecting lines between phases
+        if i < len(phases) - 1:
+            fig.add_trace(go.Scatter(
+                x=[i, i+1],
+                y=[0, 0],
+                mode='lines',
+                line=dict(
+                    color='gray',
+                    width=2,
+                    dash='dot'
+                ),
+                showlegend=False
+            ))
+    
+    # Update layout for clean visualization
+    fig.update_layout(
+        showlegend=False,
+        height=200,
+        margin=dict(l=20, r=20, t=20, b=40),
+        plot_bgcolor='white',
+        xaxis=dict(
+            showgrid=False,
+            zeroline=False,
+            showticklabels=False,
+            range=[-0.5, len(phases)-0.5]
+        ),
+        yaxis=dict(
+            showgrid=False,
+            zeroline=False,
+            showticklabels=False,
+            range=[-0.5, 0.5]
+        )
+    )
     
     return fig
 
