@@ -7,7 +7,7 @@ from decision_tree import run_decision_tree
 from decision_logic import consensus_algorithms
 from database import get_user_recommendations
 from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_decisoria, 
-                    calcular_pruning, calcular_peso_caracteristica)
+                    calcular_pruning)
 from utils import init_session_state
 
 # Framework comparison data
@@ -73,6 +73,34 @@ def create_comparison_radar_chart():
             'Eficiência': 0.7,
             'Governança': 0.75,
             'Interoperabilidade': 0.8
+        },
+        'Medshare': {
+            'Segurança': 0.85,
+            'Escalabilidade': 0.75,
+            'Eficiência': 0.7,
+            'Governança': 0.8,
+            'Interoperabilidade': 0.85
+        },
+        'TrialChain': {
+            'Segurança': 0.8,
+            'Escalabilidade': 0.7,
+            'Eficiência': 0.75,
+            'Governança': 0.75,
+            'Interoperabilidade': 0.8
+        },
+        'PharmaChain': {
+            'Segurança': 0.85,
+            'Escalabilidade': 0.8,
+            'Eficiência': 0.75,
+            'Governança': 0.8,
+            'Interoperabilidade': 0.85
+        },
+        'Action-EHR': {
+            'Segurança': 0.8,
+            'Escalabilidade': 0.7,
+            'Eficiência': 0.7,
+            'Governança': 0.75,
+            'Interoperabilidade': 0.8
         }
     }
     
@@ -121,35 +149,66 @@ def show_comparisons():
     fig = create_comparison_radar_chart()
     st.plotly_chart(fig, use_container_width=True)
     
-    # Methodology comparison
-    st.subheader("Comparação Metodológica")
-    methodology_data = {
-        'Framework': ['SeletorDLTSaude', 'CREDO-DLT', 'MedRec'],
-        'Fases': ['4 fases', '3 fases', '1 fase'],
-        'Métricas': ['Múltiplas métricas', 'Métricas ITU', 'Métricas básicas'],
-        'Validação': ['Acadêmica e prática', 'Acadêmica', 'Prática']
-    }
-    
-    methodology_df = pd.DataFrame(methodology_data)
-    st.table(methodology_df)
-    
     # Side-by-side metrics comparison
     st.subheader("Comparação de Métricas")
     metrics_comparison = pd.DataFrame({
         'Métrica': ['Segurança', 'Escalabilidade', 'Eficiência', 'Governança', 'Interoperabilidade'],
         'SeletorDLTSaude': [0.9, 0.85, 0.8, 0.85, 0.9],
         'CREDO-DLT': [0.8, 0.7, 0.75, 0.8, 0.85],
-        'MedRec': [0.85, 0.65, 0.7, 0.75, 0.8]
+        'MedRec': [0.85, 0.65, 0.7, 0.75, 0.8],
+        'Medshare': [0.85, 0.75, 0.7, 0.8, 0.85],
+        'TrialChain': [0.8, 0.7, 0.75, 0.75, 0.8],
+        'PharmaChain': [0.85, 0.8, 0.75, 0.8, 0.85],
+        'Action-EHR': [0.8, 0.7, 0.7, 0.75, 0.8]
     })
     
     fig_metrics = px.bar(
         metrics_comparison,
         x='Métrica',
-        y=['SeletorDLTSaude', 'CREDO-DLT', 'MedRec'],
+        y=['SeletorDLTSaude', 'CREDO-DLT', 'MedRec', 'Medshare', 'TrialChain', 'PharmaChain', 'Action-EHR'],
         barmode='group',
         title='Comparação de Métricas entre Frameworks'
     )
     st.plotly_chart(fig_metrics)
+    
+    # Methodology comparison
+    st.subheader("Comparação Metodológica")
+    methodology_data = {
+        'Framework': ['SeletorDLTSaude', 'CREDO-DLT', 'MedRec', 'Medshare', 'TrialChain', 'PharmaChain', 'Action-EHR'],
+        'Fases': ['4 fases', '3 fases', '1 fase', '2 fases', '2 fases', '2 fases', '1 fase'],
+        'Métricas': ['Múltiplas métricas', 'Métricas ITU', 'Métricas básicas', 'Métricas específicas', 'Métricas clínicas', 'Métricas de supply chain', 'Métricas de EHR'],
+        'Validação': ['Acadêmica e prática', 'Acadêmica', 'Prática', 'Acadêmica', 'Prática', 'Prática', 'Acadêmica']
+    }
+    
+    methodology_df = pd.DataFrame(methodology_data)
+    st.table(methodology_df)
+    
+    # Add conclusion section
+    st.markdown('''
+    ## Conclusão da Análise Comparativa
+
+    O SeletorDLTSaude se destaca dos demais frameworks pelos seguintes diferenciais:
+
+    1. **Abordagem Hierárquica**: 
+       - Único framework que considera a estrutura hierárquica completa (DLT → Tipo → Grupo → Algoritmo)
+       - Permite recomendações mais precisas e contextualizadas
+
+    2. **Base Científica Atualizada**: 
+       - Referencias acadêmicas recentes (2024-2025)
+       - Validação por estudos de caso reais em saúde
+
+    3. **Métricas Quantitativas**:
+       - Sistema de pontuação baseado em evidências
+       - Índice de consistência para validar recomendações
+
+    4. **Flexibilidade e Adaptabilidade**:
+       - Suporte a múltiplos cenários de saúde
+       - Atualização contínua da base de conhecimento
+
+    5. **Transparência na Decisão**:
+       - Explicações detalhadas em cada etapa
+       - Visualizações interativas das métricas
+    ''')
 
 def show_metrics():
     """Display metrics page."""
@@ -222,7 +281,6 @@ def show_home_page():
     df = pd.DataFrame(dlt_data)
     st.dataframe(df)
 
-    # Add download button for consolidated data
     csv = convert_df(df)
     st.download_button(
         label="Baixar Dados Consolidados",

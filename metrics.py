@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import plotly.graph_objects as go
+import plotly.express as px
 import streamlit as st
 import pandas as pd
 
@@ -58,47 +59,68 @@ def calcular_pruning(total_nos, nos_podados):
         'impacto_complexidade': impacto_complexidade
     }
 
-def calcular_peso_caracteristica(caracteristica, pesos_base, respostas):
-    """
-    Calcula o peso ajustado de uma característica específica com base nas respostas.
-    """
-    if not pesos_base or caracteristica not in pesos_base:
-        return {
-            'peso_ajustado': 0,
-            'impacto_respostas': 0,
-            'confianca': 0
-        }
+def create_metrics_radar_chart(metrics_data):
+    """Creates a radar chart for metrics visualization with enhanced tooltips."""
+    fig = go.Figure()
     
-    total_pesos = sum(pesos_base.values())
-    peso_base = pesos_base[caracteristica] / total_pesos if total_pesos > 0 else 0
+    categories = list(metrics_data.keys())
+    values = list(metrics_data.values())
     
-    relacionadas = {
-        'security': ['privacy', 'network_security'],
-        'scalability': ['data_volume', 'integration'],
-        'energy_efficiency': ['energy_efficiency'],
-        'governance': ['governance_flexibility', 'interoperability']
-    }
+    fig.add_trace(go.Scatterpolar(
+        r=values + [values[0]],
+        theta=categories + [categories[0]],
+        fill='toself',
+        name='Métricas Atuais',
+        line=dict(color='#3498db', width=2),
+        fillcolor='rgba(52, 152, 219, 0.3)',
+        hovertemplate="<b>%{theta}</b><br>" +
+                     "Valor: %{r:.3f}<br>" +
+                     "<extra></extra>"
+    ))
     
-    respostas_relacionadas = [
-        resp for q_id, resp in respostas.items()
-        if q_id in relacionadas.get(caracteristica, [])
-    ]
+    fig.update_layout(
+        polar=dict(
+            radialaxis=dict(
+                visible=True,
+                range=[0, 1],
+                showline=True,
+                linewidth=1,
+                linecolor='lightgray',
+                tickfont=dict(size=10)
+            ),
+            angularaxis=dict(
+                showline=True,
+                linewidth=1,
+                linecolor='lightgray',
+                tickfont=dict(size=10)
+            )
+        ),
+        showlegend=True,
+        title="Visão Geral das Métricas",
+        paper_bgcolor='white',
+        plot_bgcolor='white'
+    )
+    return fig
+
+def create_evaluation_matrix(metrics_data):
+    """Creates a heatmap for metrics evaluation."""
+    fig = px.imshow(
+        pd.DataFrame([metrics_data]),
+        color_continuous_scale='RdBu',
+        aspect='auto',
+        title="Matriz de Avaliação de Métricas"
+    )
     
-    num_respostas_positivas = sum(1 for resp in respostas_relacionadas if resp == "Sim")
-    total_perguntas_relacionadas = len(relacionadas.get(caracteristica, []))
+    fig.update_layout(
+        xaxis_title="Métricas",
+        yaxis_title="Avaliação",
+        yaxis_visible=False
+    )
     
-    impacto_respostas = num_respostas_positivas / total_perguntas_relacionadas if total_perguntas_relacionadas > 0 else 0
-    peso_ajustado = peso_base * (1 + impacto_respostas * 0.5)
-    confianca = len(respostas_relacionadas) / total_perguntas_relacionadas if total_perguntas_relacionadas > 0 else 0
-    
-    return {
-        'peso_ajustado': peso_ajustado,
-        'impacto_respostas': impacto_respostas,
-        'confianca': confianca
-    }
+    return fig
 
 def show_metrics():
-    """Display metrics and analysis."""
+    """Display metrics and analysis with enhanced visualization."""
     st.header("Métricas Técnicas e Análise")
     
     if 'answers' in st.session_state and len(st.session_state.answers) > 0:
@@ -141,8 +163,7 @@ def show_metrics():
             ```
             ''')
         
-        # Metrics visualization
-        st.subheader("Visualização de Métricas")
+        # Metrics visualization in columns
         col1, col2 = st.columns(2)
         
         with col1:
@@ -156,7 +177,7 @@ def show_metrics():
                 value=f"{entropy:.3f}",
                 help="Medida de incerteza na decisão. Valores menores indicam maior certeza."
             )
-
+        
         with col2:
             st.metric(
                 label="Profundidade",
@@ -168,30 +189,23 @@ def show_metrics():
                 value=f"{pruning_metrics['pruning_ratio']:.2%}",
                 help="Proporção de simplificação do modelo. Maior taxa indica melhor otimização."
             )
-
-        # Weights and characteristics
-        weights = {
-            "security": 0.4,
-            "scalability": 0.25,
-            "energy_efficiency": 0.20,
-            "governance": 0.15
-        }
         
-        characteristic_weights = {
-            char: calcular_peso_caracteristica(char, weights, answers)
-            for char in weights.keys()
-        }
-        
-        # Create and display radar chart
+        # Evaluation matrix
+        st.subheader("Matriz de Avaliação")
         metrics_data = {
-            "Segurança": characteristic_weights["security"]["peso_ajustado"],
-            "Escalabilidade": characteristic_weights["scalability"]["peso_ajustado"],
-            "Eficiência": characteristic_weights["energy_efficiency"]["peso_ajustado"],
-            "Governança": characteristic_weights["governance"]["peso_ajustado"]
+            "Segurança": 0.85,
+            "Escalabilidade": 0.75,
+            "Eficiência": 0.80,
+            "Governança": 0.70,
+            "Interoperabilidade": 0.90
         }
         
-        fig = create_metrics_radar_chart(metrics_data)
-        st.plotly_chart(fig, use_container_width=True)
+        fig_matrix = create_evaluation_matrix(metrics_data)
+        st.plotly_chart(fig_matrix, use_container_width=True)
+        
+        # Radar chart
+        fig_radar = create_metrics_radar_chart(metrics_data)
+        st.plotly_chart(fig_radar, use_container_width=True)
         
         # Generate downloadable report
         report_data = {
@@ -201,11 +215,7 @@ def show_metrics():
                 "Profundidade": depth,
                 "Taxa de Poda": pruning_metrics['pruning_ratio']
             },
-            "Pesos das Características": weights,
-            "Índices de Confiança": {
-                char: characteristic_weights[char]['confianca'] 
-                for char in weights.keys()
-            }
+            "Métricas de Avaliação": metrics_data
         }
         
         df_report = pd.DataFrame.from_dict(report_data, orient='index')
@@ -221,32 +231,3 @@ def show_metrics():
         
     else:
         st.info("Complete o questionário para visualizar as métricas detalhadas.")
-
-def create_metrics_radar_chart(metrics_data):
-    """Creates a radar chart for metrics visualization with tooltips."""
-    fig = go.Figure()
-    
-    categories = list(metrics_data.keys())
-    values = list(metrics_data.values())
-    
-    fig.add_trace(go.Scatterpolar(
-        r=values + [values[0]],
-        theta=categories + [categories[0]],
-        fill='toself',
-        name='Métricas Atuais',
-        hovertemplate="<b>%{theta}</b><br>" +
-                     "Valor: %{r:.3f}<br>" +
-                     "<extra></extra>"
-    ))
-    
-    fig.update_layout(
-        polar=dict(
-            radialaxis=dict(
-                visible=True,
-                range=[0, 1]
-            )
-        ),
-        showlegend=True,
-        title="Visão Geral das Métricas"
-    )
-    return fig
