@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 from dlt_data import questions
 from decision_logic import get_recommendation, dlt_classification
+from database import save_recommendation
 
 def create_progress_animation(current_phase, answers, questions):
     """Create an animated progress visualization with enhanced interactivity."""
@@ -198,6 +199,26 @@ def create_evaluation_matrices(recommendation):
         st.subheader("🔧 Algoritmos")
         for algo in recommendation['algorithms']:
             st.write(f"• {algo}")
+
+    # Add Save Recommendation button
+    if st.session_state.authenticated:
+        if st.button("💾 Salvar Recomendação", help="Clique para salvar esta recomendação no seu perfil"):
+            try:
+                save_recommendation(
+                    st.session_state.username,
+                    "Healthcare",  # Default scenario
+                    {
+                        "dlt": recommendation['dlt'],
+                        "dlt_type": recommendation['dlt_type'],
+                        "consensus": ", ".join(recommendation['algorithms']),
+                        "group": recommendation['group']
+                    }
+                )
+                st.success("✅ Recomendação salva com sucesso!")
+            except Exception as e:
+                st.error(f"❌ Erro ao salvar recomendação: {str(e)}")
+    else:
+        st.info("ℹ️ Faça login para salvar suas recomendações.")
     
     # Technical details in expandable sections
     with st.expander("📋 Características Técnicas"):
@@ -224,7 +245,7 @@ def create_evaluation_matrices(recommendation):
         
         st.plotly_chart(fig, use_container_width=True)
 
-    # Add the new evaluation matrices
+    # Add the evaluation matrices
     st.subheader("Matriz de Avaliação de DLTs")
     dlt_metrics_df = pd.DataFrame({
         'DLT': ['Hyperledger Fabric', 'Quorum', 'VeChain', 'IOTA', 'Ethereum 2.0'],
@@ -288,17 +309,15 @@ def create_evaluation_matrices(recommendation):
     As cores mais escuras indicam valores mais altos (melhor desempenho).
     ''')
 
-    # Use cases and examples
+    # Additional sections
     with st.expander("🎯 Casos de Uso"):
         st.write(recommendation['details']['use_cases'])
         st.subheader("Casos Reais")
         st.write(recommendation['details']['real_cases'])
     
-    # Challenges and limitations
     with st.expander("⚠️ Desafios e Limitações"):
         st.write(recommendation['details']['challenges'])
     
-    # Complete reference information
     with st.expander("📚 Referências"):
         st.write(recommendation['details']['references'])
     
