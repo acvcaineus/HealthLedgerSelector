@@ -180,7 +180,7 @@ def create_evaluation_matrices(recommendation):
     st.header("Recomendação de DLT e Análise")
     
     # Show complete classification path
-    st.subheader("🔄 Caminho de Classificação")
+    st.subheader("Caminho de Classificação")
     path_fig = create_classification_path_visualization(recommendation)
     if path_fig:
         st.plotly_chart(path_fig, use_container_width=True)
@@ -189,20 +189,20 @@ def create_evaluation_matrices(recommendation):
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("📊 Classificação")
+        st.subheader("Classificação")
         st.write(f"**DLT:** {recommendation['dlt']}")
         st.write(f"**Tipo:** {recommendation['dlt_type']}")
         st.write(f"**Estrutura de Dados:** {recommendation['data_structure']}")
         st.write(f"**Grupo:** {recommendation['group']}")
     
     with col2:
-        st.subheader("🔧 Algoritmos")
+        st.subheader("Algoritmos")
         for algo in recommendation['algorithms']:
             st.write(f"• {algo}")
-
+    
     # Add Save Recommendation button
     if st.session_state.authenticated:
-        if st.button("💾 Salvar Recomendação", help="Clique para salvar esta recomendação no seu perfil"):
+        if st.button("Salvar Recomendação", help="Clique para salvar esta recomendação no seu perfil"):
             try:
                 save_recommendation(
                     st.session_state.username,
@@ -214,14 +214,14 @@ def create_evaluation_matrices(recommendation):
                         "group": recommendation['group']
                     }
                 )
-                st.success("✅ Recomendação salva com sucesso!")
+                st.success("Recomendação salva com sucesso!")
             except Exception as e:
-                st.error(f"❌ Erro ao salvar recomendação: {str(e)}")
+                st.error(f"Erro ao salvar recomendação: {str(e)}")
     else:
-        st.info("ℹ️ Faça login para salvar suas recomendações.")
+        st.info("Faça login para salvar suas recomendações.")
     
     # Technical details in expandable sections
-    with st.expander("📋 Características Técnicas"):
+    with st.expander("Características Técnicas"):
         # Create metrics visualization
         metrics_df = pd.DataFrame({
             'Métrica': list(recommendation['metrics'].keys()),
@@ -301,28 +301,28 @@ def create_evaluation_matrices(recommendation):
 
     # Add explanatory text
     st.info('''
-    ### Como interpretar as matrizes:
-    1. **Matriz de DLTs**: Mostra o desempenho geral de cada DLT nas principais métricas
-    2. **Matriz de Grupos**: Apresenta as características de cada grupo de algoritmos
-    3. **Matriz de Algoritmos**: Detalha o desempenho específico de cada algoritmo de consenso
+    Como interpretar as matrizes:
+    1. Matriz de DLTs: Mostra o desempenho geral de cada DLT nas principais métricas
+    2. Matriz de Grupos: Apresenta as características de cada grupo de algoritmos
+    3. Matriz de Algoritmos: Detalha o desempenho específico de cada algoritmo de consenso
 
     As cores mais escuras indicam valores mais altos (melhor desempenho).
     ''')
 
     # Additional sections
-    with st.expander("🎯 Casos de Uso"):
+    with st.expander("Casos de Uso"):
         st.write(recommendation['details']['use_cases'])
         st.subheader("Casos Reais")
         st.write(recommendation['details']['real_cases'])
     
-    with st.expander("⚠️ Desafios e Limitações"):
+    with st.expander("Desafios e Limitações"):
         st.write(recommendation['details']['challenges'])
     
-    with st.expander("📚 Referências"):
+    with st.expander("Referências"):
         st.write(recommendation['details']['references'])
     
     # Comparison table
-    st.subheader("📊 Comparação de DLTs")
+    st.subheader("Comparação de DLTs")
     comparison_data = []
     for dlt_name, matrix_info in recommendation['evaluation_matrix'].items():
         comparison_data.append({
@@ -361,7 +361,7 @@ def run_decision_tree():
     if 'answers' not in st.session_state:
         st.session_state.answers = {}
     
-    if st.button("🔄 Reiniciar", help="Clique para recomeçar o processo de seleção"):
+    if st.button("Reiniciar", help="Clique para recomeçar o processo de seleção"):
         st.session_state.answers = {}
         st.experimental_rerun()
     
