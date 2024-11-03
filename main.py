@@ -252,13 +252,19 @@ def show_home_page():
     - Índice de Consistência valida a adequação da recomendação
 
     ### Métricas de Avaliação
-    1. Índice de Gini: Mede a pureza da classificação
-    2. Entropia: Avalia a incerteza na decisão
+    1. Índice de Gini (0.653)
+       - Mede a pureza da classificação
+       - Valor mais próximo de 1 indica maior diversidade
+
+    2. Entropia (1.557)
+       - Avalia a incerteza na decisão
+       - Valor mais alto indica maior complexidade decisória
+
     3. Taxa de Poda: Indica a otimização do modelo
     4. Acurácia: Precisão global das recomendações
     ''')
 
-    # New section for framework features
+    # Framework features section
     st.markdown('''
     ## Funcionalidades do Framework
 

@@ -116,7 +116,33 @@ def show_metrics():
     metrics_fig = create_metrics_visualization(metrics)
     st.plotly_chart(metrics_fig, use_container_width=True)
     
-    # 3. Detailed Calculations
+    # 3. Gini and Entropy Visualizations
+    st.subheader("3. Distribuição e Entropia das Classes")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Gini Index visualization
+        gini_data = pd.DataFrame({
+            'Classe': ['DLT Permissionada', 'DLT Pública', 'DLT Híbrida'],
+            'Proporção': [3/7, 2/7, 2/7]
+        })
+        fig_gini = px.pie(gini_data, values='Proporção', names='Classe',
+                          title='Distribuição de Classes (Gini Index: 0.653)')
+        st.plotly_chart(fig_gini)
+
+    with col2:
+        # Entropy visualization
+        entropy_data = pd.DataFrame({
+            'Classe': ['DLT Permissionada', 'DLT Pública', 'DLT Híbrida'],
+            'Entropia': [-0.429 * np.log2(0.429),
+                        -0.286 * np.log2(0.286),
+                        -0.286 * np.log2(0.286)]
+        })
+        fig_entropy = px.bar(entropy_data, x='Classe', y='Entropia',
+                            title='Contribuição para Entropia por Classe')
+        st.plotly_chart(fig_entropy)
+    
+    # 4. Detailed Calculations
     with st.expander("Detalhamento dos Cálculos"):
         st.markdown('''
         ### 1. Índice de Gini
@@ -154,7 +180,7 @@ def show_metrics():
         ```
         ''')
     
-    # 4. Detailed Analysis
+    # 5. Detailed Analysis
     with st.expander("Análise Detalhada"):
         st.markdown(f"""
         ### Métricas Detalhadas
@@ -176,7 +202,7 @@ def show_metrics():
            - A taxa de poda mostra a eficiência da árvore de decisão
         """)
     
-    # 5. Download Report
+    # 6. Download Report
     metrics_df = pd.DataFrame({
         'Métrica': [
             'Profundidade Média',
@@ -184,7 +210,9 @@ def show_metrics():
             'Precisão',
             'Número de Caminhos',
             'Total de Nós',
-            'Nós Podados'
+            'Nós Podados',
+            'Índice de Gini',
+            'Entropia'
         ],
         'Valor': [
             metrics['profundidade_media'],
@@ -192,7 +220,9 @@ def show_metrics():
             metrics['precisao'],
             metrics['num_caminhos'],
             metrics['total_nos'],
-            metrics['nos_podados']
+            metrics['nos_podados'],
+            0.653,
+            1.557
         ]
     })
     
