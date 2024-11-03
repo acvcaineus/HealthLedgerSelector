@@ -199,6 +199,11 @@ def create_evaluation_matrices(recommendation):
         st.subheader("Algoritmos")
         for algo in recommendation['algorithms']:
             st.write(f"• {algo}")
+
+    # Calculate and display consistency index
+    consistency_index = sum(recommendation['metrics'].values()) / len(recommendation['metrics'])
+    st.info(f"Índice de Consistência: {consistency_index:.2f}")
+    st.write("*O índice de consistência indica o quão bem a DLT atende aos requisitos de forma balanceada. Valores mais próximos de 1 indicam maior consistência.*")
     
     # Add Save Recommendation button
     if st.session_state.authenticated:
@@ -321,7 +326,7 @@ def create_evaluation_matrices(recommendation):
     with st.expander("Referências"):
         st.write(recommendation['details']['references'])
     
-    # Comparison table
+    # Updated comparison table with all DLTs
     st.subheader("Comparação de DLTs")
     comparison_data = []
     for dlt_name, matrix_info in recommendation['evaluation_matrix'].items():
@@ -337,13 +342,11 @@ def create_evaluation_matrices(recommendation):
     comparison_df = pd.DataFrame(comparison_data)
     comparison_df = comparison_df.sort_values('Score', ascending=False)
     
-    # Style the dataframe
-    def highlight_max(s):
-        is_max = s == s.max()
-        return ['background-color: #e6f3ff' if v else '' for v in is_max]
+    def highlight_selected(s, selected_dlt):
+        return ['background-color: #e6f3ff' if s.name == selected_dlt else '' for _ in s]
     
     styled_df = comparison_df.style\
-        .apply(highlight_max)\
+        .apply(highlight_selected, selected_dlt=recommendation['dlt'])\
         .format({
             'Score': '{:.2f}',
             'security': '{:.2f}',
