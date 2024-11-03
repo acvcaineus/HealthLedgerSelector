@@ -228,6 +228,10 @@ def show_metrics():
             for metric, value in metrics_values.items():
                 st.metric(label=metric, value=value)
 
+            # Calculate precision and accuracy scores
+            precision_score = metrics_values['Verdadeiros Positivos (VP)'] / (metrics_values['Verdadeiros Positivos (VP)'] + metrics_values['Falsos Positivos (FP)'])
+            accuracy = (metrics_values['Verdadeiros Positivos (VP)'] + metrics_values['Verdadeiros Negativos (VN)']) / sum(metrics_values.values())
+
             st.markdown('''
             ### Fórmulas Detalhadas:
 
