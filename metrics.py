@@ -1,13 +1,10 @@
 import math
 import numpy as np
+import plotly.graph_objects as go
 
 def calcular_gini(classes):
     """
     Calcula a impureza de Gini para um conjunto de classes.
-    A impureza de Gini é uma medida de quão frequentemente um elemento seria 
-    incorretamente classificado se fosse classificado aleatoriamente.
-    
-    Fórmula: Gini = 1 - Σ(pi²), onde pi é a proporção de cada classe
     Interpretação:
     - Valor próximo a 0: Indica boa separação entre as classes
     - Valor próximo a 1: Indica maior mistura entre as classes
@@ -19,9 +16,6 @@ def calcular_gini(classes):
 def calcular_entropia(classes):
     """
     Calcula a entropia de Shannon para um conjunto de classes.
-    A entropia mede a aleatoriedade ou imprevisibilidade em um conjunto de dados.
-    
-    Fórmula: Entropia = -Σ(pi * log2(pi)), onde pi é a proporção de cada classe
     Interpretação:
     - Valor baixo: Indica maior certeza na decisão
     - Valor alto: Indica maior incerteza na decisão
@@ -35,11 +29,6 @@ def calcular_profundidade_decisoria(decisoes):
     """
     Calcula a profundidade média da árvore de decisão.
     Uma profundidade menor indica um modelo mais simples e interpretável.
-    
-    Fórmula: Profundidade Média = Σ(profundidades) / número de decisões
-    Interpretação:
-    - Valor baixo: Indica processo decisório mais direto
-    - Valor alto: Indica processo decisório mais complexo
     """
     if not decisoes:
         return 0
@@ -48,12 +37,7 @@ def calcular_profundidade_decisoria(decisoes):
 
 def calcular_pruning(total_nos, nos_podados):
     """
-    Calcula o pruning ratio (proporção de nós podados) e métricas relacionadas.
-    
-    Retorna:
-    - pruning_ratio: Proporção de nós removidos
-    - eficiencia_poda: Medida da eficiência da poda
-    - impacto_complexidade: Impacto na complexidade do modelo
+    Calcula o pruning ratio e métricas relacionadas.
     """
     if total_nos == 0:
         return {
@@ -72,21 +56,19 @@ def calcular_pruning(total_nos, nos_podados):
         'impacto_complexidade': impacto_complexidade
     }
 
-def calcular_peso_caracteristica(caracteristica, pesos, respostas):
+def calcular_peso_caracteristica(caracteristica, pesos_base, respostas):
     """
-    Calcula o peso normalizado e ajustado de uma característica específica.
+    Calcula o peso ajustado de uma característica específica com base nas respostas.
     
-    Parâmetros:
-    - caracteristica: Nome da característica
-    - pesos: Dicionário com os pesos base das características
-    - respostas: Dicionário com as respostas do usuário
+    Args:
+        caracteristica: Nome da característica
+        pesos_base: Dicionário com os pesos base das características
+        respostas: Dicionário com as respostas do usuário
     
-    Retorna:
-    - peso_ajustado: Peso final após ajustes baseados nas respostas
-    - impacto_respostas: Fator de impacto das respostas
-    - confianca: Nível de confiança no peso calculado
+    Returns:
+        Dict com peso_ajustado, impacto_respostas e confianca
     """
-    if not pesos or caracteristica not in pesos:
+    if not pesos_base or caracteristica not in pesos_base:
         return {
             'peso_ajustado': 0,
             'impacto_respostas': 0,
@@ -94,10 +76,10 @@ def calcular_peso_caracteristica(caracteristica, pesos, respostas):
         }
     
     # Peso base normalizado
-    total_pesos = sum(pesos.values())
-    peso_base = pesos[caracteristica] / total_pesos if total_pesos > 0 else 0
+    total_pesos = sum(pesos_base.values())
+    peso_base = pesos_base[caracteristica] / total_pesos if total_pesos > 0 else 0
     
-    # Ajuste baseado nas respostas relacionadas
+    # Mapeamento de características para perguntas relacionadas
     relacionadas = {
         'security': ['privacy', 'network_security'],
         'scalability': ['data_volume', 'integration'],
@@ -105,21 +87,22 @@ def calcular_peso_caracteristica(caracteristica, pesos, respostas):
         'governance': ['governance_flexibility', 'interoperability']
     }
     
-    # Calcula o impacto das respostas
+    # Calcula o impacto das respostas relacionadas
     respostas_relacionadas = [
         resp for q_id, resp in respostas.items()
         if q_id in relacionadas.get(caracteristica, [])
     ]
     
-    impacto_respostas = sum(1 for resp in respostas_relacionadas if resp == "Sim") / \
-                        len(relacionadas.get(caracteristica, [])) if relacionadas.get(caracteristica) else 0
+    num_respostas_positivas = sum(1 for resp in respostas_relacionadas if resp == "Sim")
+    total_perguntas_relacionadas = len(relacionadas.get(caracteristica, []))
+    
+    impacto_respostas = num_respostas_positivas / total_perguntas_relacionadas if total_perguntas_relacionadas > 0 else 0
     
     # Ajusta o peso baseado no impacto das respostas
     peso_ajustado = peso_base * (1 + impacto_respostas * 0.5)
     
     # Calcula o nível de confiança baseado na quantidade de respostas relacionadas
-    confianca = len(respostas_relacionadas) / len(relacionadas.get(caracteristica, [1])) \
-                if relacionadas.get(caracteristica) else 0
+    confianca = len(respostas_relacionadas) / total_perguntas_relacionadas if total_perguntas_relacionadas > 0 else 0
     
     return {
         'peso_ajustado': peso_ajustado,
@@ -127,9 +110,65 @@ def calcular_peso_caracteristica(caracteristica, pesos, respostas):
         'confianca': confianca
     }
 
+def create_metrics_radar_chart(metrics_data):
+    """
+    Creates a radar chart for visualizing metrics.
+    """
+    fig = go.Figure()
+    
+    categories = list(metrics_data.keys())
+    values = list(metrics_data.values())
+    
+    fig.add_trace(go.Scatterpolar(
+        r=values + [values[0]],  # Add first value at end to close the polygon
+        theta=categories + [categories[0]],  # Add first category at end to close the polygon
+        fill='toself',
+        name='Métricas Atuais'
+    ))
+    
+    fig.update_layout(
+        polar=dict(
+            radialaxis=dict(
+                visible=True,
+                range=[0, 1]
+            )
+        ),
+        showlegend=True,
+        title="Visão Geral das Métricas"
+    )
+    return fig
+
+def create_characteristic_weights_chart(weights_data):
+    """
+    Creates a radar chart for visualizing characteristic weights.
+    """
+    fig = go.Figure()
+    
+    categories = list(weights_data.keys())
+    values = [weights_data[cat]['peso_ajustado'] for cat in categories]
+    
+    fig.add_trace(go.Scatterpolar(
+        r=values + [values[0]],  # Add first value at end to close the polygon
+        theta=categories + [categories[0]],  # Add first category at end to close the polygon
+        fill='toself',
+        name='Pesos das Características'
+    ))
+    
+    fig.update_layout(
+        polar=dict(
+            radialaxis=dict(
+                visible=True,
+                range=[0, 1]
+            )
+        ),
+        showlegend=True,
+        title="Distribuição dos Pesos das Características"
+    )
+    return fig
+
 def get_metric_explanation(metric_name, value):
     """
-    Retorna uma explicação detalhada para uma métrica específica.
+    Returns a detailed explanation for a specific metric.
     """
     explanations = {
         "gini": {
@@ -155,14 +194,6 @@ def get_metric_explanation(metric_name, value):
             "interpretation": lambda v: "Poda eficiente" if v['pruning_ratio'] > 0.7 else 
                             "Poda moderada" if v['pruning_ratio'] > 0.4 else 
                             "Poda limitada"
-        },
-        "characteristic_weight": {
-            "title": "Peso da Característica",
-            "description": "Avalia a importância relativa da característica",
-            "formula": "Peso Ajustado = peso_base * (1 + impacto_respostas * 0.5)",
-            "interpretation": lambda v: "Alta importância" if v['peso_ajustado'] > 0.3 else 
-                            "Importância moderada" if v['peso_ajustado'] > 0.15 else 
-                            "Baixa importância"
         }
     }
     
