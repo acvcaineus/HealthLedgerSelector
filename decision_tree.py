@@ -1,9 +1,20 @@
 import streamlit as st
 import plotly.graph_objects as go
+import plotly.express as px
 import pandas as pd
 from decision_logic import get_recommendation
 from database import save_recommendation
 from dlt_data import questions, dlt_metrics
+
+def get_consensus_group_algorithms(consensus_group):
+    """Return algorithms for a given consensus group."""
+    group_algorithms = {
+        "Alta Segurança e Controle": ["PBFT", "PoW"],
+        "Alta Eficiência": ["PoA", "RAFT"],
+        "Escalabilidade e Governança": ["PoS", "DPoS"],
+        "Alta Escalabilidade IoT": ["Tangle", "DAG"]
+    }
+    return group_algorithms.get(consensus_group, [])
 
 def create_progress_animation(current_phase, answers):
     """Create an animated progress visualization."""
@@ -116,90 +127,88 @@ def create_evaluation_matrices(recommendation):
     </style>
     ''', unsafe_allow_html=True)
     
-    # DLT Matrix Section
-    with st.expander("ℹ️ Entenda a Matriz de DLTs"):
-        st.markdown("""
-        ### Matriz de Avaliação de DLTs
-        
-        Esta matriz mostra a comparação detalhada entre diferentes DLTs baseada em quatro métricas principais:
-        
-        - **Segurança**: Capacidade de proteger dados e transações
-        - **Escalabilidade**: Capacidade de crescer mantendo o desempenho
-        - **Eficiência Energética**: Consumo de energia por transação
-        - **Governança**: Flexibilidade e controle do sistema
-        
-        Os valores são normalizados de 0 a 1, onde 1 representa o melhor desempenho.
-        """)
-    
-    # Group DLTs by type
-    dlt_by_type = {}
-    for dlt, info in recommendation['evaluation_matrix'].items():
-        dlt_type = info['type']
-        if dlt_type not in dlt_by_type:
-            dlt_by_type[dlt_type] = []
-        dlt_by_type[dlt_type].append(dlt)
-    
-    # Create DLT comparison heatmap for weighted scores
-    st.subheader("Comparação de Métricas por Tipo de DLT")
-    metrics = ['security', 'scalability', 'energy_efficiency', 'governance']
-    metrics_pt = ['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança']
-    
-    # Prepare data for weighted metrics heatmap
-    weighted_values = []
-    dlt_types = []
-    dlt_names = []
-    
-    for dlt_type in sorted(dlt_by_type.keys()):
-        for dlt in dlt_by_type[dlt_type]:
-            row = []
-            for metric in metrics:
-                weighted_score = recommendation['evaluation_matrix'][dlt]['weighted_metrics'][metric]
-                row.append(weighted_score)
-            weighted_values.append(row)
-            dlt_types.append(dlt_type)
-            dlt_names.append(dlt)
-    
-    # Create weighted metrics heatmap
-    fig_weighted = go.Figure(data=go.Heatmap(
-        z=weighted_values,
-        y=dlt_names,
-        x=metrics_pt,
-        colorscale='RdBu',
-        hoverongaps=False,
-        hovertemplate="<b>DLT:</b> %{y}<br>" +
-                     "<b>Tipo:</b> %{customdata}<br>" +
-                     "<b>Métrica:</b> %{x}<br>" +
-                     "<b>Score Ponderado:</b> %{z:.2f}<br>" +
-                     "<extra></extra>",
-        customdata=dlt_types
-    ))
-    
-    fig_weighted.update_layout(
-        title="Scores Ponderados por Tipo de DLT",
-        yaxis_title="DLTs",
-        xaxis_title="Métricas",
-        height=600
+    # DLT Types Matrix
+    st.subheader("Matriz de Tipos de DLT")
+    dlt_types_df = pd.DataFrame({
+        'Tipo': ['DLT Permissionada Privada', 'DLT Permissionada Simples', 'DLT Híbrida', 
+                 'DLT com Consenso Delegado', 'DLT Pública', 'DLT Pública Permissionless'],
+        'Segurança': [0.85, 0.70, 0.78, 0.80, 0.95, 0.85],
+        'Escalabilidade': [0.65, 0.55, 0.75, 0.85, 0.40, 0.75],
+        'Eficiência': [0.80, 0.75, 0.80, 0.90, 0.35, 0.65],
+        'Governança': [0.75, 0.80, 0.78, 0.60, 0.50, 0.80]
+    }).set_index('Tipo')
+
+    # Create heatmap for DLT types
+    fig_types = px.imshow(
+        dlt_types_df,
+        color_continuous_scale='RdBu',
+        aspect='auto'
     )
+    fig_types.update_layout(
+        title="Comparação de Tipos de DLT",
+        height=400
+    )
+    st.plotly_chart(fig_types)
     
-    st.plotly_chart(fig_weighted, use_container_width=True)
-    st.caption("As DLTs estão agrupadas por tipo para melhor comparação. Cores mais escuras indicam scores mais altos.")
+    # Consensus Groups Matrix
+    st.subheader("Matriz de Grupos de Consenso")
+    consensus_groups_df = pd.DataFrame({
+        'Grupo': ['Alta Segurança e Controle', 'Alta Eficiência', 'Escalabilidade e Governança', 'Alta Escalabilidade IoT'],
+        'Segurança': [0.90, 0.75, 0.80, 0.70],
+        'Escalabilidade': [0.60, 0.85, 0.90, 0.95],
+        'Eficiência': [0.70, 0.90, 0.85, 0.80],
+        'Governança': [0.85, 0.80, 0.95, 0.75]
+    }).set_index('Grupo')
+    
+    fig_consensus = px.imshow(
+        consensus_groups_df,
+        color_continuous_scale='RdBu',
+        aspect='auto'
+    )
+    fig_consensus.update_layout(
+        title="Comparação de Grupos de Consenso",
+        height=400
+    )
+    st.plotly_chart(fig_consensus)
+    
+    # Algorithms Matrix
+    st.subheader("Matriz de Algoritmos do Grupo")
+    consensus_group = recommendation.get('consensus_group', 'Alta Segurança e Controle')
+    algorithms = get_consensus_group_algorithms(consensus_group)
+    
+    if algorithms:
+        algorithms_df = pd.DataFrame({
+            'Algoritmo': algorithms,
+            'Segurança': [0.85 if 'PBFT' in alg else 0.75 for alg in algorithms],
+            'Escalabilidade': [0.70 if 'PBFT' in alg else 0.85 for alg in algorithms],
+            'Eficiência': [0.80 if 'PoS' in alg else 0.70 for alg in algorithms],
+            'Governança': [0.90 if 'DPoS' in alg else 0.75 for alg in algorithms]
+        }).set_index('Algoritmo')
+        
+        fig_algorithms = px.imshow(
+            algorithms_df,
+            color_continuous_scale='RdBu',
+            aspect='auto'
+        )
+        fig_algorithms.update_layout(
+            title=f"Comparação de Algoritmos do Grupo: {consensus_group}",
+            height=400
+        )
+        st.plotly_chart(fig_algorithms)
     
     # Create score comparison table with styling
     scores_df = pd.DataFrame({
-        'Tipo de DLT': [recommendation['evaluation_matrix'][dlt]['type'] for dlt in dlt_names],
-        'DLT': dlt_names,
-        'Score Total': [recommendation['weighted_scores'][dlt] for dlt in dlt_names],
-        'Segurança': [recommendation['evaluation_matrix'][dlt]['raw_metrics']['security'] for dlt in dlt_names],
-        'Escalabilidade': [recommendation['evaluation_matrix'][dlt]['raw_metrics']['scalability'] for dlt in dlt_names],
-        'Eficiência': [recommendation['evaluation_matrix'][dlt]['raw_metrics']['energy_efficiency'] for dlt in dlt_names],
-        'Governança': [recommendation['evaluation_matrix'][dlt]['raw_metrics']['governance'] for dlt in dlt_names]
+        'Tipo de DLT': [recommendation['evaluation_matrix'][dlt]['type'] for dlt in recommendation['evaluation_matrix']],
+        'DLT': list(recommendation['evaluation_matrix'].keys()),
+        'Score Total': [recommendation['weighted_scores'][dlt] for dlt in recommendation['evaluation_matrix']],
+        'Segurança': [recommendation['evaluation_matrix'][dlt]['raw_metrics']['security'] for dlt in recommendation['evaluation_matrix']],
+        'Escalabilidade': [recommendation['evaluation_matrix'][dlt]['raw_metrics']['scalability'] for dlt in recommendation['evaluation_matrix']],
+        'Eficiência': [recommendation['evaluation_matrix'][dlt]['raw_metrics']['energy_efficiency'] for dlt in recommendation['evaluation_matrix']],
+        'Governança': [recommendation['evaluation_matrix'][dlt]['raw_metrics']['governance'] for dlt in recommendation['evaluation_matrix']]
     }).sort_values('Score Total', ascending=False)
     
-    # Style the DataFrame
     def highlight_recommended(row):
-        if row.name == recommendation['dlt']:
-            return ['background-color: #e6f3ff'] * len(row)
-        return [''] * len(row)
+        return ['background-color: #e6f3ff' if row.name == recommendation['dlt'] else '' for _ in row]
     
     def highlight_metrics(val):
         if isinstance(val, float):
@@ -219,7 +228,6 @@ def create_evaluation_matrices(recommendation):
 
 def select_consensus_algorithm(dlt_type, answers):
     """Select the best consensus algorithm based on DLT type and characteristics."""
-    # Define algorithm groups and their algorithms
     algorithm_groups = {
         "Alta Segurança e Controle": {
             "algorithms": ["PBFT", "PoW"],
@@ -263,7 +271,6 @@ def select_consensus_algorithm(dlt_type, answers):
             score += 0.1  # Governance weight
         algorithm_scores[algorithm] = score
     
-    # Return the highest scoring algorithm
     return max(algorithm_scores.items(), key=lambda x: x[1])[0] if algorithm_scores else "Não disponível"
 
 def run_decision_tree():
