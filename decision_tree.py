@@ -183,24 +183,6 @@ def create_consensus_algorithms_matrix():
     )
     return fig
 
-def create_integration_matrix():
-    """Create matrix showing relationships between components."""
-    integration_data = {
-        'DLT Types': {'Consensus': 0.9, 'Infrastructure': 0.8, 'Application': 0.7},
-        'Consensus': {'DLT Types': 0.9, 'Infrastructure': 0.85, 'Application': 0.6},
-        'Infrastructure': {'DLT Types': 0.8, 'Consensus': 0.85, 'Application': 0.8},
-        'Application': {'DLT Types': 0.7, 'Consensus': 0.6, 'Infrastructure': 0.8}
-    }
-    
-    df = pd.DataFrame(integration_data)
-    fig = px.imshow(
-        df,
-        color_continuous_scale='RdBu',
-        aspect='auto',
-        title="Matriz de Integração"
-    )
-    return fig
-
 def create_evaluation_matrices(recommendation):
     """Create and display evaluation matrices with hierarchical relationships."""
     if not recommendation or recommendation['dlt'] == "Não disponível":
@@ -252,12 +234,12 @@ def create_evaluation_matrices(recommendation):
         incluindo segurança, escalabilidade, eficiência energética e governança.
         """)
 
-    with st.expander("Matriz de Integração"):
-        st.plotly_chart(create_integration_matrix(), use_container_width=True)
-        st.write("""
-        Visualização das relações entre diferentes componentes do sistema,
-        mostrando como eles se integram e interagem entre si.
-        """)
+    # Display decision path
+    st.subheader("Fluxo da Árvore de Decisão")
+    st.write("Seu caminho de decisão:")
+    for q in questions:
+        if q['id'] in st.session_state.answers:
+            st.write(f"• {q['phase']} - {q['text']}: **{st.session_state.answers[q['id']]}**")
 
     # Display additional information sections
     with st.expander("Casos de Uso"):

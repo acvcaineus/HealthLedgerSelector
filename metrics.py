@@ -25,26 +25,33 @@ def calcular_entropia(classes):
 
 def calcular_profundidade_decisoria(decisoes):
     """
-    Calcula a profundidade média da árvore de decisão.
+    Calcula a profundidade média e máxima da árvore de decisão.
     """
     if not decisoes:
-        return 0
-    profundidade_total = sum(decisoes)
-    return profundidade_total / len(decisoes)
+        return {'media': 0, 'maxima': 0, 'caminhos': []}
+    
+    profundidades = []
+    caminho_atual = 0
+    caminhos = []
+    
+    for i, decisao in enumerate(decisoes):
+        if decisao == 'Sim':
+            caminho_atual += 1
+        profundidades.append(caminho_atual)
+        caminhos.append(f"Nível {caminho_atual}: Decisão {i+1}")
+    
+    return {
+        'media': sum(profundidades) / len(profundidades),
+        'maxima': max(profundidades),
+        'caminhos': caminhos
+    }
 
 def calcular_pruning(total_nos, nos_podados):
     """
     Calcula o pruning ratio e métricas relacionadas.
     """
-    if total_nos == 0:
-        return {
-            'pruning_ratio': 0,
-            'eficiencia_poda': 0,
-            'impacto_complexidade': 0
-        }
-    
-    pruning_ratio = (total_nos - nos_podados) / total_nos
-    eficiencia_poda = 1 - (nos_podados / total_nos)
+    pruning_ratio = (total_nos - nos_podados) / total_nos if total_nos > 0 else 0
+    eficiencia_poda = 1 - (nos_podados / total_nos) if total_nos > 0 else 0
     impacto_complexidade = math.log2(total_nos / (total_nos - nos_podados + 1))
     
     return {
@@ -77,17 +84,15 @@ def calculate_precision_metrics(true_positives, false_positives, false_negatives
     }
 
 def calculate_consistency_score(metrics, answers):
-    """
-    Calculate consistency score based on user answers and metrics.
-    """
+    """Calculate consistency score based on user answers and metrics."""
     if not answers or not metrics:
         return 0.0
     
     weights = {
-        'security': 0.4,
+        'security': 0.25,
         'scalability': 0.25,
-        'energy_efficiency': 0.20,
-        'governance': 0.15
+        'energy_efficiency': 0.25,
+        'governance': 0.25
     }
     
     score = 0
@@ -95,94 +100,10 @@ def calculate_consistency_score(metrics, answers):
     
     for key, weight in weights.items():
         if key in metrics:
-            if answers.get('privacy') == 'Sim' and key == 'security':
-                score += metrics[key] * weight * 1.2
-            elif answers.get('scalability') == 'Sim' and key == 'scalability':
-                score += metrics[key] * weight * 1.2
-            elif answers.get('energy_efficiency') == 'Sim' and key == 'energy_efficiency':
-                score += metrics[key] * weight * 1.2
-            elif answers.get('governance_flexibility') == 'Sim' and key == 'governance':
-                score += metrics[key] * weight * 1.2
-            else:
-                score += metrics[key] * weight
+            score += metrics[key] * weight
             total_weight += weight
     
     return score / total_weight if total_weight > 0 else 0
-
-def create_metrics_radar_chart(metrics_data, recommendation=None, answers=None):
-    """Creates a radar chart for metrics visualization with enhanced tooltips."""
-    fig = go.Figure()
-    
-    if recommendation and answers:
-        metrics_data.update(recommendation['metrics'])
-        consistency_score = calculate_consistency_score(metrics_data, answers)
-        
-        fig.add_annotation(
-            text=f"Índice de Consistência: {consistency_score:.2f}",
-            xref="paper", yref="paper",
-            x=0.5, y=1.1,
-            showarrow=False,
-            font=dict(size=14)
-        )
-    
-    categories = list(metrics_data.keys())
-    values = list(metrics_data.values())
-    
-    fig.add_trace(go.Scatterpolar(
-        r=values + [values[0]],
-        theta=categories + [categories[0]],
-        fill='toself',
-        name='Métricas Atuais',
-        line=dict(color='#3498db', width=2),
-        fillcolor='rgba(52, 152, 219, 0.3)'
-    ))
-    
-    fig.update_layout(
-        polar=dict(
-            radialaxis=dict(
-                visible=True,
-                range=[0, 1],
-                showline=True,
-                linewidth=1,
-                linecolor='lightgray',
-                tickfont=dict(size=10)
-            )
-        ),
-        showlegend=True,
-        title="Visão Geral das Métricas"
-    )
-    return fig
-
-def create_evaluation_matrix(metrics_data, recommendation=None, answers=None):
-    """Creates a heatmap for metrics evaluation with current recommendation data."""
-    if recommendation and 'metrics' in recommendation:
-        metrics_data.update(recommendation['metrics'])
-    
-    df = pd.DataFrame([metrics_data])
-    colors = ['#053061', '#2166ac', '#4393c3', '#92c5de', '#d1e5f0', 
-              '#f7f7f7', '#fddbc7', '#f4a582', '#d6604d', '#b2182b', '#67001f']
-    
-    fig = px.imshow(
-        df,
-        color_continuous_scale=colors,
-        aspect='auto',
-        title="Matriz de Avaliação de Métricas"
-    )
-    
-    fig.update_layout(
-        xaxis_title="Métricas",
-        yaxis_title="Avaliação",
-        yaxis_visible=False,
-        coloraxis_colorbar=dict(
-            title="Pontuação",
-            ticktext=["0.0", "0.2", "0.4", "0.6", "0.8", "1.0"],
-            tickvals=[0, 0.2, 0.4, 0.6, 0.8, 1],
-            lenmode="pixels",
-            len=200,
-        )
-    )
-    
-    return fig
 
 def show_metrics():
     """Display metrics and analysis with enhanced visualization and state synchronization."""
@@ -205,8 +126,59 @@ def show_metrics():
         classes = {'class_a': len(answers), 'class_b': nos_podados}
         gini = calcular_gini(classes)
         entropy = calcular_entropia(classes)
-        depth = calcular_profundidade_decisoria(list(range(len(answers))))
-
+        
+        # Calculate tree depth metrics with visualization
+        profundidade_metrics = calcular_profundidade_decisoria(list(answers.values()))
+        
+        # Tree Depth Analysis Section
+        st.subheader("Análise de Profundidade da Árvore")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Profundidade Média", f"{profundidade_metrics['media']:.2f}")
+            st.metric("Profundidade Máxima", f"{profundidade_metrics['maxima']}")
+        
+        with col2:
+            # Create visualization of tree depth
+            depth_fig = go.Figure()
+            x_values = list(range(1, len(profundidade_metrics['caminhos']) + 1))
+            y_values = [int(caminho.split(':')[0].split()[-1]) for caminho in profundidade_metrics['caminhos']]
+            
+            depth_fig.add_trace(go.Scatter(
+                x=x_values,
+                y=y_values,
+                mode='lines+markers',
+                name='Profundidade',
+                line=dict(color='#3498db', width=2),
+                marker=dict(size=8)
+            ))
+            
+            depth_fig.update_layout(
+                title="Visualização da Profundidade da Árvore",
+                xaxis_title="Número da Decisão",
+                yaxis_title="Nível de Profundidade",
+                showlegend=False
+            )
+            
+            st.plotly_chart(depth_fig, use_container_width=True)
+        
+        with st.expander("Detalhes da Profundidade"):
+            st.markdown("""
+            ### Fórmulas de Profundidade
+            ```python
+            Profundidade Média = Σ(profundidade_nós) / total_nós
+            Profundidade Máxima = max(profundidade_nós)
+            ```
+            
+            ### Interpretação
+            - **Profundidade Média**: Indica o número médio de decisões necessárias
+            - **Profundidade Máxima**: Mostra o caminho mais longo na árvore
+            - **Caminhos**: Sequência de decisões tomadas
+            """)
+            
+            st.write("### Caminhos de Decisão")
+            for caminho in profundidade_metrics['caminhos']:
+                st.write(f"• {caminho}")
+        
         # Calculate precision metrics
         true_positives = len([a for a in answers.values() if a == 'Sim'])
         false_positives = len([a for a in answers.values() if a == 'Não'])
@@ -215,7 +187,7 @@ def show_metrics():
         
         # Display formulas
         with st.expander("Fórmulas das Métricas"):
-            st.markdown('''
+            st.markdown("""
             ### Índice de Gini
             ```
             gini = 1 - Σ(pi²)
@@ -233,112 +205,57 @@ def show_metrics():
             taxa_poda = (total_nos - nos_podados) / total_nos
             ```
             
-            ### Índice de Consistência
-            ```
-            consistencia = Σ(peso_i * confianca_i) / Σ(peso_i)
-            onde peso_i é o peso da característica i
-            e confianca_i é a confiança na característica i
-            ```
-
             ### Precisão
             ```
             precisao = verdadeiros_positivos / (verdadeiros_positivos + falsos_positivos)
             ```
-
+            
             ### Sensibilidade
             ```
             sensibilidade = verdadeiros_positivos / (verdadeiros_positivos + falsos_negativos)
             ```
-
+            
             ### Acurácia
             ```
             acuracia = (verdadeiros_positivos + verdadeiros_negativos) / total_casos
             ```
-            ''')
-
-        # Display metrics in columns
-        st.subheader("Métricas Técnicas")
-        col1, col2 = st.columns(2)
+            """)
         
-        with col1:
+        # Display other metrics
+        st.subheader("Métricas de Qualidade")
+        col3, col4 = st.columns(2)
+        with col3:
             st.metric("Índice de Gini", f"{gini:.3f}")
             st.metric("Entropia", f"{entropy:.3f}")
-        
-        with col2:
+        with col4:
             st.metric("Taxa de Poda", f"{pruning_metrics['pruning_ratio']:.2%}")
             if current_recommendation and 'metrics' in current_recommendation:
                 consistency_index = calculate_consistency_score(current_recommendation['metrics'], answers)
                 st.metric("Índice de Consistência", f"{consistency_index:.2f}")
-
+        
         # Precision Analysis Section
         st.subheader("Análise de Precisão")
-        col3, col4 = st.columns(2)
-        with col3:
+        col5, col6 = st.columns(2)
+        with col5:
             st.metric("Precisão", f"{precision_metrics['precision']:.3f}")
             st.metric("Sensibilidade", f"{precision_metrics['sensitivity']:.3f}")
-        with col4:
+        with col6:
             st.metric("Acurácia", f"{precision_metrics['accuracy']:.3f}")
-
-        # Sensitivity Analysis Section
-        st.subheader("Análise de Sensibilidade")
-        with st.expander("Impacto das Mudanças de Peso"):
-            weight_impacts = {
-                'Segurança': {'atual': 0.4, 'impacto': 'Alto'},
-                'Escalabilidade': {'atual': 0.25, 'impacto': 'Médio'},
-                'Eficiência Energética': {'atual': 0.20, 'impacto': 'Médio'},
-                'Governança': {'atual': 0.15, 'impacto': 'Baixo'}
-            }
-            impact_df = pd.DataFrame(weight_impacts).T
-            st.table(impact_df)
-            st.write("Esta análise mostra como mudanças nos pesos afetam a recomendação final.")
-        
-        # Matrix explanations
-        with st.expander("Explicação das Matrizes"):
-            st.markdown("""
-            ### Matriz de Avaliação
-            A matriz mostra a pontuação de cada métrica em uma escala de calor:
-            - Tons mais escuros de azul indicam valores mais baixos
-            - Tons mais escuros de vermelho indicam valores mais altos
-            
-            ### Gráfico Radar
-            O gráfico radar permite visualizar:
-            - O equilíbrio entre as diferentes métricas
-            - Pontos fortes e fracos da recomendação
-            - Comparação com valores ideais
-            """)
-        
-        # Technical metrics visualization
-        st.subheader("Métricas Técnicas")
-        metrics_data = {
-            "security": 0.85,
-            "scalability": 0.75,
-            "energy_efficiency": 0.80,
-            "governance": 0.70
-        }
-        
-        if current_recommendation and 'metrics' in current_recommendation:
-            metrics_data.update({k.lower(): v for k, v in current_recommendation['metrics'].items()})
-        
-        # Create and display evaluation matrix
-        fig_matrix = create_evaluation_matrix(metrics_data, current_recommendation, answers)
-        st.plotly_chart(fig_matrix, use_container_width=True)
-        
-        # Create and display radar chart
-        fig_radar = create_metrics_radar_chart(metrics_data, current_recommendation, answers)
-        st.plotly_chart(fig_radar, use_container_width=True)
         
         # Generate downloadable report
         report_data = {
-            "Métricas Técnicas": {
+            "Métricas da Árvore": {
+                "Profundidade Média": profundidade_metrics['media'],
+                "Profundidade Máxima": profundidade_metrics['maxima'],
                 "Índice de Gini": gini,
                 "Entropia": entropy,
-                "Taxa de Poda": pruning_metrics['pruning_ratio'],
-                "Índice de Consistência": consistency_index if 'consistency_index' in locals() else 0,
+                "Taxa de Poda": pruning_metrics['pruning_ratio']
+            },
+            "Métricas de Precisão": {
                 "Precisão": precision_metrics['precision'],
                 "Sensibilidade": precision_metrics['sensitivity'],
                 "Acurácia": precision_metrics['accuracy']
-            },
-            "Métricas de Avaliação": metrics_data
+            }
         }
         
         if current_recommendation:
@@ -346,7 +263,7 @@ def show_metrics():
                 "DLT": current_recommendation.get('dlt', 'N/A'),
                 "Tipo": current_recommendation.get('dlt_type', 'N/A'),
                 "Grupo": current_recommendation.get('group', 'N/A'),
-                "Consistência": calculate_consistency_score(metrics_data, answers)
+                "Consistência": calculate_consistency_score(current_recommendation.get('metrics', {}), answers)
             }
         
         df_report = pd.DataFrame.from_dict(report_data, orient='index')
