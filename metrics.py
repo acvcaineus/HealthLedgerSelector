@@ -53,15 +53,56 @@ def calcular_pruning(total_nos, nos_podados):
         'impacto_complexidade': impacto_complexidade
     }
 
-def create_metrics_radar_chart(metrics_data, recommendation=None):
+def calculate_consistency_score(metrics, answers):
+    """
+    Calculate consistency score based on user answers and metrics.
+    """
+    if not answers or not metrics:
+        return 0.0
+    
+    weights = {
+        'security': 0.4,
+        'scalability': 0.25,
+        'energy_efficiency': 0.20,
+        'governance': 0.15
+    }
+    
+    score = 0
+    total_weight = 0
+    
+    for key, weight in weights.items():
+        if key in metrics:
+            if answers.get('privacy') == 'Sim' and key == 'security':
+                score += metrics[key] * weight * 1.2
+            elif answers.get('scalability') == 'Sim' and key == 'scalability':
+                score += metrics[key] * weight * 1.2
+            elif answers.get('energy_efficiency') == 'Sim' and key == 'energy_efficiency':
+                score += metrics[key] * weight * 1.2
+            elif answers.get('governance_flexibility') == 'Sim' and key == 'governance':
+                score += metrics[key] * weight * 1.2
+            else:
+                score += metrics[key] * weight
+            total_weight += weight
+    
+    return score / total_weight if total_weight > 0 else 0
+
+def create_metrics_radar_chart(metrics_data, recommendation=None, answers=None):
     """Creates a radar chart for metrics visualization with enhanced tooltips."""
     fig = go.Figure()
     
-    if recommendation:
+    if recommendation and answers:
         # Update metrics data with current recommendation values
-        for metric, value in recommendation['metrics'].items():
-            if metric.lower() in metrics_data:
-                metrics_data[metric.lower()] = value
+        metrics_data.update(recommendation['metrics'])
+        consistency_score = calculate_consistency_score(metrics_data, answers)
+        
+        # Add consistency score annotation
+        fig.add_annotation(
+            text=f"Índice de Consistência: {consistency_score:.2f}",
+            xref="paper", yref="paper",
+            x=0.5, y=1.1,
+            showarrow=False,
+            font=dict(size=14)
+        )
     
     categories = list(metrics_data.keys())
     values = list(metrics_data.values())
@@ -73,15 +114,8 @@ def create_metrics_radar_chart(metrics_data, recommendation=None):
         fill='toself',
         name='Métricas Atuais',
         line=dict(color='#3498db', width=2),
-        fillcolor='rgba(52, 152, 219, 0.3)',
-        hovertemplate="<b>%{theta}</b><br>" +
-                     "Valor: %{r:.3f}<br>" +
-                     "<extra></extra>"
+        fillcolor='rgba(52, 152, 219, 0.3)'
     ))
-    
-    # Add confidence intervals (±5% variation)
-    upper_values = [min(1, v * 1.05) for v in values]
-    lower_values = [max(0, v * 0.95) for v in values]
     
     fig.update_layout(
         polar=dict(
@@ -95,21 +129,34 @@ def create_metrics_radar_chart(metrics_data, recommendation=None):
             )
         ),
         showlegend=True,
-        title="Visão Geral das Métricas com Intervalos de Confiança"
+        title="Visão Geral das Métricas"
     )
     return fig
 
-def create_evaluation_matrix(metrics_data, recommendation=None):
+def create_evaluation_matrix(metrics_data, recommendation=None, answers=None):
     """Creates a heatmap for metrics evaluation with current recommendation data."""
     if recommendation and 'metrics' in recommendation:
-        # Update metrics with current recommendation values
         metrics_data.update(recommendation['metrics'])
     
     df = pd.DataFrame([metrics_data])
     
+    # Create custom color scale based on user preferences
+    if answers:
+        color_scale = []
+        for metric in df.columns:
+            if (metric == 'security' and answers.get('privacy') == 'Sim') or \
+               (metric == 'scalability' and answers.get('scalability') == 'Sim') or \
+               (metric == 'energy_efficiency' and answers.get('energy_efficiency') == 'Sim') or \
+               (metric == 'governance' and answers.get('governance_flexibility') == 'Sim'):
+                color_scale.append('darkred')
+            else:
+                color_scale.append('royalblue')
+    else:
+        color_scale = 'RdBu'
+    
     fig = px.imshow(
         df,
-        color_continuous_scale='RdBu',
+        color_continuous_scale=color_scale,
         aspect='auto',
         title="Matriz de Avaliação de Métricas"
     )
@@ -126,16 +173,13 @@ def show_metrics():
     """Display metrics and analysis with enhanced visualization and state synchronization."""
     st.header("Métricas Técnicas e Análise")
     
-    # Check session state for answers and recommendation
     if 'answers' in st.session_state and len(st.session_state.answers) > 0:
         answers = st.session_state.answers
         current_recommendation = None
         
-        # Get current recommendation if available
         if 'current_recommendation' in st.session_state:
             current_recommendation = st.session_state.current_recommendation
         else:
-            # Calculate new recommendation
             current_recommendation = get_recommendation(answers)
             st.session_state.current_recommendation = current_recommendation
         
@@ -178,23 +222,22 @@ def show_metrics():
         # Technical metrics visualization
         st.subheader("Métricas Técnicas")
         metrics_data = {
-            "segurança": 0.85,
-            "escalabilidade": 0.75,
-            "eficiência": 0.80,
-            "governança": 0.70,
-            "interoperabilidade": 0.90
+            "security": 0.85,
+            "scalability": 0.75,
+            "energy_efficiency": 0.80,
+            "governance": 0.70
         }
         
-        # Update metrics with current recommendation if available
+        # Update metrics with current recommendation
         if current_recommendation and 'metrics' in current_recommendation:
             metrics_data.update({k.lower(): v for k, v in current_recommendation['metrics'].items()})
         
         # Create and display evaluation matrix
-        fig_matrix = create_evaluation_matrix(metrics_data, current_recommendation)
+        fig_matrix = create_evaluation_matrix(metrics_data, current_recommendation, answers)
         st.plotly_chart(fig_matrix, use_container_width=True)
         
         # Create and display radar chart
-        fig_radar = create_metrics_radar_chart(metrics_data, current_recommendation)
+        fig_radar = create_metrics_radar_chart(metrics_data, current_recommendation, answers)
         st.plotly_chart(fig_radar, use_container_width=True)
         
         # Generate downloadable report
@@ -212,7 +255,8 @@ def show_metrics():
             report_data["Recomendação"] = {
                 "DLT": current_recommendation.get('dlt', 'N/A'),
                 "Tipo": current_recommendation.get('dlt_type', 'N/A'),
-                "Grupo": current_recommendation.get('group', 'N/A')
+                "Grupo": current_recommendation.get('group', 'N/A'),
+                "Consistência": calculate_consistency_score(metrics_data, answers)
             }
         
         df_report = pd.DataFrame.from_dict(report_data, orient='index')
@@ -225,6 +269,5 @@ def show_metrics():
             mime="text/csv",
             help="Baixe o relatório completo com todas as métricas e análises"
         )
-        
     else:
         st.info("Complete o questionário para visualizar as métricas detalhadas.")

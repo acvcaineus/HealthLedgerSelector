@@ -1,9 +1,7 @@
 import streamlit as st
-import pandas as pd
 import plotly.graph_objects as go
-import plotly.express as px
 from dlt_data import questions
-from decision_logic import get_recommendation, dlt_classification
+from decision_logic import get_recommendation
 from database import save_recommendation
 
 def create_progress_animation(current_phase, answers, questions):
@@ -15,6 +13,12 @@ def create_progress_animation(current_phase, answers, questions):
     phase_progress = {phase: 0 for phase in phases}
     phase_total = {phase: 0 for phase in phases}
     phase_characteristics = {phase: set() for phase in phases}
+    phase_importance = {
+        'Aplicação': 0.4,  # Security and privacy focused
+        'Consenso': 0.25,  # Scalability focused
+        'Infraestrutura': 0.20,  # Energy efficiency focused
+        'Internet': 0.15   # Governance focused
+    }
     
     for q in questions:
         phase = q['phase']
@@ -25,26 +29,36 @@ def create_progress_animation(current_phase, answers, questions):
     
     # Create nodes for each phase with improved styling
     for i, phase in enumerate(phases):
+        # Calculate phase completion percentage
+        completion = phase_progress[phase] / phase_total[phase] if phase_total[phase] > 0 else 0
+        
         if phase == current_phase:
             color = '#3498db'  # Active phase (blue)
             size = 45
             symbol = 'circle'
-        elif phase_progress[phase] > 0:
+        elif completion == 1:
             color = '#2ecc71'  # Completed phase (green)
             size = 40
             symbol = 'circle-dot'
+        elif completion > 0:
+            color = '#f1c40f'  # Partially completed (yellow)
+            size = 38
+            symbol = 'circle-open'
         else:
             color = '#bdc3c7'  # Pending phase (gray)
             size = 35
             symbol = 'circle-open'
         
+        # Enhanced tooltip with more information
         tooltip = f"""
         <b>{phase}</b><br>
-        Progresso: {phase_progress[phase]}/{phase_total[phase]}<br>
+        Progresso: {phase_progress[phase]}/{phase_total[phase]} ({completion:.0%})<br>
+        Importância: {phase_importance[phase]:.0%}<br>
         <br>Características:<br>
         {('<br>'.join(f'• {char}' for char in phase_characteristics[phase]))}
         """
         
+        # Add phase node
         fig.add_trace(go.Scatter(
             x=[i], y=[0],
             mode='markers',
@@ -59,26 +73,37 @@ def create_progress_animation(current_phase, answers, questions):
             showlegend=False
         ))
         
+        # Add phase label with completion percentage
         fig.add_annotation(
             x=i, y=-0.2,
-            text=f"{phase}<br>({phase_progress[phase]}/{phase_total[phase]})",
+            text=f"{phase}<br>({completion:.0%})",
             showarrow=False,
             font=dict(size=12, color='rgba(0,0,0,0.7)')
         )
         
+        # Add connecting lines between phases
         if i < len(phases) - 1:
+            # Use different line styles based on completion
+            if completion == 1 and phase_progress[phases[i+1]] > 0:
+                line_style = 'solid'
+                line_color = '#2ecc71'
+            else:
+                line_style = 'dot'
+                line_color = 'rgba(52, 152, 219, 0.3)'
+            
             fig.add_trace(go.Scatter(
                 x=[i, i+1],
                 y=[0, 0],
                 mode='lines',
                 line=dict(
-                    color='rgba(52, 152, 219, 0.3)',
+                    color=line_color,
                     width=2,
-                    dash='dot'
+                    dash=line_style
                 ),
                 showlegend=False
             ))
     
+    # Update layout with improved aesthetics
     fig.update_layout(
         showlegend=False,
         height=200,
@@ -123,46 +148,13 @@ def create_evaluation_matrices(recommendation):
             st.write(f"• {algo}")
     
     with col2:
-        consistency_index = sum(recommendation['metrics'].values()) / len(recommendation['metrics'])
-        st.subheader(f"Índice de Consistência: {consistency_index:.2f}")
-        with st.expander("Explicação do Índice de Consistência"):
-            st.write("O índice de consistência indica o quão bem a DLT atende aos requisitos de forma balanceada.")
-            st.write("Valores mais próximos de 1 indicam maior consistência.")
-    
-    # Technical metrics visualization
-    st.subheader("Métricas Técnicas")
-    metrics_df = pd.DataFrame({
-        'Métrica': list(recommendation['metrics'].keys()),
-        'Valor': list(recommendation['metrics'].values())
-    })
-    
-    # Bar chart for metrics
-    fig = go.Figure(data=[
-        go.Bar(
-            x=metrics_df['Métrica'],
-            y=metrics_df['Valor'],
-            marker_color='#3498db'
-        )
-    ])
-    
-    fig.update_layout(
-        title="Visualização das Métricas Técnicas",
-        xaxis_title="Métricas",
-        yaxis_title="Pontuação",
-        yaxis_range=[0, 1]
-    )
-    
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # Download button for technical data
-    csv = metrics_df.to_csv(index=False).encode('utf-8')
-    st.download_button(
-        label="Baixar Dados Técnicos",
-        data=csv,
-        file_name='metricas_tecnicas.csv',
-        mime='text/csv'
-    )
-    
+        if 'metrics' in recommendation:
+            consistency_index = sum(recommendation['metrics'].values()) / len(recommendation['metrics'])
+            st.subheader(f"Índice de Consistência: {consistency_index:.2f}")
+            with st.expander("Explicação do Índice de Consistência"):
+                st.write("O índice de consistência indica o quão bem a DLT atende aos requisitos de forma balanceada.")
+                st.write("Valores mais próximos de 1 indicam maior consistência.")
+
     # Display additional information sections
     with st.expander("Casos de Uso"):
         st.write(recommendation['details']['use_cases'])
@@ -182,12 +174,7 @@ def create_evaluation_matrices(recommendation):
                 save_recommendation(
                     st.session_state.username,
                     "Healthcare",
-                    {
-                        "dlt": recommendation['dlt'],
-                        "dlt_type": recommendation['dlt_type'],
-                        "consensus": ", ".join(recommendation['algorithms']),
-                        "group": recommendation['group']
-                    }
+                    recommendation
                 )
                 st.success("Recomendação salva com sucesso!")
             except Exception as e:
