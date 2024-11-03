@@ -6,6 +6,10 @@ from dlt_data import questions
 from decision_logic import get_recommendation, dlt_classification
 from database import save_recommendation
 
+@st.cache_data
+def convert_df(df):
+    return df.to_csv().encode('utf-8')
+
 def create_progress_animation(current_phase, answers, questions):
     """Create an animated progress visualization with enhanced interactivity."""
     phases = ['Aplicação', 'Consenso', 'Infraestrutura', 'Internet']
@@ -25,7 +29,6 @@ def create_progress_animation(current_phase, answers, questions):
     
     # Create nodes for each phase with improved styling
     for i, phase in enumerate(phases):
-        # Determine node styling with better visual hierarchy
         if phase == current_phase:
             color = '#3498db'  # Active phase (blue)
             size = 45
@@ -39,7 +42,6 @@ def create_progress_animation(current_phase, answers, questions):
             size = 35
             symbol = 'circle-open'
         
-        # Enhanced tooltip with more detailed information
         tooltip = f"""
         <b>{phase}</b><br>
         Progresso: {phase_progress[phase]}/{phase_total[phase]}<br>
@@ -47,7 +49,6 @@ def create_progress_animation(current_phase, answers, questions):
         {('<br>'.join(f'• {char}' for char in phase_characteristics[phase]))}
         """
         
-        # Add node with enhanced styling
         fig.add_trace(go.Scatter(
             x=[i], y=[0],
             mode='markers',
@@ -62,7 +63,6 @@ def create_progress_animation(current_phase, answers, questions):
             showlegend=False
         ))
         
-        # Add phase label with progress information
         fig.add_annotation(
             x=i, y=-0.2,
             text=f"{phase}<br>({phase_progress[phase]}/{phase_total[phase]})",
@@ -70,7 +70,6 @@ def create_progress_animation(current_phase, answers, questions):
             font=dict(size=12, color='rgba(0,0,0,0.7)')
         )
         
-        # Add connecting lines between phases with improved styling
         if i < len(phases) - 1:
             fig.add_trace(go.Scatter(
                 x=[i, i+1],
@@ -84,7 +83,6 @@ def create_progress_animation(current_phase, answers, questions):
                 showlegend=False
             ))
     
-    # Update layout with improved aesthetics
     fig.update_layout(
         showlegend=False,
         height=200,
@@ -112,41 +110,32 @@ def create_classification_path_visualization(recommendation):
     if not recommendation or recommendation['dlt'] == "Não disponível":
         return None
     
-    # Create Sankey diagram data
     nodes = [
-        # Level 1: DLT Type
         dict(label="DLT Types"),
         dict(label=recommendation['dlt_type']),
-        # Level 2: Data Structure
         dict(label="Data Structures"),
         dict(label=recommendation['data_structure']),
-        # Level 3: Algorithm Group
         dict(label="Algorithm Groups"),
         dict(label=recommendation['group']),
-        # Level 4: Specific Algorithms
         dict(label="Algorithms")
     ]
     
-    # Add nodes for specific algorithms
     algo_start_idx = len(nodes)
     for algo in recommendation['algorithms']:
         nodes.append(dict(label=algo))
     
-    # Create links between nodes
     links = [
-        dict(source=0, target=1, value=1),  # Types to selected type
-        dict(source=1, target=2, value=1),  # Type to Structures
-        dict(source=2, target=3, value=1),  # Structures to selected structure
-        dict(source=3, target=4, value=1),  # Structure to Groups
-        dict(source=4, target=5, value=1),  # Groups to selected group
-        dict(source=5, target=6, value=1),  # Group to Algorithms
+        dict(source=0, target=1, value=1),
+        dict(source=1, target=2, value=1),
+        dict(source=2, target=3, value=1),
+        dict(source=3, target=4, value=1),
+        dict(source=4, target=5, value=1),
+        dict(source=5, target=6, value=1),
     ]
     
-    # Add links to specific algorithms
     for i, _ in enumerate(recommendation['algorithms']):
         links.append(dict(source=6, target=algo_start_idx + i, value=1))
     
-    # Create Sankey diagram
     fig = go.Figure(data=[go.Sankey(
         node=dict(
             pad=15,
@@ -178,32 +167,55 @@ def create_evaluation_matrices(recommendation):
         return
     
     st.header("Recomendação de DLT e Análise")
+
+    # Create combined DataFrame first
+    combined_data = []
+    for dlt_name, info in dlt_classification.items():
+        combined_data.append({
+            'DLT': dlt_name,
+            'Tipo': info['type'],
+            'Grupo de Algoritmo': info['group'],
+            'Algoritmos': ', '.join(info['algorithms'])
+        })
     
-    # Show complete classification path
+    combined_df = pd.DataFrame(combined_data)
+    
+    # Add download button for combined data
+    csv = convert_df(combined_df)
+    st.download_button(
+        label="Baixar Dados Consolidados",
+        data=csv,
+        file_name='dlt_dados_consolidados.csv',
+        mime='text/csv',
+    )
+    
+    # Display combined matrix
+    st.subheader("Matriz Consolidada de DLTs")
+    st.dataframe(combined_df)
+    
+    # Show classification path
     st.subheader("Caminho de Classificação")
     path_fig = create_classification_path_visualization(recommendation)
     if path_fig:
         st.plotly_chart(path_fig, use_container_width=True)
     
-    # Display DLT details in organized sections
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("Classificação")
-        st.write(f"**DLT:** {recommendation['dlt']}")
-        st.write(f"**Tipo:** {recommendation['dlt_type']}")
-        st.write(f"**Estrutura de Dados:** {recommendation['data_structure']}")
-        st.write(f"**Grupo:** {recommendation['group']}")
-    
-    with col2:
-        st.subheader("Algoritmos")
-        for algo in recommendation['algorithms']:
-            st.write(f"• {algo}")
-
-    # Calculate and display consistency index
+    # Calculate consistency index
     consistency_index = sum(recommendation['metrics'].values()) / len(recommendation['metrics'])
-    st.info(f"Índice de Consistência: {consistency_index:.2f}")
-    st.write("*O índice de consistência indica o quão bem a DLT atende aos requisitos de forma balanceada. Valores mais próximos de 1 indicam maior consistência.*")
+    
+    # Display DLT recommendation with consistency index
+    st.subheader(f"DLT Recomendada: {recommendation['dlt']} (Índice de Consistência: {consistency_index:.2f})")
+    
+    with st.expander("Detalhes da Recomendação"):
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write(f"**Tipo:** {recommendation['dlt_type']}")
+            st.write(f"**Estrutura de Dados:** {recommendation['data_structure']}")
+            st.write(f"**Grupo:** {recommendation['group']}")
+        
+        with col2:
+            st.write("**Algoritmos:**")
+            for algo in recommendation['algorithms']:
+                st.write(f"• {algo}")
     
     # Add Save Recommendation button
     if st.session_state.authenticated:
@@ -211,7 +223,7 @@ def create_evaluation_matrices(recommendation):
             try:
                 save_recommendation(
                     st.session_state.username,
-                    "Healthcare",  # Default scenario
+                    "Healthcare",
                     {
                         "dlt": recommendation['dlt'],
                         "dlt_type": recommendation['dlt_type'],
@@ -225,9 +237,7 @@ def create_evaluation_matrices(recommendation):
     else:
         st.info("Faça login para salvar suas recomendações.")
     
-    # Technical details in expandable sections
     with st.expander("Características Técnicas"):
-        # Create metrics visualization
         metrics_df = pd.DataFrame({
             'Métrica': list(recommendation['metrics'].keys()),
             'Valor': list(recommendation['metrics'].values())
@@ -250,71 +260,65 @@ def create_evaluation_matrices(recommendation):
         
         st.plotly_chart(fig, use_container_width=True)
 
-    # Add the evaluation matrices
-    st.subheader("Matriz de Avaliação de DLTs")
-    dlt_metrics_df = pd.DataFrame({
-        'DLT': ['Hyperledger Fabric', 'Quorum', 'VeChain', 'IOTA', 'Ethereum 2.0'],
-        'Segurança': [0.85, 0.78, 0.75, 0.80, 0.85],
-        'Escalabilidade': [0.65, 0.70, 0.80, 0.85, 0.75],
-        'Eficiência': [0.80, 0.80, 0.85, 0.90, 0.65],
-        'Governança': [0.75, 0.78, 0.70, 0.60, 0.80]
-    }).set_index('DLT')
+    with st.expander("Matrizes de Avaliação"):
+        st.subheader("Matriz de Avaliação de DLTs")
+        dlt_metrics_df = pd.DataFrame({
+            'DLT': ['Hyperledger Fabric', 'Quorum', 'VeChain', 'IOTA', 'Ethereum 2.0'],
+            'Segurança': [0.85, 0.78, 0.75, 0.80, 0.85],
+            'Escalabilidade': [0.65, 0.70, 0.80, 0.85, 0.75],
+            'Eficiência': [0.80, 0.80, 0.85, 0.90, 0.65],
+            'Governança': [0.75, 0.78, 0.70, 0.60, 0.80]
+        }).set_index('DLT')
 
-    # Create heatmap for DLTs
-    fig_dlt = px.imshow(
-        dlt_metrics_df,
-        color_continuous_scale='RdBu',
-        aspect='auto'
-    )
-    st.plotly_chart(fig_dlt)
+        fig_dlt = px.imshow(
+            dlt_metrics_df,
+            color_continuous_scale='RdBu',
+            aspect='auto'
+        )
+        st.plotly_chart(fig_dlt)
 
-    # Algorithm Groups Matrix
-    st.subheader("Matriz de Grupos de Algoritmos")
-    algo_groups_df = pd.DataFrame({
-        'Grupo': ['Alta Segurança', 'Alta Eficiência', 'Escalabilidade', 'IoT'],
-        'Segurança': [0.90, 0.75, 0.80, 0.70],
-        'Escalabilidade': [0.60, 0.85, 0.90, 0.95],
-        'Eficiência': [0.70, 0.90, 0.85, 0.80],
-        'Governança': [0.85, 0.70, 0.75, 0.65]
-    }).set_index('Grupo')
+        st.subheader("Matriz de Grupos de Algoritmos")
+        algo_groups_df = pd.DataFrame({
+            'Grupo': ['Alta Segurança', 'Alta Eficiência', 'Escalabilidade', 'IoT'],
+            'Segurança': [0.90, 0.75, 0.80, 0.70],
+            'Escalabilidade': [0.60, 0.85, 0.90, 0.95],
+            'Eficiência': [0.70, 0.90, 0.85, 0.80],
+            'Governança': [0.85, 0.70, 0.75, 0.65]
+        }).set_index('Grupo')
 
-    # Create heatmap for algorithm groups
-    fig_groups = px.imshow(
-        algo_groups_df,
-        color_continuous_scale='RdBu',
-        aspect='auto'
-    )
-    st.plotly_chart(fig_groups)
+        fig_groups = px.imshow(
+            algo_groups_df,
+            color_continuous_scale='RdBu',
+            aspect='auto'
+        )
+        st.plotly_chart(fig_groups)
 
-    # Consensus Algorithms Matrix
-    st.subheader("Matriz de Algoritmos de Consenso")
-    algo_df = pd.DataFrame({
-        'Algoritmo': ['PBFT', 'PoW', 'PoS', 'PoA', 'Tangle'],
-        'Segurança': [0.90, 0.95, 0.85, 0.80, 0.75],
-        'Escalabilidade': [0.70, 0.40, 0.85, 0.80, 0.95],
-        'Eficiência': [0.80, 0.30, 0.85, 0.90, 0.95],
-        'Governança': [0.85, 0.50, 0.80, 0.75, 0.70]
-    }).set_index('Algoritmo')
+        st.subheader("Matriz de Algoritmos de Consenso")
+        algo_df = pd.DataFrame({
+            'Algoritmo': ['PBFT', 'PoW', 'PoS', 'PoA', 'Tangle'],
+            'Segurança': [0.90, 0.95, 0.85, 0.80, 0.75],
+            'Escalabilidade': [0.70, 0.40, 0.85, 0.80, 0.95],
+            'Eficiência': [0.80, 0.30, 0.85, 0.90, 0.95],
+            'Governança': [0.85, 0.50, 0.80, 0.75, 0.70]
+        }).set_index('Algoritmo')
 
-    # Create heatmap for consensus algorithms
-    fig_algo = px.imshow(
-        algo_df,
-        color_continuous_scale='RdBu',
-        aspect='auto'
-    )
-    st.plotly_chart(fig_algo)
+        fig_algo = px.imshow(
+            algo_df,
+            color_continuous_scale='RdBu',
+            aspect='auto'
+        )
+        st.plotly_chart(fig_algo)
 
-    # Add explanatory text
-    st.info('''
-    Como interpretar as matrizes:
-    1. Matriz de DLTs: Mostra o desempenho geral de cada DLT nas principais métricas
-    2. Matriz de Grupos: Apresenta as características de cada grupo de algoritmos
-    3. Matriz de Algoritmos: Detalha o desempenho específico de cada algoritmo de consenso
+    with st.expander("Guia de Interpretação"):
+        st.info('''
+        Como interpretar as matrizes:
+        1. Matriz de DLTs: Mostra o desempenho geral de cada DLT nas principais métricas
+        2. Matriz de Grupos: Apresenta as características de cada grupo de algoritmos
+        3. Matriz de Algoritmos: Detalha o desempenho específico de cada algoritmo de consenso
 
-    As cores mais escuras indicam valores mais altos (melhor desempenho).
-    ''')
+        As cores mais escuras indicam valores mais altos (melhor desempenho).
+        ''')
 
-    # Additional sections
     with st.expander("Casos de Uso"):
         st.write(recommendation['details']['use_cases'])
         st.subheader("Casos Reais")
@@ -326,36 +330,36 @@ def create_evaluation_matrices(recommendation):
     with st.expander("Referências"):
         st.write(recommendation['details']['references'])
     
-    # Updated comparison table with all DLTs
-    st.subheader("Comparação de DLTs")
-    comparison_data = []
-    for dlt_name, matrix_info in recommendation['evaluation_matrix'].items():
-        comparison_data.append({
-            'DLT': dlt_name,
-            'Tipo': matrix_info['type'],
-            'Estrutura': matrix_info['data_structure'],
-            'Grupo': matrix_info['group'],
-            'Score': matrix_info['score'],
-            **matrix_info['metrics']
-        })
-    
-    comparison_df = pd.DataFrame(comparison_data)
-    comparison_df = comparison_df.sort_values('Score', ascending=False)
-    
-    def highlight_selected(s, selected_dlt):
-        return ['background-color: #e6f3ff' if s.name == selected_dlt else '' for _ in s]
-    
-    styled_df = comparison_df.style\
-        .apply(highlight_selected, selected_dlt=recommendation['dlt'])\
-        .format({
-            'Score': '{:.2f}',
-            'security': '{:.2f}',
-            'scalability': '{:.2f}',
-            'energy_efficiency': '{:.2f}',
-            'governance': '{:.2f}'
-        })
-    
-    st.table(styled_df)
+    # Comparison table
+    with st.expander("Comparação Detalhada de DLTs"):
+        comparison_data = []
+        for dlt_name, matrix_info in recommendation['evaluation_matrix'].items():
+            comparison_data.append({
+                'DLT': dlt_name,
+                'Tipo': matrix_info['type'],
+                'Estrutura': matrix_info['data_structure'],
+                'Grupo': matrix_info['group'],
+                'Score': matrix_info['score'],
+                **matrix_info['metrics']
+            })
+        
+        comparison_df = pd.DataFrame(comparison_data)
+        comparison_df = comparison_df.sort_values('Score', ascending=False)
+        
+        def highlight_selected(s, selected_dlt):
+            return ['background-color: #e6f3ff' if s.name == selected_dlt else '' for _ in s]
+        
+        styled_df = comparison_df.style\
+            .apply(highlight_selected, selected_dlt=recommendation['dlt'])\
+            .format({
+                'Score': '{:.2f}',
+                'security': '{:.2f}',
+                'scalability': '{:.2f}',
+                'energy_efficiency': '{:.2f}',
+                'governance': '{:.2f}'
+            })
+        
+        st.table(styled_df)
 
 def run_decision_tree():
     """Main function to run the decision tree interface."""
