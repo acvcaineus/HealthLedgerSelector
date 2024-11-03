@@ -184,7 +184,6 @@ def get_recommendation(answers):
                 "evaluation_matrix": evaluation_matrix,
                 "metrics": dlt_metrics[selected_dlt]['metrics'],
                 "details": {
-                    "technical_characteristics": dlt_info['technical_characteristics'],
                     "use_cases": dlt_info['use_cases'],
                     "challenges": dlt_info['challenges'],
                     "references": dlt_info['references'],

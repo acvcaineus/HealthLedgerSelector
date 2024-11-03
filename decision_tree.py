@@ -200,8 +200,6 @@ def create_evaluation_matrices(recommendation):
     
     # Technical details in expandable sections
     with st.expander("📋 Características Técnicas"):
-        st.write(recommendation['details']['technical_characteristics'])
-        
         # Create metrics visualization
         metrics_df = pd.DataFrame({
             'Métrica': list(recommendation['metrics'].keys()),
