@@ -212,6 +212,53 @@ def show_metrics():
                 value=f"{pruning_metrics['pruning_ratio']:.2%}",
                 help="Proporção de simplificação do modelo. Maior taxa indica melhor otimização."
             )
+
+        # New section for detailed metrics values
+        with st.expander("Valores Detalhados das Métricas"):
+            metrics_values = {
+                'Verdadeiros Positivos (VP)': 85,  # Recomendações corretas aceitas pelos usuários
+                'Verdadeiros Negativos (VN)': 80,  # Rejeições corretas de DLTs não adequadas
+                'Falsos Positivos (FP)': 10,       # Recomendações incorretas (erro tipo I)
+                'Falsos Negativos (FN)': 15        # Rejeições incorretas (erro tipo II)
+            }
+
+            st.subheader("Valores Detalhados das Métricas")
+            st.write("Os seguintes valores são utilizados no cálculo das métricas técnicas:")
+
+            for metric, value in metrics_values.items():
+                st.metric(label=metric, value=value)
+
+            st.markdown('''
+            ### Fórmulas Detalhadas:
+
+            1. **Acurácia**:
+               ```
+               Acurácia = (VP + VN) / (VP + VN + FP + FN)
+               = (85 + 80) / (85 + 80 + 10 + 15)
+               = 165 / 190 = 0.868 (86.8%)
+               ```
+
+            2. **Precisão**:
+               ```
+               Precisão = VP / (VP + FP)
+               = 85 / (85 + 10)
+               = 85 / 95 = 0.895 (89.5%)
+               ```
+
+            3. **Sensibilidade (Recall)**:
+               ```
+               Sensibilidade = VP / (VP + FN)
+               = 85 / (85 + 15)
+               = 85 / 100 = 0.85 (85%)
+               ```
+
+            4. **Especificidade**:
+               ```
+               Especificidade = VN / (VN + FP)
+               = 80 / (80 + 10)
+               = 80 / 90 = 0.889 (88.9%)
+               ```
+            ''')
         
         # Evaluation matrix
         st.subheader("Matriz de Avaliação")
@@ -222,56 +269,6 @@ def show_metrics():
             "Governança": 0.70,
             "Interoperabilidade": 0.90
         }
-        
-        # New section for precision and reliability analysis
-        with st.expander("Análise de Precisão e Confiabilidade"):
-            st.subheader("Precisão da Recomendação")
-            precision_score = sum(metrics_data.values()) / len(metrics_data)
-            st.metric("Índice de Precisão", f"{precision_score:.2%}")
-            
-            st.subheader("Análise de Sensibilidade")
-            sensitivity_df = pd.DataFrame({
-                'Característica': ['Segurança', 'Escalabilidade', 'Eficiência', 'Governança'],
-                'Impacto': [0.4, 0.25, 0.20, 0.15],
-                'Sensibilidade': [0.85, 0.75, 0.70, 0.80]
-            })
-            st.dataframe(sensitivity_df)
-            
-            st.subheader("Acurácia do Modelo")
-            accuracy_metrics = {
-                'True Positives': 85,
-                'False Positives': 10,
-                'True Negatives': 80,
-                'False Negatives': 15
-            }
-            accuracy = (accuracy_metrics['True Positives'] + accuracy_metrics['True Negatives']) / sum(accuracy_metrics.values())
-            st.metric("Acurácia Global", f"{accuracy:.2%}")
-        
-        # New section for detailed calculation explanations
-        with st.expander("Detalhamento dos Cálculos"):
-            st.markdown('''
-            ### Cálculos das Métricas
-
-            1. **Índice de Precisão**
-            ```
-            precisão = Σ(valores_métrica) / total_métricas
-            ```
-            
-            2. **Sensibilidade**
-            ```
-            sensibilidade = Δ(recomendação) / Δ(característica)
-            ```
-            
-            3. **Acurácia**
-            ```
-            acurácia = (VP + VN) / (VP + FP + VN + FN)
-            onde:
-            VP = Verdadeiros Positivos
-            VN = Verdadeiros Negativos
-            FP = Falsos Positivos
-            FN = Falsos Negativos
-            ```
-            ''')
         
         fig_matrix = create_evaluation_matrix(metrics_data)
         st.plotly_chart(fig_matrix, use_container_width=True)
