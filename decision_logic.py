@@ -5,75 +5,83 @@ from dlt_data import questions, dlt_classes, consensus_algorithms, dlt_metrics, 
 dlt_classification = {
     'Hyperledger Fabric': {
         'type': 'DLT Permissionada Privada',
+        'data_structure': 'Blockchain',
         'group': 'Alta Segurança e Controle dos Dados',
-        'algorithms': ['RAFT', 'IBFT'],
-        'technical_characteristics': 'Alta segurança e resiliência contra falhas bizantinas. Máxima proteção de dados sensíveis em redes permissionadas e descentralizadas.',
-        'use_cases': 'Rastreabilidade de medicamentos na cadeia de suprimentos',
+        'algorithms': ['RAFT', 'PBFT'],
+        'use_cases': 'Rastreabilidade de medicamentos na cadeia de suprimentos, Gestão de Registros Médicos Eletrônicos (EHR)',
         'challenges': 'Baixa escalabilidade para redes muito grandes',
-        'references': 'Mehmood et al. (2025) - "BLPCA-ledger: A lightweight plenum consensus protocols for consortium blockchain"'
+        'references': 'Mehmood et al. (2025) - "BLPCA-ledger: A lightweight plenum consensus protocols for consortium blockchain"',
+        'real_cases': 'IBM Food Trust, PharmaLedger'
     },
     'VeChain': {
         'type': 'DLT Híbrida',
+        'data_structure': 'Blockchain',
         'group': 'Alta Eficiência Operacional em Redes Locais',
         'algorithms': ['PoA'],
-        'technical_characteristics': 'Simplicidade e eficiência em redes permissionadas menores. Validação rápida e leve, ideal para redes locais.',
         'use_cases': 'Rastreamento de suprimentos médicos e cadeia farmacêutica',
         'challenges': 'Dependência de validadores centralizados',
-        'references': 'Popoola et al. (2024) - "A critical literature review of security and privacy in smart home healthcare schemes adopting IoT & blockchain"'
+        'references': 'Popoola et al. (2024) - "A critical literature review of security and privacy in smart home healthcare schemes adopting IoT & blockchain"',
+        'real_cases': 'VeChain ToolChain (uso por hospitais na China para rastrear vacinas e medicamentos)'
     },
     'Quorum': {
         'type': 'DLT Híbrida',
+        'data_structure': 'Blockchain',
         'group': 'Escalabilidade e Governança Flexível',
         'algorithms': ['RAFT', 'IBFT'],
-        'technical_characteristics': 'Alta escalabilidade e eficiência energética com governança descentralizada ou semi-descentralizada.',
         'use_cases': 'Monitoramento e rastreamento de medicamentos',
         'challenges': 'Escalabilidade limitada em redes públicas',
-        'references': 'Mehmood et al. (2025) - "BLPCA-ledger: A lightweight plenum consensus protocols for consortium blockchain"'
+        'references': 'Mehmood et al. (2025) - "BLPCA-ledger: A lightweight plenum consensus protocols for consortium blockchain"',
+        'real_cases': 'Mediledger (rastreamento de cadeia farmacêutica nos EUA)'
     },
     'IOTA': {
         'type': 'DLT com Consenso Delegado',
+        'data_structure': 'DAG',
         'group': 'Alta Escalabilidade em Redes IoT',
         'algorithms': ['Tangle'],
-        'technical_characteristics': 'Alta escalabilidade e eficiência para o monitoramento de dispositivos IoT em tempo real.',
         'use_cases': 'Compartilhamento seguro de dados de pacientes via IoT',
         'challenges': 'Maturidade tecnológica (não totalmente implementada)',
-        'references': 'Salim et al. (2024) - "Privacy-preserving and scalable federated blockchain scheme for healthcare 4.0"'
+        'references': 'Salim et al. (2024) - "Privacy-preserving and scalable federated blockchain scheme for healthcare 4.0"',
+        'real_cases': 'Projeto de mobilidade urbana em Taipei utilizando IOTA para segurança de dados'
     },
     'Ripple': {
         'type': 'DLT com Consenso Delegado',
+        'data_structure': 'Blockchain',
         'group': 'Alta Eficiência Operacional em Redes Locais',
         'algorithms': ['Ripple Consensus Algorithm'],
-        'technical_characteristics': 'Processamento eficiente de transações e alta segurança de dados.',
         'use_cases': 'Processamento eficiente de transações e segurança de dados',
         'challenges': 'Centralização nos validadores principais',
-        'references': 'Makhdoom et al. (2024) - "PrivySeC: A secure and privacy-compliant distributed framework for personal data sharing in IoT ecosystems"'
+        'references': 'Makhdoom et al. (2024) - "PrivySeC: A secure and privacy-compliant distributed framework for personal data sharing in IoT ecosystems"',
+        'real_cases': 'Santander e American Express (uso para transações financeiras e de remessas internacionais)'
     },
     'Bitcoin': {
         'type': 'DLT Pública',
+        'data_structure': 'Blockchain',
         'group': 'Alta Segurança e Descentralização',
         'algorithms': ['PoW'],
-        'technical_characteristics': 'Máxima segurança e descentralização para redes públicas.',
         'use_cases': 'Armazenamento seguro de dados médicos críticos',
         'challenges': 'Consumo energético elevado, escalabilidade limitada',
-        'references': 'Liu et al. (2024) - "A systematic study on integrating blockchain in healthcare for electronic health record management and tracking medical supplies"'
+        'references': 'Liu et al. (2024) - "A systematic study on integrating blockchain in healthcare for electronic health record management and tracking medical supplies"',
+        'real_cases': 'MedRec (gestão de registros médicos baseada em blockchain no MIT)'
     },
     'Ethereum (PoW)': {
         'type': 'DLT Pública',
+        'data_structure': 'Blockchain',
         'group': 'Alta Segurança e Descentralização',
         'algorithms': ['PoW'],
-        'technical_characteristics': 'Alta segurança e suporte a contratos inteligentes.',
         'use_cases': 'Contratos inteligentes e registros médicos eletrônicos',
         'challenges': 'Consumo de energia elevado',
-        'references': 'Makhdoom et al. (2024) - "PrivySeC: A secure and privacy-compliant distributed framework for personal data sharing in IoT ecosystems"'
+        'references': 'Makhdoom et al. (2024) - "PrivySeC: A secure and privacy-compliant distributed framework for personal data sharing in IoT ecosystems"',
+        'real_cases': 'MedRec (gestão de registros médicos baseada em blockchain no MIT)'
     },
     'Ethereum 2.0': {
         'type': 'DLT Pública Permissionless',
+        'data_structure': 'Blockchain',
         'group': 'Escalabilidade e Governança Flexível',
         'algorithms': ['PoS'],
-        'technical_characteristics': 'Alta escalabilidade e eficiência energética com governança flexível.',
         'use_cases': 'Aceleração de ensaios clínicos e compartilhamento de dados',
         'challenges': 'Governança flexível, mas centralização é possível',
-        'references': 'Nawaz et al. (2024) - "Hyperledger sawtooth based supply chain traceability system for counterfeit drugs"'
+        'references': 'Nawaz et al. (2024) - "Hyperledger sawtooth based supply chain traceability system for counterfeit drugs"',
+        'real_cases': 'ConsenSys Health (ensaios clínicos e compartilhamento de dados de saúde)'
     }
 }
 
@@ -121,6 +129,7 @@ def get_recommendation(answers):
         return {
             "dlt": "Não disponível",
             "dlt_type": "Não disponível",
+            "data_structure": "Não disponível",
             "group": "Não disponível",
             "algorithms": [],
             "evaluation_matrix": {},
@@ -151,6 +160,7 @@ def get_recommendation(answers):
                 scores[dlt_name] = score
                 evaluation_matrix[dlt_name] = {
                     'type': dlt_info['type'],
+                    'data_structure': dlt_info['data_structure'],
                     'group': dlt_info['group'],
                     'algorithms': dlt_info['algorithms'],
                     'metrics': metrics,
@@ -168,6 +178,7 @@ def get_recommendation(answers):
             return {
                 "dlt": selected_dlt,
                 "dlt_type": dlt_info['type'],
+                "data_structure": dlt_info['data_structure'],
                 "group": dlt_info['group'],
                 "algorithms": dlt_info['algorithms'],
                 "evaluation_matrix": evaluation_matrix,
@@ -176,13 +187,15 @@ def get_recommendation(answers):
                     "technical_characteristics": dlt_info['technical_characteristics'],
                     "use_cases": dlt_info['use_cases'],
                     "challenges": dlt_info['challenges'],
-                    "references": dlt_info['references']
+                    "references": dlt_info['references'],
+                    "real_cases": dlt_info['real_cases']
                 }
             }
         
         return {
             "dlt": "Não disponível",
             "dlt_type": "Não disponível",
+            "data_structure": "Não disponível",
             "group": "Não disponível",
             "algorithms": [],
             "evaluation_matrix": {},
@@ -195,6 +208,7 @@ def get_recommendation(answers):
         return {
             "dlt": "Não disponível",
             "dlt_type": "Não disponível",
+            "data_structure": "Não disponível",
             "group": "Não disponível",
             "algorithms": [],
             "evaluation_matrix": {},

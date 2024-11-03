@@ -21,26 +21,31 @@ def create_progress_animation(current_phase, answers, questions):
         if q['id'] in answers:
             phase_progress[phase] += 1
     
-    # Create nodes for each phase
+    # Create nodes for each phase with improved styling
     for i, phase in enumerate(phases):
-        # Determine node styling
+        # Determine node styling with better visual hierarchy
         if phase == current_phase:
             color = '#3498db'  # Active phase (blue)
             size = 45
+            symbol = 'circle'
         elif phase_progress[phase] > 0:
             color = '#2ecc71'  # Completed phase (green)
             size = 40
+            symbol = 'circle-dot'
         else:
             color = '#bdc3c7'  # Pending phase (gray)
             size = 35
+            symbol = 'circle-open'
         
-        # Create tooltip with detailed information
-        tooltip = f"<b>{phase}</b><br>"
-        tooltip += f"Progresso: {phase_progress[phase]}/{phase_total[phase]}<br>"
-        tooltip += "<br>Características:<br>"
-        tooltip += "<br>".join([f"- {char}" for char in phase_characteristics[phase]])
+        # Enhanced tooltip with more detailed information
+        tooltip = f"""
+        <b>{phase}</b><br>
+        Progresso: {phase_progress[phase]}/{phase_total[phase]}<br>
+        <br>Características:<br>
+        {('<br>'.join(f'• {char}' for char in phase_characteristics[phase]))}
+        """
         
-        # Add node
+        # Add node with enhanced styling
         fig.add_trace(go.Scatter(
             x=[i], y=[0],
             mode='markers',
@@ -48,41 +53,42 @@ def create_progress_animation(current_phase, answers, questions):
                 size=size,
                 color=color,
                 line=dict(color='white', width=2),
-                symbol='circle'
+                symbol=symbol
             ),
             hovertext=tooltip,
             hoverinfo='text',
             showlegend=False
         ))
         
-        # Add phase label
+        # Add phase label with progress information
         fig.add_annotation(
             x=i, y=-0.2,
             text=f"{phase}<br>({phase_progress[phase]}/{phase_total[phase]})",
             showarrow=False,
-            font=dict(size=12)
+            font=dict(size=12, color='rgba(0,0,0,0.7)')
         )
         
-        # Add connecting lines between phases
+        # Add connecting lines between phases with improved styling
         if i < len(phases) - 1:
             fig.add_trace(go.Scatter(
                 x=[i, i+1],
                 y=[0, 0],
                 mode='lines',
                 line=dict(
-                    color='gray',
+                    color='rgba(52, 152, 219, 0.3)',
                     width=2,
                     dash='dot'
                 ),
                 showlegend=False
             ))
     
-    # Update layout
+    # Update layout with improved aesthetics
     fig.update_layout(
         showlegend=False,
         height=200,
         margin=dict(l=20, r=20, t=20, b=40),
         plot_bgcolor='white',
+        paper_bgcolor='white',
         xaxis=dict(
             showgrid=False,
             zeroline=False,
@@ -99,49 +105,44 @@ def create_progress_animation(current_phase, answers, questions):
     
     return fig
 
-def create_hierarchical_visualization(recommendation):
-    """Create a visualization showing the DLT selection path."""
+def create_classification_path_visualization(recommendation):
+    """Create a visualization showing the complete DLT classification path."""
     if not recommendation or recommendation['dlt'] == "Não disponível":
         return None
     
-    selected_dlt = recommendation['dlt']
-    dlt_info = dlt_classification[selected_dlt]
-    
     # Create Sankey diagram data
-    nodes = []
-    links = []
-    
-    # Add nodes for each level
-    nodes.extend([
-        # DLT Types
+    nodes = [
+        # Level 1: DLT Type
         dict(label="DLT Types"),
-        dict(label=dlt_info['type']),
-        # Algorithm Groups
+        dict(label=recommendation['dlt_type']),
+        # Level 2: Data Structure
+        dict(label="Data Structures"),
+        dict(label=recommendation['data_structure']),
+        # Level 3: Algorithm Group
         dict(label="Algorithm Groups"),
-        dict(label=dlt_info['group']),
-        # Algorithms
-        dict(label="Algorithms"),
-    ])
+        dict(label=recommendation['group']),
+        # Level 4: Specific Algorithms
+        dict(label="Algorithms")
+    ]
     
-    # Add nodes for each algorithm
-    for algo in dlt_info['algorithms']:
+    # Add nodes for specific algorithms
+    algo_start_idx = len(nodes)
+    for algo in recommendation['algorithms']:
         nodes.append(dict(label=algo))
     
-    # Create links
-    links.extend([
-        # Link from Types to selected type
-        dict(source=0, target=1, value=1),
-        # Link from selected type to Groups
-        dict(source=1, target=2, value=1),
-        # Link from Groups to selected group
-        dict(source=2, target=3, value=1),
-        # Link from selected group to Algorithms
-        dict(source=3, target=4, value=1),
-    ])
+    # Create links between nodes
+    links = [
+        dict(source=0, target=1, value=1),  # Types to selected type
+        dict(source=1, target=2, value=1),  # Type to Structures
+        dict(source=2, target=3, value=1),  # Structures to selected structure
+        dict(source=3, target=4, value=1),  # Structure to Groups
+        dict(source=4, target=5, value=1),  # Groups to selected group
+        dict(source=5, target=6, value=1),  # Group to Algorithms
+    ]
     
-    # Add links to algorithms
-    for i, _ in enumerate(dlt_info['algorithms']):
-        links.append(dict(source=4, target=5+i, value=1))
+    # Add links to specific algorithms
+    for i, _ in enumerate(recommendation['algorithms']):
+        links.append(dict(source=6, target=algo_start_idx + i, value=1))
     
     # Create Sankey diagram
     fig = go.Figure(data=[go.Sankey(
@@ -150,7 +151,8 @@ def create_hierarchical_visualization(recommendation):
             thickness=20,
             line=dict(color="black", width=0.5),
             label=[node['label'] for node in nodes],
-            color=['#3498db' if i < 5 else '#2ecc71' for i in range(len(nodes))]
+            color=['#3498db' if i < algo_start_idx else '#2ecc71' 
+                   for i in range(len(nodes))]
         ),
         link=dict(
             source=[link['source'] for link in links],
@@ -160,7 +162,7 @@ def create_hierarchical_visualization(recommendation):
     )])
     
     fig.update_layout(
-        title_text="DLT Selection Path",
+        title_text="Caminho de Classificação Completo",
         font_size=12,
         height=400
     )
@@ -175,25 +177,26 @@ def create_evaluation_matrices(recommendation):
     
     st.header("Recomendação de DLT e Análise")
     
-    # Show hierarchical visualization
-    st.subheader("🔄 Caminho de Seleção")
-    hierarchy_fig = create_hierarchical_visualization(recommendation)
-    if hierarchy_fig:
-        st.plotly_chart(hierarchy_fig, use_container_width=True)
+    # Show complete classification path
+    st.subheader("🔄 Caminho de Classificação")
+    path_fig = create_classification_path_visualization(recommendation)
+    if path_fig:
+        st.plotly_chart(path_fig, use_container_width=True)
     
-    # Display DLT details
-    st.subheader("📊 Detalhes da DLT Recomendada")
+    # Display DLT details in organized sections
     col1, col2 = st.columns(2)
     
     with col1:
+        st.subheader("📊 Classificação")
         st.write(f"**DLT:** {recommendation['dlt']}")
         st.write(f"**Tipo:** {recommendation['dlt_type']}")
+        st.write(f"**Estrutura de Dados:** {recommendation['data_structure']}")
         st.write(f"**Grupo:** {recommendation['group']}")
     
     with col2:
-        st.write("**Algoritmos Disponíveis:**")
+        st.subheader("🔧 Algoritmos")
         for algo in recommendation['algorithms']:
-            st.write(f"- {algo}")
+            st.write(f"• {algo}")
     
     # Technical details in expandable sections
     with st.expander("📋 Características Técnicas"):
@@ -222,22 +225,28 @@ def create_evaluation_matrices(recommendation):
         
         st.plotly_chart(fig, use_container_width=True)
     
+    # Use cases and examples
     with st.expander("🎯 Casos de Uso"):
         st.write(recommendation['details']['use_cases'])
+        st.subheader("Casos Reais")
+        st.write(recommendation['details']['real_cases'])
     
+    # Challenges and limitations
     with st.expander("⚠️ Desafios e Limitações"):
         st.write(recommendation['details']['challenges'])
     
+    # Complete reference information
     with st.expander("📚 Referências"):
         st.write(recommendation['details']['references'])
     
-    # Create comparison table
+    # Comparison table
     st.subheader("📊 Comparação de DLTs")
     comparison_data = []
     for dlt_name, matrix_info in recommendation['evaluation_matrix'].items():
         comparison_data.append({
             'DLT': dlt_name,
             'Tipo': matrix_info['type'],
+            'Estrutura': matrix_info['data_structure'],
             'Grupo': matrix_info['group'],
             'Score': matrix_info['score'],
             **matrix_info['metrics']
