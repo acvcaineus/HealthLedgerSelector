@@ -40,6 +40,26 @@ frameworks_data = {
         "Hyperledger Fabric, Ethereum",
         "Blockchain permissionada",
         "Múltiplas DLTs (Hyperledger Fabric, Ethereum, IOTA, etc.)"
+    ],
+    "Fases de Implementação": [
+        "Fase 1: Avaliação Inicial; Fase 2: Definição de Requisitos Funcionais; Fase 3: Seleção de DLT; Fase 4: Implementação",
+        "Fase 1: Revisão Sistemática; Fase 2: Formalização de Métricas; Fase 3: Aplicação em Cenários Reais",
+        "Única fase sequencial",
+        "Fase 1: Avaliação Inicial; Fase 2: Definição de Governança",
+        "Fase 1: Integridade de Produtos; Fase 2: Verificabilidade Pública",
+        "Única fase sequencial",
+        "Fase única de implementação",
+        "Fase 1: Aplicação; Fase 2: Consenso; Fase 3: Infraestrutura; Fase 4: Internet"
+    ],
+    "Características": [
+        "Foco em interoperabilidade de EHRs, alta segurança, privacidade",
+        "Baseado em recomendações ITU, múltiplos critérios",
+        "Compartilhamento seguro de dados médicos",
+        "Rastreabilidade e transparência em ensaios clínicos",
+        "Rastreamento de medicamentos na cadeia de suprimentos",
+        "Gestão de registros eletrônicos de saúde",
+        "Gerenciamento de registros médicos descentralizado",
+        "Seleção multicritério com análise hierárquica"
     ]
 }
 
@@ -50,7 +70,6 @@ def convert_df(df):
     return df.to_csv().encode('utf-8')
 
 def create_comparison_radar_chart():
-    """Create radar chart comparing frameworks."""
     frameworks_metrics = {
         'SeletorDLTSaude': {
             'Segurança': 0.9,
@@ -58,6 +77,13 @@ def create_comparison_radar_chart():
             'Eficiência': 0.8,
             'Governança': 0.85,
             'Interoperabilidade': 0.9
+        },
+        'Blockchain-Based EHR': {
+            'Segurança': 0.95,
+            'Escalabilidade': 0.75,
+            'Eficiência': 0.85,
+            'Governança': 0.8,
+            'Interoperabilidade': 0.95
         },
         'CREDO-DLT': {
             'Segurança': 0.8,
@@ -79,27 +105,6 @@ def create_comparison_radar_chart():
             'Eficiência': 0.7,
             'Governança': 0.8,
             'Interoperabilidade': 0.85
-        },
-        'TrialChain': {
-            'Segurança': 0.8,
-            'Escalabilidade': 0.7,
-            'Eficiência': 0.75,
-            'Governança': 0.75,
-            'Interoperabilidade': 0.8
-        },
-        'PharmaChain': {
-            'Segurança': 0.85,
-            'Escalabilidade': 0.8,
-            'Eficiência': 0.75,
-            'Governança': 0.8,
-            'Interoperabilidade': 0.85
-        },
-        'Action-EHR': {
-            'Segurança': 0.8,
-            'Escalabilidade': 0.7,
-            'Eficiência': 0.7,
-            'Governança': 0.75,
-            'Interoperabilidade': 0.8
         }
     }
     
@@ -122,19 +127,39 @@ def create_comparison_radar_chart():
     return fig
 
 def show_comparisons():
-    """Display framework comparisons page."""
     st.title("Comparação de Frameworks")
     
     st.markdown("""
-    Esta página apresenta uma análise comparativa do SeletorDLTSaude com outros frameworks
-    existentes para seleção de DLTs na área da saúde.
+    Esta página apresenta uma análise comparativa detalhada do SeletorDLTSaude com outros frameworks
+    existentes para seleção de DLTs na área da saúde, com destaque especial para o framework
+    Blockchain-Based para EHRs Interoperáveis.
     """)
     
-    # Framework comparison table
+    st.subheader("Análise do Framework Blockchain-Based para EHRs Interoperáveis")
+    st.markdown("""
+    ### Características Principais:
+    1. **Foco em Interoperabilidade**
+       - Especializado em garantir a interoperabilidade entre diferentes sistemas de EHR
+       - Implementação baseada em padrões internacionais de saúde
+    
+    2. **Arquitetura de Segurança**
+       - Alta segurança para dados sensíveis de pacientes
+       - Controle de acesso granular e auditável
+    
+    3. **Processo de Seleção**
+       - Avaliação inicial rigorosa
+       - Definição clara de requisitos funcionais
+       - Processo estruturado em 4 fases
+    
+    4. **Vantagens**
+       - Forte ênfase em privacidade
+       - Comprovada eficácia em casos reais
+       - Suporte a múltiplos padrões de EHR
+    """)
+    
     st.subheader("Tabela Comparativa de Frameworks")
     st.dataframe(frameworks_df)
     
-    # Download button for comparison data
     csv = convert_df(frameworks_df)
     st.download_button(
         label="Baixar Dados Comparativos",
@@ -143,47 +168,69 @@ def show_comparisons():
         mime='text/csv'
     )
     
-    # Radar chart comparison
     st.subheader("Comparação Visual de Características")
     fig = create_comparison_radar_chart()
     st.plotly_chart(fig, use_container_width=True)
     
-    # Side-by-side metrics comparison
     st.subheader("Comparação de Métricas")
     metrics_comparison = pd.DataFrame({
         'Métrica': ['Segurança', 'Escalabilidade', 'Eficiência', 'Governança', 'Interoperabilidade'],
         'SeletorDLTSaude': [0.9, 0.85, 0.8, 0.85, 0.9],
+        'Blockchain-Based EHR': [0.95, 0.75, 0.85, 0.8, 0.95],
         'CREDO-DLT': [0.8, 0.7, 0.75, 0.8, 0.85],
         'MedRec': [0.85, 0.65, 0.7, 0.75, 0.8],
-        'Medshare': [0.85, 0.75, 0.7, 0.8, 0.85],
-        'TrialChain': [0.8, 0.7, 0.75, 0.75, 0.8],
-        'PharmaChain': [0.85, 0.8, 0.75, 0.8, 0.85],
-        'Action-EHR': [0.8, 0.7, 0.7, 0.75, 0.8]
+        'Medshare': [0.85, 0.75, 0.7, 0.8, 0.85]
     })
     
     fig_metrics = px.bar(
         metrics_comparison,
         x='Métrica',
-        y=['SeletorDLTSaude', 'CREDO-DLT', 'MedRec', 'Medshare', 'TrialChain', 'PharmaChain', 'Action-EHR'],
+        y=['SeletorDLTSaude', 'Blockchain-Based EHR', 'CREDO-DLT', 'MedRec', 'Medshare'],
         barmode='group',
         title='Comparação de Métricas entre Frameworks'
     )
     st.plotly_chart(fig_metrics)
     
-    # Methodology comparison
     st.subheader("Comparação Metodológica")
     methodology_data = {
-        'Framework': ['SeletorDLTSaude', 'CREDO-DLT', 'MedRec', 'Medshare', 'TrialChain', 'PharmaChain', 'Action-EHR'],
-        'Fases': ['4 fases', '3 fases', '1 fase', '2 fases', '2 fases', '2 fases', '1 fase'],
-        'Métricas': ['Múltiplas métricas', 'Métricas ITU', 'Métricas básicas', 'Métricas específicas', 'Métricas clínicas', 'Métricas de supply chain', 'Métricas de EHR'],
-        'Validação': ['Acadêmica e prática', 'Acadêmica', 'Prática', 'Acadêmica', 'Prática', 'Prática', 'Acadêmica']
+        'Framework': ['SeletorDLTSaude', 'Blockchain-Based EHR', 'CREDO-DLT', 'MedRec', 'Medshare'],
+        'Fases': ['4 fases', '4 fases', '3 fases', '1 fase', '2 fases'],
+        'Métricas': ['Múltiplas métricas', 'Foco em interoperabilidade', 'Métricas ITU', 'Métricas básicas', 'Métricas específicas'],
+        'Validação': ['Acadêmica e prática', 'Casos reais de EHR', 'Acadêmica', 'Prática', 'Acadêmica']
     }
     
     methodology_df = pd.DataFrame(methodology_data)
     st.table(methodology_df)
     
-    # Add conclusion section
-    st.markdown('''
+    st.markdown("""
+    ## Análise Comparativa com Blockchain-Based Framework
+
+    ### 1. Pontos em Comum:
+    - Ambos utilizam estrutura de 4 fases para seleção
+    - Forte ênfase em segurança e privacidade
+    - Suporte a múltiplas DLTs
+    - Foco em interoperabilidade
+
+    ### 2. Principais Diferenças:
+    
+    #### SeletorDLTSaude:
+    - Abordagem mais ampla para diferentes casos de uso em saúde
+    - Sistema de pontuação baseado em múltiplos critérios
+    - Maior flexibilidade na seleção de DLTs
+    - Interface interativa com feedback visual
+    
+    #### Blockchain-Based Framework:
+    - Especializado em EHRs
+    - Maior ênfase em padrões de interoperabilidade
+    - Processo mais focado em requisitos específicos de EHR
+    - Validação extensiva em ambientes hospitalares
+    
+    ### 3. Vantagens Complementares:
+    - O SeletorDLTSaude pode incorporar as métricas de interoperabilidade do Blockchain-Based Framework
+    - O Blockchain-Based Framework pode beneficiar-se do sistema de pontuação do SeletorDLTSaude
+    """)
+    
+    st.markdown("""
     ## Conclusão da Análise Comparativa
 
     O SeletorDLTSaude se destaca dos demais frameworks pelos seguintes diferenciais:
@@ -207,10 +254,9 @@ def show_comparisons():
     5. **Transparência na Decisão**:
        - Explicações detalhadas em cada etapa
        - Visualizações interativas das métricas
-    ''')
+    """)
 
 def show_metrics():
-    """Display metrics page."""
     from metrics import show_metrics as display_metrics
     display_metrics()
 
@@ -236,7 +282,6 @@ def show_home_page():
        - Métricas de avaliação para validar a recomendação
     ''')
 
-    # New section for scoring methodology
     st.markdown('''
     ## Metodologia de Ponderação e Scores
 
@@ -264,7 +309,6 @@ def show_home_page():
     4. Acurácia: Precisão global das recomendações
     ''')
 
-    # Framework features section
     st.markdown('''
     ## Funcionalidades do Framework
 
@@ -292,7 +336,6 @@ def show_home_page():
     st.markdown("## Referência de DLTs e Algoritmos")
     st.write("Abaixo está uma tabela detalhada com as principais DLTs e suas características para aplicações em saúde:")
     
-    # Reference table data
     dlt_data = {
         'DLT': [
             'Hyperledger Fabric', 'Corda', 'Quorum', 'VeChain', 'IOTA',
