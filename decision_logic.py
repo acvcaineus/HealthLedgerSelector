@@ -2,33 +2,20 @@ import statistics
 from dlt_data import questions, dlt_classes, consensus_algorithms, dlt_metrics, dlt_type_weights
 
 def calculate_weighted_score(metrics, answers):
-    """Calculate weighted score based on metrics and user answers."""
-    # Base weights without user input
+    """Calculate weighted score based on metrics and healthcare priorities."""
+    # Healthcare-specific weights
     weights = {
-        'security': 0.25,
-        'scalability': 0.25,
-        'energy_efficiency': 0.25,
-        'governance': 0.25
+        'security': 0.40,  # High security for patient data
+        'scalability': 0.25,  # Scalability for healthcare networks
+        'energy_efficiency': 0.20,  # Energy efficiency for continuous operation
+        'governance': 0.15  # Governance for regulatory compliance
     }
     
-    # Adjust weights based on user answers
-    if answers.get('network_security') == 'Sim':
-        weights['security'] += 0.1
-    if answers.get('scalability') == 'Sim':
-        weights['scalability'] += 0.1
-    if answers.get('energy_efficiency') == 'Sim':
-        weights['energy_efficiency'] += 0.1
-    if answers.get('governance_flexibility') == 'Sim':
-        weights['governance'] += 0.1
-        
-    # Normalize weights
-    total = sum(weights.values())
-    weights = {k: v/total for k, v in weights.items()}
-    
+    # Calculate weighted score
     return sum(metrics[metric] * weights[metric] for metric in metrics.keys())
 
 def select_consensus_group(dlt_type, answers):
-    """Select the consensus group based on DLT type."""
+    """Select the consensus group based on DLT type and healthcare requirements."""
     type_to_group = {
         "DLT Permissionada Privada": "Alta Segurança e Controle",
         "DLT Permissionada Simples": "Alta Eficiência",
@@ -37,6 +24,13 @@ def select_consensus_group(dlt_type, answers):
         "DLT Pública": "Alta Segurança e Controle",
         "DLT Pública Permissionless": "Escalabilidade e Governança"
     }
+    
+    # Adjust group based on healthcare requirements
+    if answers.get('network_security') == 'Sim' and answers.get('privacy') == 'Sim':
+        return "Alta Segurança e Controle"
+    elif answers.get('scalability') == 'Sim' and answers.get('energy_efficiency') == 'Sim':
+        return "Alta Eficiência"
+    
     return type_to_group.get(dlt_type, "Alta Segurança e Controle")
 
 def select_consensus_algorithm(consensus_group, answers):
@@ -50,20 +44,28 @@ def select_consensus_algorithm(consensus_group, answers):
     
     if consensus_group not in group_algorithms:
         return "Não disponível"
-        
+    
     algorithms = group_algorithms[consensus_group]
     algorithm_scores = {}
+    
+    # Healthcare-specific weights for algorithm selection
+    weights = {
+        'security': 0.40,
+        'scalability': 0.25,
+        'energy_efficiency': 0.20,
+        'governance': 0.15
+    }
     
     for algorithm in algorithms:
         score = 0
         if answers.get('network_security') == 'Sim':
-            score += 0.4  # Security weight
+            score += weights['security']
         if answers.get('scalability') == 'Sim':
-            score += 0.3  # Scalability weight
+            score += weights['scalability']
         if answers.get('energy_efficiency') == 'Sim':
-            score += 0.2  # Energy efficiency weight
+            score += weights['energy_efficiency']
         if answers.get('governance_flexibility') == 'Sim':
-            score += 0.1  # Governance weight
+            score += weights['governance']
         algorithm_scores[algorithm] = score
     
     return max(algorithm_scores.items(), key=lambda x: x[1])[0] if algorithm_scores else algorithms[0]
@@ -72,20 +74,21 @@ def calculate_confidence(weighted_scores, characteristics, answers):
     """Calculate confidence score for the recommendation."""
     if not weighted_scores:
         return 0.0
-        
+    
     try:
         max_score = max(weighted_scores.values())
-        mean_score = sum(weighted_scores.values()) / len(weighted_scores)
+        mean_score = statistics.mean(weighted_scores.values())
         std_dev = statistics.stdev(weighted_scores.values())
         
         separation_factor = (max_score - mean_score) / max_score if max_score > 0 else 0
         consistency_factor = 1 - (std_dev / max_score) if max_score > 0 else 0
         answer_consistency = sum(1 for ans in answers.values() if ans == "Sim") / len(answers) if answers else 0
         
+        # Healthcare-specific confidence weights
         confidence = (
-            separation_factor * 0.4 +
-            consistency_factor * 0.3 +
-            answer_consistency * 0.3
+            separation_factor * 0.40 +  # Higher weight for separation
+            consistency_factor * 0.35 +  # Higher weight for consistency
+            answer_consistency * 0.25    # Lower weight for answer consistency
         )
         
         return confidence
@@ -101,6 +104,7 @@ def get_recommendation(answers):
         weighted_scores = {}
         evaluation_matrix = {}
         
+        # Calculate weighted scores for each DLT
         for dlt_name, dlt_info in dlt_metrics.items():
             metrics = dlt_info["metrics"]
             weighted_score = calculate_weighted_score(metrics, answers)
@@ -116,7 +120,7 @@ def get_recommendation(answers):
         recommended_dlt = max(weighted_scores.items(), key=lambda x: x[1])[0]
         dlt_type = dlt_metrics[recommended_dlt]["type"]
         
-        # Select consensus group based on DLT type
+        # Select consensus group based on DLT type and healthcare requirements
         consensus_group = select_consensus_group(dlt_type, answers)
         
         # Select algorithm from consensus group
