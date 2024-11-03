@@ -131,15 +131,45 @@ def show_metrics():
         st.plotly_chart(fig_gini)
 
     with col2:
-        # Entropy visualization
+        # Updated Entropy visualization using a line chart
         entropy_data = pd.DataFrame({
             'Classe': ['DLT Permissionada', 'DLT Pública', 'DLT Híbrida'],
             'Entropia': [-0.429 * np.log2(0.429),
                         -0.286 * np.log2(0.286),
-                        -0.286 * np.log2(0.286)]
+                        -0.286 * np.log2(0.286)],
+            'Probabilidade': [0.429, 0.286, 0.286]
         })
-        fig_entropy = px.bar(entropy_data, x='Classe', y='Entropia',
-                            title='Contribuição para Entropia por Classe')
+        
+        fig_entropy = go.Figure()
+        
+        # Add line trace for entropy values
+        fig_entropy.add_trace(go.Scatter(
+            x=entropy_data['Classe'],
+            y=entropy_data['Entropia'],
+            mode='lines+markers',
+            name='Entropia',
+            line=dict(color='blue', width=2),
+            marker=dict(size=8)
+        ))
+        
+        # Add probability points for reference
+        fig_entropy.add_trace(go.Scatter(
+            x=entropy_data['Classe'],
+            y=entropy_data['Probabilidade'],
+            mode='markers',
+            name='Probabilidade',
+            marker=dict(size=8, color='red')
+        ))
+        
+        # Update layout
+        fig_entropy.update_layout(
+            title='Entropia por Classe (Total: 1.557)',
+            xaxis_title='Classe',
+            yaxis_title='Valor',
+            hovermode='x unified',
+            showlegend=True
+        )
+        
         st.plotly_chart(fig_entropy)
     
     # 4. Detailed Calculations
