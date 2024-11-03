@@ -83,7 +83,7 @@ def show_metrics():
         col1, col2 = st.columns(2)
         
         with col1:
-            st.subheader("📊 Métricas de Classificação")
+            st.subheader("Métricas de Classificação")
             st.metric(
                 label="Índice de Gini",
                 value=f"{gini:.3f}",
@@ -96,7 +96,7 @@ def show_metrics():
             )
         
         with col2:
-            st.subheader("🌳 Métricas da Árvore")
+            st.subheader("Métricas da Árvore")
             st.metric(
                 label="Profundidade da Árvore",
                 value=f"{depth:.1f}",
@@ -107,6 +107,26 @@ def show_metrics():
                 value=f"{pruning_metrics['pruning_ratio']:.2%}",
                 help="Proporção de nós removidos"
             )
+
+        with st.expander("Explicação do Índice de Gini"):
+            st.write("O Índice de Gini mede a pureza da classificação...")
+            st.write("Valores próximos a 0 indicam boa separação entre as classes")
+            st.write("Valores próximos a 1 indicam maior mistura entre as classes")
+
+        with st.expander("Explicação da Entropia"):
+            st.write("A Entropia mede a incerteza na decisão...")
+            st.write("Valores baixos indicam maior certeza na decisão")
+            st.write("Valores altos indicam maior incerteza na decisão")
+
+        with st.expander("Explicação da Profundidade"):
+            st.write("A profundidade mede o número médio de decisões necessárias...")
+            st.write("Valores menores indicam um processo decisório mais direto")
+            st.write("Valores maiores indicam um processo decisório mais complexo")
+
+        with st.expander("Explicação da Taxa de Poda"):
+            st.write("A taxa de poda indica a simplificação do modelo...")
+            st.write("Valores altos indicam maior simplificação do modelo")
+            st.write("Valores baixos indicam menor simplificação do modelo")
         
         # Display metrics radar chart
         fig_radar = create_metrics_radar_chart(
@@ -117,23 +137,8 @@ def show_metrics():
         )
         st.plotly_chart(fig_radar, use_container_width=True)
         
-        # Pruning metrics details
-        with st.expander("🔍 Detalhes das Métricas de Poda"):
-            st.markdown(f"""
-            ### Métricas de Poda Detalhadas
-            
-            1. **Taxa de Poda:** {pruning_metrics['pruning_ratio']:.2%}
-               - Proporção de nós removidos do modelo
-            
-            2. **Eficiência da Poda:** {pruning_metrics['eficiencia_poda']:.2%}
-               - Medida de quão eficiente foi o processo de poda
-            
-            3. **Impacto na Complexidade:** {pruning_metrics['impacto_complexidade']:.3f}
-               - Redução logarítmica na complexidade do modelo
-            """)
-        
         # Characteristic weights visualization
-        st.subheader("⚖️ Pesos das Características")
+        st.subheader("Pesos das Características")
         weights = {
             "security": 0.4,
             "scalability": 0.25,
@@ -154,6 +159,24 @@ def show_metrics():
 def show_home_page():
     st.title("SeletorDLTSaude - Sistema de Seleção de DLT para Saúde")
     st.write("Bem-vindo ao SeletorDLTSaude, uma aplicação para ajudar na escolha de tecnologias de ledger distribuído (DLT) para projetos de saúde.")
+
+    st.markdown('''
+    ## Como o Framework Funciona
+
+    1. **Base do Framework**: 
+       - A tabela abaixo apresenta a estrutura hierárquica de classificação das DLTs
+       - Cada DLT está associada a um tipo, grupo de algoritmo e algoritmos específicos
+
+    2. **Processo de Seleção**:
+       - O framework avalia suas necessidades através de um questionário
+       - As respostas são analisadas considerando segurança, escalabilidade, eficiência e governança
+       - A recomendação é baseada na tabela de classificação e suas prioridades
+
+    3. **Resultado**:
+       - Você receberá uma recomendação detalhada da DLT mais adequada
+       - Incluindo explicações técnicas e casos de uso relacionados
+       - Métricas de avaliação para validar a recomendação
+    ''')
 
     st.markdown("## Referência de DLTs e Algoritmos")
     st.write("Abaixo está uma tabela detalhada com as principais DLTs e suas características para aplicações em saúde:")
