@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.express as px
 from user_management import login, register, is_authenticated, logout
 from decision_tree import run_decision_tree
 from decision_logic import consensus_algorithms
@@ -9,152 +10,151 @@ from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_dec
                     calcular_pruning, calcular_peso_caracteristica)
 from utils import init_session_state
 
+# Framework comparison data
+frameworks_data = {
+    "Framework": [
+        "Blockchain-Based Framework for Interoperable EHRs",
+        "CREDO-DLT Decision Support Tool",
+        "Medshare Data Sharing Framework",
+        "TrialChain para Ensaios Clínicos",
+        "PharmaChain para Cadeia de Suprimentos",
+        "Action-EHR Framework para EHRs",
+        "MedRec para Gerenciamento de Registros Médicos",
+        "SeletorDLTSaude (Nosso Framework)"
+    ],
+    "Perguntas para Seleção": [
+        "1. Acesso imutável? 2. Alta segurança? 3. Controle robusto? 4. Privacidade? 5. Transparência?",
+        "1. Funcionalidade? 2. Segurança? 3. Desempenho? 4. Compliance com ITU?",
+        "1. Segurança dos dados? 2. Controle de acesso? 3. Privacidade? 4. Interoperabilidade?",
+        "1. Presença de terceiros confiáveis? 2. Alta segurança dos dados? 3. Controle de acesso? 4. Transparência?",
+        "1. Acesso imutável? 2. Segurança dos dados? 3. Frequência de atualização? 4. Transparência das transações?",
+        "1. Controle de acesso? 2. Segurança dos dados? 3. Interoperabilidade?",
+        "1. Segurança dos dados? 2. Eficiência no acesso? 3. Controle de permissão?",
+        "1. Segurança? 2. Escalabilidade? 3. Eficiência Energética? 4. Governança? 5. Interoperabilidade?"
+    ],
+    "DLTs Possíveis": [
+        "DLT permissionada privada",
+        "Todas as plataformas DLT relevantes",
+        "Blockchain permissionada",
+        "DLT permissionada privada/pública",
+        "DLT permissionada pública",
+        "Hyperledger Fabric, Ethereum",
+        "Blockchain permissionada",
+        "Múltiplas DLTs (Hyperledger Fabric, Ethereum, IOTA, etc.)"
+    ]
+}
+
+frameworks_df = pd.DataFrame(frameworks_data)
+
 @st.cache_data
 def convert_df(df):
     return df.to_csv().encode('utf-8')
 
-def create_metrics_radar_chart(gini, entropy, depth, pruning):
-    """Create a radar chart for technical metrics visualization."""
+def create_comparison_radar_chart():
+    """Create radar chart comparing frameworks."""
+    frameworks_metrics = {
+        'SeletorDLTSaude': {
+            'Segurança': 0.9,
+            'Escalabilidade': 0.85,
+            'Eficiência': 0.8,
+            'Governança': 0.85,
+            'Interoperabilidade': 0.9
+        },
+        'CREDO-DLT': {
+            'Segurança': 0.8,
+            'Escalabilidade': 0.7,
+            'Eficiência': 0.75,
+            'Governança': 0.8,
+            'Interoperabilidade': 0.85
+        },
+        'MedRec': {
+            'Segurança': 0.85,
+            'Escalabilidade': 0.65,
+            'Eficiência': 0.7,
+            'Governança': 0.75,
+            'Interoperabilidade': 0.8
+        }
+    }
+    
     fig = go.Figure()
     
-    fig.add_trace(go.Scatterpolar(
-        r=[gini, entropy, depth, pruning],
-        theta=['Índice de Gini', 'Entropia', 'Profundidade', 'Taxa de Poda'],
-        fill='toself',
-        name='Métricas Atuais',
-        hovertemplate="<b>%{theta}</b><br>" +
-                     "Valor: %{r:.3f}<br>" +
-                     "<extra></extra>"
-    ))
-    
-    fig.update_layout(
-        polar=dict(
-            radialaxis=dict(
-                visible=True,
-                range=[0, 1]
-            )),
-        title="Visão Geral das Métricas",
-        showlegend=True
-    )
-    return fig
-
-def create_characteristic_weights_chart(characteristic_weights):
-    """Create a radar chart for characteristic weights visualization."""
-    fig = go.Figure()
-    
-    chars = list(characteristic_weights.keys())
-    values = [characteristic_weights[char]['peso_ajustado'] for char in chars]
-    values.append(values[0])  # Close the polygon
-    chars.append(chars[0])  # Close the polygon
-    
-    fig.add_trace(go.Scatterpolar(
-        r=values,
-        theta=chars,
-        fill='toself',
-        name='Pesos Ajustados'
-    ))
+    for framework, metrics in frameworks_metrics.items():
+        fig.add_trace(go.Scatterpolar(
+            r=list(metrics.values()),
+            theta=list(metrics.keys()),
+            fill='toself',
+            name=framework
+        ))
     
     fig.update_layout(
         polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
         showlegend=True,
-        title="Distribuição dos Pesos das Características"
+        title="Comparação de Frameworks"
     )
+    
     return fig
 
-def show_metrics():
-    """Display technical metrics and analysis."""
-    st.header("Métricas Técnicas do Processo de Decisão")
+def show_comparisons():
+    """Display framework comparisons page."""
+    st.title("Comparação de Frameworks")
     
-    if 'answers' in st.session_state and len(st.session_state.answers) > 0:
-        answers = st.session_state.answers
-        
-        # Calculate basic metrics
-        total_nos = len(answers) * 2 + 1
-        nos_podados = total_nos - len(answers) - 1
-        pruning_metrics = calcular_pruning(total_nos, nos_podados)
-        
-        # Create dummy classes for Gini and Entropy calculation
-        classes = {'class_a': len(answers), 'class_b': nos_podados}
-        gini = calcular_gini(classes)
-        entropy = calcular_entropia(classes)
-        depth = calcular_profundidade_decisoria(list(range(len(answers))))
-        
-        # Display metrics in columns
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.subheader("Métricas de Classificação")
-            st.metric(
-                label="Índice de Gini",
-                value=f"{gini:.3f}",
-                help="Medida de pureza da classificação"
-            )
-            st.metric(
-                label="Entropia",
-                value=f"{entropy:.3f} bits",
-                help="Medida de incerteza na decisão"
-            )
-        
-        with col2:
-            st.subheader("Métricas da Árvore")
-            st.metric(
-                label="Profundidade da Árvore",
-                value=f"{depth:.1f}",
-                help="Número médio de decisões necessárias"
-            )
-            st.metric(
-                label="Taxa de Poda",
-                value=f"{pruning_metrics['pruning_ratio']:.2%}",
-                help="Proporção de nós removidos"
-            )
+    st.markdown("""
+    Esta página apresenta uma análise comparativa do SeletorDLTSaude com outros frameworks
+    existentes para seleção de DLTs na área da saúde.
+    """)
+    
+    # Framework comparison table
+    st.subheader("Tabela Comparativa de Frameworks")
+    st.dataframe(frameworks_df)
+    
+    # Download button for comparison data
+    csv = convert_df(frameworks_df)
+    st.download_button(
+        label="Baixar Dados Comparativos",
+        data=csv,
+        file_name='comparacao_frameworks.csv',
+        mime='text/csv'
+    )
+    
+    # Radar chart comparison
+    st.subheader("Comparação Visual de Características")
+    fig = create_comparison_radar_chart()
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Methodology comparison
+    st.subheader("Comparação Metodológica")
+    methodology_data = {
+        'Framework': ['SeletorDLTSaude', 'CREDO-DLT', 'MedRec'],
+        'Fases': ['4 fases', '3 fases', '1 fase'],
+        'Métricas': ['Múltiplas métricas', 'Métricas ITU', 'Métricas básicas'],
+        'Validação': ['Acadêmica e prática', 'Acadêmica', 'Prática']
+    }
+    
+    methodology_df = pd.DataFrame(methodology_data)
+    st.table(methodology_df)
+    
+    # Side-by-side metrics comparison
+    st.subheader("Comparação de Métricas")
+    metrics_comparison = pd.DataFrame({
+        'Métrica': ['Segurança', 'Escalabilidade', 'Eficiência', 'Governança', 'Interoperabilidade'],
+        'SeletorDLTSaude': [0.9, 0.85, 0.8, 0.85, 0.9],
+        'CREDO-DLT': [0.8, 0.7, 0.75, 0.8, 0.85],
+        'MedRec': [0.85, 0.65, 0.7, 0.75, 0.8]
+    })
+    
+    fig_metrics = px.bar(
+        metrics_comparison,
+        x='Métrica',
+        y=['SeletorDLTSaude', 'CREDO-DLT', 'MedRec'],
+        barmode='group',
+        title='Comparação de Métricas entre Frameworks'
+    )
+    st.plotly_chart(fig_metrics)
 
-        with st.expander("Explicação do Índice de Gini"):
-            st.write("O Índice de Gini mede a pureza da classificação...")
-            st.write("Valores próximos a 0 indicam boa separação entre as classes")
-            st.write("Valores próximos a 1 indicam maior mistura entre as classes")
-
-        with st.expander("Explicação da Entropia"):
-            st.write("A Entropia mede a incerteza na decisão...")
-            st.write("Valores baixos indicam maior certeza na decisão")
-            st.write("Valores altos indicam maior incerteza na decisão")
-
-        with st.expander("Explicação da Profundidade"):
-            st.write("A profundidade mede o número médio de decisões necessárias...")
-            st.write("Valores menores indicam um processo decisório mais direto")
-            st.write("Valores maiores indicam um processo decisório mais complexo")
-
-        with st.expander("Explicação da Taxa de Poda"):
-            st.write("A taxa de poda indica a simplificação do modelo...")
-            st.write("Valores altos indicam maior simplificação do modelo")
-            st.write("Valores baixos indicam menor simplificação do modelo")
-        
-        # Display metrics radar chart
-        fig_radar = create_metrics_radar_chart(
-            gini,
-            entropy,
-            depth / 10,  # Normalize to 0-1 range
-            pruning_metrics['pruning_ratio']
-        )
-        st.plotly_chart(fig_radar, use_container_width=True)
-        
-        # Characteristic weights visualization
-        st.subheader("Pesos das Características")
-        weights = {
-            "security": 0.4,
-            "scalability": 0.25,
-            "energy_efficiency": 0.20,
-            "governance": 0.15
-        }
-        
-        characteristic_weights = {}
-        for char in weights.keys():
-            weight_metrics = calcular_peso_caracteristica(char, weights, answers)
-            characteristic_weights[char] = weight_metrics
-        
-        fig_weights = create_characteristic_weights_chart(characteristic_weights)
-        st.plotly_chart(fig_weights)
-    else:
-        st.info("Complete o questionário para visualizar as métricas detalhadas.")
+def show_metrics():
+    """Display metrics page."""
+    from metrics import show_metrics as display_metrics
+    display_metrics()
 
 def show_home_page():
     st.title("SeletorDLTSaude - Sistema de Seleção de DLT para Saúde")
@@ -261,7 +261,7 @@ def main():
             register()
     else:
         st.sidebar.title("Menu")
-        menu_options = ['Início', 'Framework Proposto', 'Métricas', 'Perfil', 'Logout']
+        menu_options = ['Início', 'Framework Proposto', 'Métricas', 'Comparações', 'Perfil', 'Logout']
         
         menu_option = st.sidebar.selectbox(
             "Escolha uma opção",
@@ -277,6 +277,8 @@ def main():
             run_decision_tree()
         elif menu_option == 'Métricas':
             show_metrics()
+        elif menu_option == 'Comparações':
+            show_comparisons()
         elif menu_option == 'Perfil':
             show_user_profile()
         elif menu_option == 'Logout':

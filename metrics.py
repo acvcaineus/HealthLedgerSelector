@@ -113,30 +113,39 @@ def show_metrics():
         entropy = calcular_entropia(classes)
         depth = calcular_profundidade_decisoria(list(range(len(answers))))
         
-        # Adequação da Recomendação section
-        st.header("Adequação da Recomendação")
-        st.write("O framework proposto realiza uma análise multifatorial considerando:")
-
-        col1, col2 = st.columns(2)
-        with col1:
-            st.subheader("Características Avaliadas")
-            st.write("• Segurança (40%)")
-            st.write("• Escalabilidade (25%)")
-            st.write("• Eficiência Energética (20%)")
-            st.write("• Governança (15%)")
-
-        with col2:
-            st.subheader("Diferenciais do Framework")
-            st.write("• Análise baseada em evidências acadêmicas")
-            st.write("• Validação por métricas quantitativas")
-            st.write("• Consideração de casos reais")
-            st.write("• Recomendação personalizada")
-
+        # Formula explanations
+        with st.expander("Fórmulas das Métricas"):
+            st.markdown('''
+            ### Índice de Gini
+            ```
+            gini = 1 - Σ(pi²)
+            onde pi é a proporção de cada classe
+            ```
+            
+            ### Entropia
+            ```
+            entropia = -Σ(pi * log2(pi))
+            onde pi é a proporção de cada classe
+            ```
+            
+            ### Taxa de Poda
+            ```
+            taxa_poda = (total_nos - nos_podados) / total_nos
+            ```
+            
+            ### Índice de Consistência
+            ```
+            consistencia = Σ(peso_i * confianca_i)
+            onde peso_i é o peso da característica i
+            e confianca_i é a confiança na característica i
+            ```
+            ''')
+        
         # Metrics visualization
         st.subheader("Visualização de Métricas")
-        col3, col4 = st.columns(2)
+        col1, col2 = st.columns(2)
         
-        with col3:
+        with col1:
             st.metric(
                 label="Índice de Gini",
                 value=f"{gini:.3f}",
@@ -148,7 +157,7 @@ def show_metrics():
                 help="Medida de incerteza na decisão. Valores menores indicam maior certeza."
             )
 
-        with col4:
+        with col2:
             st.metric(
                 label="Profundidade",
                 value=f"{depth:.2f}",
@@ -160,40 +169,31 @@ def show_metrics():
                 help="Proporção de simplificação do modelo. Maior taxa indica melhor otimização."
             )
 
-        # Analysis conclusion
-        with st.expander("Conclusão da Análise"):
-            st.write("A recomendação é considerada adequada quando:")
-            st.write("1. O índice de consistência é superior a 0.7")
-            st.write("2. A distribuição de pesos reflete as prioridades do usuário")
-            st.write("3. Os casos de uso alinham-se com o cenário proposto")
-            st.write("4. As métricas técnicas atendem aos requisitos mínimos")
-
-            # Calculate recommendation confidence
-            weights = {
-                "security": 0.4,
-                "scalability": 0.25,
-                "energy_efficiency": 0.20,
-                "governance": 0.15
-            }
-            
-            characteristic_weights = {
-                char: calcular_peso_caracteristica(char, weights, answers)
-                for char in weights.keys()
-            }
-            
-            consistency_index = sum(
-                weights[char] * characteristic_weights[char]['confianca'] 
-                for char in weights.keys()
-            )
-            
-            st.metric(
-                label="Confiança da Recomendação",
-                value=f"{consistency_index:.2%}",
-                help="Baseado na consistência das respostas e alinhamento com requisitos"
-            )
-
+        # Weights and characteristics
+        weights = {
+            "security": 0.4,
+            "scalability": 0.25,
+            "energy_efficiency": 0.20,
+            "governance": 0.15
+        }
+        
+        characteristic_weights = {
+            char: calcular_peso_caracteristica(char, weights, answers)
+            for char in weights.keys()
+        }
+        
+        # Create and display radar chart
+        metrics_data = {
+            "Segurança": characteristic_weights["security"]["peso_ajustado"],
+            "Escalabilidade": characteristic_weights["scalability"]["peso_ajustado"],
+            "Eficiência": characteristic_weights["energy_efficiency"]["peso_ajustado"],
+            "Governança": characteristic_weights["governance"]["peso_ajustado"]
+        }
+        
+        fig = create_metrics_radar_chart(metrics_data)
+        st.plotly_chart(fig, use_container_width=True)
+        
         # Generate downloadable report
-        st.subheader("Relatório Completo")
         report_data = {
             "Métricas Técnicas": {
                 "Índice de Gini": gini,
@@ -201,9 +201,7 @@ def show_metrics():
                 "Profundidade": depth,
                 "Taxa de Poda": pruning_metrics['pruning_ratio']
             },
-            "Pesos das Características": {
-                char: weights[char] for char in weights.keys()
-            },
+            "Pesos das Características": weights,
             "Índices de Confiança": {
                 char: characteristic_weights[char]['confianca'] 
                 for char in weights.keys()
@@ -220,7 +218,7 @@ def show_metrics():
             mime="text/csv",
             help="Baixe o relatório completo com todas as métricas e análises"
         )
-
+        
     else:
         st.info("Complete o questionário para visualizar as métricas detalhadas.")
 
