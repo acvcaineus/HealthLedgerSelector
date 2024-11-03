@@ -171,11 +171,14 @@ def create_evaluation_matrices(recommendation):
     if st.session_state.authenticated:
         if st.button("Salvar Recomendação", help="Clique para salvar esta recomendação no seu perfil"):
             try:
-                save_recommendation(
-                    st.session_state.username,
-                    "Healthcare",
-                    recommendation
-                )
+                # Before saving, ensure recommendation has required fields
+                save_data = {
+                    'dlt': recommendation.get('dlt', 'N/A'),
+                    'consensus': recommendation.get('algorithms', ['N/A'])[0],  # Get first algorithm or N/A
+                    'dlt_type': recommendation.get('dlt_type', 'N/A'),
+                    'group': recommendation.get('group', 'N/A')
+                }
+                save_recommendation(st.session_state.username, "Healthcare", save_data)
                 st.success("Recomendação salva com sucesso!")
             except Exception as e:
                 st.error(f"Erro ao salvar recomendação: {str(e)}")

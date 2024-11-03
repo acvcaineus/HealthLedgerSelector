@@ -140,23 +140,13 @@ def create_evaluation_matrix(metrics_data, recommendation=None, answers=None):
     
     df = pd.DataFrame([metrics_data])
     
-    # Create custom color scale based on user preferences
-    if answers:
-        color_scale = []
-        for metric in df.columns:
-            if (metric == 'security' and answers.get('privacy') == 'Sim') or \
-               (metric == 'scalability' and answers.get('scalability') == 'Sim') or \
-               (metric == 'energy_efficiency' and answers.get('energy_efficiency') == 'Sim') or \
-               (metric == 'governance' and answers.get('governance_flexibility') == 'Sim'):
-                color_scale.append('darkred')
-            else:
-                color_scale.append('royalblue')
-    else:
-        color_scale = 'RdBu'
+    # Create custom color scale based on user preferences and metric importance
+    colors = ['#053061', '#2166ac', '#4393c3', '#92c5de', '#d1e5f0', 
+              '#f7f7f7', '#fddbc7', '#f4a582', '#d6604d', '#b2182b', '#67001f']
     
     fig = px.imshow(
         df,
-        color_continuous_scale=color_scale,
+        color_continuous_scale=colors,
         aspect='auto',
         title="Matriz de Avaliação de Métricas"
     )
@@ -164,7 +154,14 @@ def create_evaluation_matrix(metrics_data, recommendation=None, answers=None):
     fig.update_layout(
         xaxis_title="Métricas",
         yaxis_title="Avaliação",
-        yaxis_visible=False
+        yaxis_visible=False,
+        coloraxis_colorbar=dict(
+            title="Pontuação",
+            ticktext=["0.0", "0.2", "0.4", "0.6", "0.8", "1.0"],
+            tickvals=[0, 0.2, 0.4, 0.6, 0.8, 1],
+            lenmode="pixels",
+            len=200,
+        )
     )
     
     return fig
@@ -192,32 +189,62 @@ def show_metrics():
         entropy = calcular_entropia(classes)
         depth = calcular_profundidade_decisoria(list(range(len(answers))))
         
+        # Display formulas
+        with st.expander("Fórmulas das Métricas"):
+            st.markdown('''
+            ### Índice de Gini
+            ```
+            gini = 1 - Σ(pi²)
+            onde pi é a proporção de cada classe
+            ```
+            
+            ### Entropia
+            ```
+            entropia = -Σ(pi * log2(pi))
+            onde pi é a proporção de cada classe
+            ```
+            
+            ### Taxa de Poda
+            ```
+            taxa_poda = (total_nos - nos_podados) / total_nos
+            ```
+            
+            ### Índice de Consistência
+            ```
+            consistencia = Σ(peso_i * confianca_i) / Σ(peso_i)
+            onde peso_i é o peso da característica i
+            e confianca_i é a confiança na característica i
+            ```
+            ''')
+        
         # Display metrics in columns
+        st.subheader("Métricas Técnicas")
         col1, col2 = st.columns(2)
         
         with col1:
-            st.metric(
-                label="Índice de Gini",
-                value=f"{gini:.3f}",
-                help="Medida de pureza da classificação. Valores próximos a 0 indicam melhor separação."
-            )
-            st.metric(
-                label="Entropia",
-                value=f"{entropy:.3f}",
-                help="Medida de incerteza na decisão. Valores menores indicam maior certeza."
-            )
+            st.metric("Índice de Gini", f"{gini:.3f}")
+            st.metric("Entropia", f"{entropy:.3f}")
         
         with col2:
-            st.metric(
-                label="Profundidade",
-                value=f"{depth:.2f}",
-                help="Número médio de decisões. Menor profundidade indica processo mais direto."
-            )
-            st.metric(
-                label="Taxa de Poda",
-                value=f"{pruning_metrics['pruning_ratio']:.2%}",
-                help="Proporção de simplificação do modelo. Maior taxa indica melhor otimização."
-            )
+            st.metric("Taxa de Poda", f"{pruning_metrics['pruning_ratio']:.2%}")
+            if current_recommendation and 'metrics' in current_recommendation:
+                consistency_index = calculate_consistency_score(current_recommendation['metrics'], answers)
+                st.metric("Índice de Consistência", f"{consistency_index:.2f}")
+        
+        # Matrix explanations
+        with st.expander("Explicação das Matrizes"):
+            st.markdown("""
+            ### Matriz de Avaliação
+            A matriz mostra a pontuação de cada métrica em uma escala de calor:
+            - Tons mais escuros de azul indicam valores mais baixos
+            - Tons mais escuros de vermelho indicam valores mais altos
+            
+            ### Gráfico Radar
+            O gráfico radar permite visualizar:
+            - O equilíbrio entre as diferentes métricas
+            - Pontos fortes e fracos da recomendação
+            - Comparação com valores ideais
+            """)
         
         # Technical metrics visualization
         st.subheader("Métricas Técnicas")
@@ -245,8 +272,8 @@ def show_metrics():
             "Métricas Técnicas": {
                 "Índice de Gini": gini,
                 "Entropia": entropy,
-                "Profundidade": depth,
-                "Taxa de Poda": pruning_metrics['pruning_ratio']
+                "Taxa de Poda": pruning_metrics['pruning_ratio'],
+                "Índice de Consistência": consistency_index if 'consistency_index' in locals() else 0
             },
             "Métricas de Avaliação": metrics_data
         }
