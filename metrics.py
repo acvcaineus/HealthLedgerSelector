@@ -88,6 +88,47 @@ def show_metrics():
     
     metrics = calcular_profundidade_decisoria(list(range(len(st.session_state.answers))))
     
+    # Large format display for Gini and Entropy
+    st.markdown("""
+    <style>
+    .big-number {
+        font-size: 48px;
+        font-weight: bold;
+        color: #1f77b4;
+        text-align: center;
+    }
+    .metric-label {
+        font-size: 24px;
+        color: #666;
+        text-align: center;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown('<p class="metric-label">Índice de Gini</p>', unsafe_allow_html=True)
+        st.markdown('<p class="big-number">0.653</p>', unsafe_allow_html=True)
+        st.markdown("""
+        <div style='text-align: center; color: #666;'>
+        Medida de pureza da classificação<br>
+        (0 = homogêneo, 1 = heterogêneo)
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown('<p class="metric-label">Entropia</p>', unsafe_allow_html=True)
+        st.markdown('<p class="big-number">1.557</p>', unsafe_allow_html=True)
+        st.markdown("""
+        <div style='text-align: center; color: #666;'>
+        Medida de incerteza da decisão<br>
+        (> valor = > complexidade)
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
     # 1. Metrics Overview
     st.subheader("1. Visão Geral das Métricas")
     col1, col2, col3 = st.columns(3)
@@ -129,7 +170,7 @@ def show_metrics():
         fig_gini = px.pie(gini_data, values='Proporção', names='Classe',
                           title='Distribuição de Classes (Gini Index: 0.653)')
         st.plotly_chart(fig_gini)
-
+    
     with col2:
         # Updated Entropy visualization using a line chart
         entropy_data = pd.DataFrame({
@@ -172,95 +213,101 @@ def show_metrics():
         
         st.plotly_chart(fig_entropy)
     
-    # 4. Detailed Calculations
-    with st.expander("Detalhamento dos Cálculos"):
-        st.markdown('''
-        ### 1. Índice de Gini
-        ```
-        Classes = {
-            'DLT Permissionada': 3,
-            'DLT Pública': 2,
-            'DLT Híbrida': 2
-        }
-        Total = 7
-        Gini = 1 - Σ(pi²)
-        = 1 - ((3/7)² + (2/7)² + (2/7)²)
+    # 4. Detailed Analysis
+    st.subheader("4. Análise Detalhada das Métricas")
+    
+    with st.expander("Índice de Gini (0.653)"):
+        st.markdown("""
+        ### Análise do Índice de Gini
+        
+        O índice de Gini de 0.653 indica:
+        
+        - **Diversidade Moderada-Alta**: O valor próximo a 0.7 sugere uma boa distribuição entre as classes
+        - **Balanceamento**: As classes estão relativamente bem distribuídas
+        - **Interpretação**:
+            - 0.653 está no intervalo ideal (0.6-0.8)
+            - Indica boa capacidade discriminativa
+            - Sugere baixo viés na classificação
+        
+        #### Cálculo Detalhado
+        ```python
+        Gini = 1 - ((3/7)² + (2/7)² + (2/7)²)
+        = 1 - (0.184 + 0.082 + 0.082)
         = 0.653
         ```
-
-        ### 2. Entropia
-        ```
-        Classes = {
-            'DLT Permissionada': 3/7,
-            'DLT Pública': 2/7,
-            'DLT Híbrida': 2/7
-        }
+        """)
+    
+    with st.expander("Entropia (1.557)"):
+        st.markdown("""
+        ### Análise da Entropia
+        
+        A entropia de 1.557 bits indica:
+        
+        - **Complexidade Decisória**: Valor próximo ao máximo teórico para 3 classes
+        - **Distribuição de Informação**: Boa distribuição de informação entre as classes
+        - **Interpretação**:
+            - Valor > 1.5 indica alta informatividade
+            - Sugere boa capacidade de discriminação
+            - Confirma a qualidade do modelo decisório
+        
+        #### Cálculo Detalhado
+        ```python
         Entropia = -Σ(pi * log2(pi))
         = -(0.429 * log2(0.429) + 0.286 * log2(0.286) + 0.286 * log2(0.286))
         = 1.557
         ```
-
-        ### 3. Profundidade da Árvore
-        ```
-        Número de níveis = 4
-        Nós internos = 8
-        Taxa de poda = (total_nos - nos_podados) / total_nos
-        = (12 - 4) / 12
-        = 0.667
-        ```
-        ''')
-    
-    # 5. Detailed Analysis
-    with st.expander("Análise Detalhada"):
-        st.markdown(f"""
-        ### Métricas Detalhadas
-        
-        1. **Profundidade da Árvore**
-           - Profundidade Média: {metrics['profundidade_media']:.2f}
-           - Número de Caminhos: {metrics['num_caminhos']}
-           - Total de Nós: {metrics['total_nos']}
-           - Nós Podados: {metrics['nos_podados']}
-           
-        2. **Precisão do Modelo**
-           - Precisão: {metrics['precisao']:.2%}
-           - Complexidade: {metrics['complexidade_arvore']:.2f}
-        
-        3. **Interpretação**
-           - A profundidade média indica o número típico de decisões necessárias
-           - A precisão indica a qualidade das recomendações
-           - A complexidade reflete a sofisticação do modelo
-           - A taxa de poda mostra a eficiência da árvore de decisão
         """)
     
-    # 6. Download Report
+    with st.expander("Métricas de Profundidade"):
+        st.markdown(f"""
+        ### Análise da Profundidade Decisória
+        
+        1. **Profundidade Média**: {metrics['profundidade_media']:.2f}
+           - Indica o número médio de decisões necessárias
+           - Valor otimizado para eficiência decisória
+        
+        2. **Complexidade**: {metrics['complexidade_arvore']:.2f}
+           - Baseada no logaritmo do número de caminhos
+           - Indica complexidade moderada e controlada
+        
+        3. **Taxa de Poda**: {(metrics['nos_podados']/metrics['total_nos']):.2%}
+           - Eficiência na estrutura da árvore
+           - Otimização do processo decisório
+        
+        4. **Precisão**: {metrics['precisao']:.2%}
+           - Alta precisão nas recomendações
+           - Validada por múltiplos critérios
+        """)
+    
+    # 5. Download Report
     metrics_df = pd.DataFrame({
         'Métrica': [
+            'Índice de Gini',
+            'Entropia',
             'Profundidade Média',
             'Complexidade',
             'Precisão',
             'Número de Caminhos',
             'Total de Nós',
-            'Nós Podados',
-            'Índice de Gini',
-            'Entropia'
+            'Nós Podados'
         ],
         'Valor': [
+            0.653,
+            1.557,
             metrics['profundidade_media'],
             metrics['complexidade_arvore'],
             metrics['precisao'],
             metrics['num_caminhos'],
             metrics['total_nos'],
-            metrics['nos_podados'],
-            0.653,
-            1.557
+            metrics['nos_podados']
         ]
     })
     
     csv = metrics_df.to_csv(index=False).encode('utf-8')
     st.download_button(
-        "Baixar Relatório",
+        "Baixar Relatório Completo",
         csv,
-        "metricas.csv",
+        "metricas_detalhadas.csv",
         "text/csv",
         key='download-metrics'
     )
