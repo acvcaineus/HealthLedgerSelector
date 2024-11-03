@@ -12,12 +12,12 @@ from utils import init_session_state
 # Framework comparison data
 frameworks_data = {
     "Framework": [
-        "Blockchain-Based Framework for Interoperable EHRs",
-        "CREDO-DLT Decision Support Tool",
-        "Medshare Data Sharing Framework",
+        "Framework Blockchain para EHRs Interoperáveis",
+        "Ferramenta de Suporte CREDO-DLT",
+        "Framework Medshare para Compartilhamento de Dados",
         "TrialChain para Ensaios Clínicos",
         "PharmaChain para Cadeia de Suprimentos",
-        "Action-EHR Framework para EHRs",
+        "Framework Action-EHR para EHRs",
         "MedRec para Gerenciamento de Registros Médicos",
         "SeletorDLTSaude (Nosso Framework)"
     ],
@@ -69,34 +69,6 @@ def create_comparison_radar_chart():
         'MedRec': {
             'Segurança': 0.85,
             'Escalabilidade': 0.65,
-            'Eficiência': 0.7,
-            'Governança': 0.75,
-            'Interoperabilidade': 0.8
-        },
-        'Medshare': {
-            'Segurança': 0.85,
-            'Escalabilidade': 0.75,
-            'Eficiência': 0.7,
-            'Governança': 0.8,
-            'Interoperabilidade': 0.85
-        },
-        'TrialChain': {
-            'Segurança': 0.8,
-            'Escalabilidade': 0.7,
-            'Eficiência': 0.75,
-            'Governança': 0.75,
-            'Interoperabilidade': 0.8
-        },
-        'PharmaChain': {
-            'Segurança': 0.85,
-            'Escalabilidade': 0.8,
-            'Eficiência': 0.75,
-            'Governança': 0.8,
-            'Interoperabilidade': 0.85
-        },
-        'Action-EHR': {
-            'Segurança': 0.8,
-            'Escalabilidade': 0.7,
             'Eficiência': 0.7,
             'Governança': 0.75,
             'Interoperabilidade': 0.8
@@ -154,17 +126,13 @@ def show_comparisons():
         'Métrica': ['Segurança', 'Escalabilidade', 'Eficiência', 'Governança', 'Interoperabilidade'],
         'SeletorDLTSaude': [0.9, 0.85, 0.8, 0.85, 0.9],
         'CREDO-DLT': [0.8, 0.7, 0.75, 0.8, 0.85],
-        'MedRec': [0.85, 0.65, 0.7, 0.75, 0.8],
-        'Medshare': [0.85, 0.75, 0.7, 0.8, 0.85],
-        'TrialChain': [0.8, 0.7, 0.75, 0.75, 0.8],
-        'PharmaChain': [0.85, 0.8, 0.75, 0.8, 0.85],
-        'Action-EHR': [0.8, 0.7, 0.7, 0.75, 0.8]
+        'MedRec': [0.85, 0.65, 0.7, 0.75, 0.8]
     })
     
     fig_metrics = px.bar(
         metrics_comparison,
         x='Métrica',
-        y=['SeletorDLTSaude', 'CREDO-DLT', 'MedRec', 'Medshare', 'TrialChain', 'PharmaChain', 'Action-EHR'],
+        y=['SeletorDLTSaude', 'CREDO-DLT', 'MedRec'],
         barmode='group',
         title='Comparação de Métricas entre Frameworks'
     )
@@ -173,10 +141,10 @@ def show_comparisons():
     # Methodology comparison
     st.subheader("Comparação Metodológica")
     methodology_data = {
-        'Framework': ['SeletorDLTSaude', 'CREDO-DLT', 'MedRec', 'Medshare', 'TrialChain', 'PharmaChain', 'Action-EHR'],
-        'Fases': ['4 fases', '3 fases', '1 fase', '2 fases', '2 fases', '2 fases', '1 fase'],
-        'Métricas': ['Múltiplas métricas', 'Métricas ITU', 'Métricas básicas', 'Métricas específicas', 'Métricas clínicas', 'Métricas de supply chain', 'Métricas de EHR'],
-        'Validação': ['Acadêmica e prática', 'Acadêmica', 'Prática', 'Acadêmica', 'Prática', 'Prática', 'Acadêmica']
+        'Framework': ['SeletorDLTSaude', 'CREDO-DLT', 'MedRec'],
+        'Fases': ['4 fases', '3 fases', '1 fase'],
+        'Métricas': ['Múltiplas métricas', 'Métricas ITU', 'Métricas básicas'],
+        'Validação': ['Acadêmica e prática', 'Acadêmica', 'Prática']
     }
     
     methodology_df = pd.DataFrame(methodology_data)
@@ -222,112 +190,77 @@ def show_home_page():
     ## Como o Framework Funciona
 
     1. **Base do Framework**: 
-       - A tabela abaixo apresenta a estrutura hierárquica de classificação das DLTs
-       - Cada DLT está associada a um tipo, grupo de algoritmo e algoritmos específicos
+       - Estrutura hierárquica de classificação das DLTs
+       - Cada DLT associada a características específicas
 
     2. **Processo de Seleção**:
-       - O framework avalia suas necessidades através de um questionário
-       - As respostas são analisadas considerando segurança, escalabilidade, eficiência e governança
-       - A recomendação é baseada na tabela de classificação e suas prioridades
+       - Avaliação através de questionário estruturado
+       - Análise baseada em critérios fundamentais:
+         - Segurança (40%)
+         - Escalabilidade (25%)
+         - Eficiência Energética (20%)
+         - Governança (15%)
 
     3. **Resultado**:
-       - Você receberá uma recomendação detalhada da DLT mais adequada
-       - Incluindo explicações técnicas e casos de uso relacionados
-       - Métricas de avaliação para validar a recomendação
+       - Recomendação detalhada da DLT mais adequada
+       - Explicações técnicas e casos de uso
+       - Métricas de avaliação quantitativas
     ''')
 
     # New section for scoring methodology
     st.markdown('''
-    ## Metodologia de Ponderação e Scores
+    ## Metodologia de Ponderação
 
     ### Pesos das Características
-    - Segurança (40%): Fundamental para proteção de dados sensíveis de saúde
-    - Escalabilidade (25%): Capacidade de crescimento e adaptação
-    - Eficiência Energética (20%): Sustentabilidade e custo operacional
-    - Governança (15%): Controle e gerenciamento do sistema
+    - Segurança (40%): Proteção de dados sensíveis
+    - Escalabilidade (25%): Capacidade de crescimento
+    - Eficiência Energética (20%): Sustentabilidade
+    - Governança (15%): Controle e gerenciamento
 
     ### Sistema de Pontuação
-    - Cada DLT é avaliada em uma escala de 0 a 1
-    - Scores são calculados usando média ponderada das características
-    - Índice de Consistência valida a adequação da recomendação
+    - Escala de 0 a 1 para cada característica
+    - Média ponderada para score final
+    - Índice de Consistência para validação
 
     ### Métricas de Avaliação
     1. Índice de Gini (0.653)
-       - Mede a pureza da classificação
-       - Valor mais próximo de 1 indica maior diversidade
+       - Pureza da classificação
+       - Diversidade de recomendações
 
     2. Entropia (1.557)
-       - Avalia a incerteza na decisão
-       - Valor mais alto indica maior complexidade decisória
+       - Complexidade decisória
+       - Distribuição de informação
 
-    3. Taxa de Poda: Indica a otimização do modelo
-    4. Acurácia: Precisão global das recomendações
+    3. Taxa de Poda
+       - Otimização do modelo
+       - Eficiência decisória
     ''')
 
-    # Framework features section
-    st.markdown('''
-    ## Funcionalidades do Framework
-
-    1. **Recomendação Personalizada**:
-       - Questionário adaptativo em 4 fases
-       - Análise multicritério com pesos customizáveis
-       - Visualização detalhada das métricas
-
-    2. **Análise Comparativa**:
-       - Comparação entre diferentes DLTs
-       - Matrizes de avaliação interativas
-       - Visualização de métricas técnicas
-
-    3. **Suporte à Decisão**:
-       - Explicações detalhadas das recomendações
-       - Casos de uso relacionados
-       - Referências acadêmicas recentes
-
-    4. **Recursos Adicionais**:
-       - Salvamento de recomendações
-       - Download de relatórios detalhados
-       - Visualização de métricas de confiabilidade
-    ''')
-
-    st.markdown("## Referência de DLTs e Algoritmos")
-    st.write("Abaixo está uma tabela detalhada com as principais DLTs e suas características para aplicações em saúde:")
+    st.markdown("## Referência de DLTs")
+    st.write("Tabela detalhada das principais DLTs para aplicações em saúde:")
     
     # Reference table data
     dlt_data = {
         'DLT': [
             'Hyperledger Fabric', 'Corda', 'Quorum', 'VeChain', 'IOTA',
-            'Ripple (XRP Ledger)', 'Stellar', 'Bitcoin', 'Ethereum (PoW)',
+            'Ripple', 'Stellar', 'Bitcoin', 'Ethereum (PoW)',
             'Ethereum 2.0 (PoS)'
         ],
-        'Tipo de DLT': [
+        'Tipo': [
             'DLT Permissionada Privada', 'DLT Permissionada Simples', 'DLT Híbrida',
             'DLT Híbrida', 'DLT Pública (DAG)', 'DLT com Consenso Delegado',
             'DLT com Consenso Delegado', 'DLT Pública', 'DLT Pública',
             'DLT Pública Permissionless'
         ],
         'Grupo de Algoritmo': [
-            'Alta Segurança e Controle dos dados sensíveis',
-            'Alta Segurança e Controle dos dados sensíveis',
-            'Escalabilidade e Governança Flexível',
-            'Alta Eficiência Operacional em redes locais',
-            'Alta Escalabilidade em Redes IoT',
-            'Alta Eficiência Operacional em redes locais',
-            'Alta Eficiência Operacional em redes locais',
-            'Alta Segurança e Descentralização de dados críticos',
-            'Alta Segurança e Descentralização de dados críticos',
-            'Escalabilidade e Governança Flexível'
+            'Alta Segurança', 'Alta Segurança', 'Escalabilidade',
+            'Alta Eficiência', 'Alta Escalabilidade', 'Alta Eficiência',
+            'Alta Eficiência', 'Alta Segurança', 'Alta Segurança',
+            'Escalabilidade'
         ],
-        'Algoritmos de Consenso': [
-            'RAFT, PBFT',
-            'RAFT',
-            'RAFT, IBFT',
-            'PoA',
-            'Tangle',
-            'Ripple Consensus Protocol',
-            'Stellar Consensus Protocol',
-            'PoW',
-            'PoW',
-            'PoS'
+        'Algoritmo': [
+            'RAFT/PBFT', 'RAFT', 'RAFT/IBFT', 'PoA', 'Tangle',
+            'RCA', 'SCP', 'PoW', 'PoW', 'PoS'
         ]
     }
     df = pd.DataFrame(dlt_data)
@@ -343,7 +276,7 @@ def show_home_page():
 
     st.markdown("---")
     st.subheader("Iniciar o Processo de Seleção de DLT")
-    if st.button("Iniciar Questionário", key="start_questionnaire", help="Clique aqui para começar o processo de seleção de DLT"):
+    if st.button("Iniciar Questionário", key="start_questionnaire"):
         st.session_state.page = "Framework Proposto"
         st.experimental_rerun()
 

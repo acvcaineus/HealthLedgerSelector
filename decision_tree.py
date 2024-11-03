@@ -11,7 +11,6 @@ def create_progress_animation(current_phase, answers, questions):
     phases = ['Aplicação', 'Consenso', 'Infraestrutura', 'Internet']
     fig = go.Figure()
     
-    # Calculate progress for each phase
     phase_progress = {phase: 0 for phase in phases}
     phase_total = {phase: 0 for phase in phases}
     phase_characteristics = {phase: set() for phase in phases}
@@ -85,7 +84,6 @@ def create_progress_animation(current_phase, answers, questions):
         
         # Add connecting lines between phases
         if i < len(phases) - 1:
-            # Use different line styles based on completion
             if completion == 1 and phase_progress[phases[i+1]] > 0:
                 line_style = 'solid'
                 line_color = '#2ecc71'
@@ -131,10 +129,10 @@ def create_progress_animation(current_phase, answers, questions):
 def create_dlt_types_matrix():
     """Create matrix showing relationships between DLT types."""
     dlt_types = {
-        'DLT Permissionada Privada': {'security': 0.9, 'scalability': 0.7, 'efficiency': 0.8, 'governance': 0.85},
-        'DLT Híbrida': {'security': 0.8, 'scalability': 0.85, 'efficiency': 0.75, 'governance': 0.8},
-        'DLT Pública': {'security': 0.85, 'scalability': 0.6, 'efficiency': 0.5, 'governance': 0.7},
-        'DLT com Consenso Delegado': {'security': 0.75, 'scalability': 0.9, 'efficiency': 0.85, 'governance': 0.75}
+        'DLT Permissionada Privada': {'Segurança': 0.9, 'Escalabilidade': 0.7, 'Eficiência': 0.8, 'Governança': 0.85},
+        'DLT Híbrida': {'Segurança': 0.8, 'Escalabilidade': 0.85, 'Eficiência': 0.75, 'Governança': 0.8},
+        'DLT Pública': {'Segurança': 0.85, 'Escalabilidade': 0.6, 'Eficiência': 0.5, 'Governança': 0.7},
+        'DLT com Consenso Delegado': {'Segurança': 0.75, 'Escalabilidade': 0.9, 'Eficiência': 0.85, 'Governança': 0.75}
     }
     
     df = pd.DataFrame(dlt_types).T
@@ -149,10 +147,10 @@ def create_dlt_types_matrix():
 def create_algorithm_groups_matrix():
     """Create matrix comparing different algorithm groups."""
     algorithm_groups = {
-        'Alta Segurança': {'complexity': 0.8, 'performance': 0.7, 'decentralization': 0.9},
-        'Alta Eficiência': {'complexity': 0.6, 'performance': 0.9, 'decentralization': 0.7},
-        'Escalabilidade': {'complexity': 0.7, 'performance': 0.8, 'decentralization': 0.8},
-        'Governança': {'complexity': 0.75, 'performance': 0.75, 'decentralization': 0.85}
+        'Alta Segurança': {'Complexidade': 0.8, 'Desempenho': 0.7, 'Descentralização': 0.9},
+        'Alta Eficiência': {'Complexidade': 0.6, 'Desempenho': 0.9, 'Descentralização': 0.7},
+        'Escalabilidade': {'Complexidade': 0.7, 'Desempenho': 0.8, 'Descentralização': 0.8},
+        'Governança': {'Complexidade': 0.75, 'Desempenho': 0.75, 'Descentralização': 0.85}
     }
     
     df = pd.DataFrame(algorithm_groups).T
@@ -167,11 +165,11 @@ def create_algorithm_groups_matrix():
 def create_consensus_algorithms_matrix():
     """Create matrix showing consensus algorithm characteristics."""
     consensus_characteristics = {
-        'PBFT': {'security': 0.9, 'scalability': 0.7, 'energy': 0.8, 'governance': 0.85},
-        'PoW': {'security': 0.95, 'scalability': 0.5, 'energy': 0.3, 'governance': 0.7},
-        'PoS': {'security': 0.85, 'scalability': 0.8, 'energy': 0.9, 'governance': 0.8},
-        'PoA': {'security': 0.8, 'scalability': 0.9, 'energy': 0.85, 'governance': 0.75},
-        'Tangle': {'security': 0.8, 'scalability': 0.95, 'energy': 0.9, 'governance': 0.7}
+        'PBFT': {'Segurança': 0.9, 'Escalabilidade': 0.7, 'Energia': 0.8, 'Governança': 0.85},
+        'PoW': {'Segurança': 0.95, 'Escalabilidade': 0.5, 'Energia': 0.3, 'Governança': 0.7},
+        'PoS': {'Segurança': 0.85, 'Escalabilidade': 0.8, 'Energia': 0.9, 'Governança': 0.8},
+        'PoA': {'Segurança': 0.8, 'Escalabilidade': 0.9, 'Energia': 0.85, 'Governança': 0.75},
+        'Tangle': {'Segurança': 0.8, 'Escalabilidade': 0.95, 'Energia': 0.9, 'Governança': 0.7}
     }
     
     df = pd.DataFrame(consensus_characteristics).T
@@ -180,24 +178,6 @@ def create_consensus_algorithms_matrix():
         color_continuous_scale='RdBu',
         aspect='auto',
         title="Matriz de Algoritmos de Consenso"
-    )
-    return fig
-
-def create_integration_matrix():
-    """Create matrix showing relationships between components."""
-    integration_data = {
-        'DLT Types': {'Consensus': 0.9, 'Infrastructure': 0.8, 'Application': 0.7},
-        'Consensus': {'DLT Types': 0.9, 'Infrastructure': 0.85, 'Application': 0.6},
-        'Infrastructure': {'DLT Types': 0.8, 'Consensus': 0.85, 'Application': 0.8},
-        'Application': {'DLT Types': 0.7, 'Consensus': 0.6, 'Infrastructure': 0.8}
-    }
-    
-    df = pd.DataFrame(integration_data)
-    fig = px.imshow(
-        df,
-        color_continuous_scale='RdBu',
-        aspect='auto',
-        title="Matriz de Integração"
     )
     return fig
 
@@ -242,7 +222,7 @@ def create_evaluation_matrices(recommendation):
         st.plotly_chart(create_algorithm_groups_matrix(), use_container_width=True)
         st.write("""
         Comparação entre diferentes grupos de algoritmos baseada em complexidade,
-        performance e descentralização.
+        desempenho e descentralização.
         """)
 
     with st.expander("Matriz de Algoritmos de Consenso"):
@@ -250,13 +230,6 @@ def create_evaluation_matrices(recommendation):
         st.write("""
         Características detalhadas de cada algoritmo de consenso,
         incluindo segurança, escalabilidade, eficiência energética e governança.
-        """)
-
-    with st.expander("Matriz de Integração"):
-        st.plotly_chart(create_integration_matrix(), use_container_width=True)
-        st.write("""
-        Visualização das relações entre diferentes componentes do sistema,
-        mostrando como eles se integram e interagem entre si.
         """)
 
     # Display additional information sections
