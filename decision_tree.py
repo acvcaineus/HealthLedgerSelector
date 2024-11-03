@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.express as px
 from dlt_data import questions
 from decision_logic import get_recommendation, dlt_classification
 
@@ -222,7 +223,71 @@ def create_evaluation_matrices(recommendation):
         )
         
         st.plotly_chart(fig, use_container_width=True)
-    
+
+    # Add the new evaluation matrices
+    st.subheader("Matriz de Avaliação de DLTs")
+    dlt_metrics_df = pd.DataFrame({
+        'DLT': ['Hyperledger Fabric', 'Quorum', 'VeChain', 'IOTA', 'Ethereum 2.0'],
+        'Segurança': [0.85, 0.78, 0.75, 0.80, 0.85],
+        'Escalabilidade': [0.65, 0.70, 0.80, 0.85, 0.75],
+        'Eficiência': [0.80, 0.80, 0.85, 0.90, 0.65],
+        'Governança': [0.75, 0.78, 0.70, 0.60, 0.80]
+    }).set_index('DLT')
+
+    # Create heatmap for DLTs
+    fig_dlt = px.imshow(
+        dlt_metrics_df,
+        color_continuous_scale='RdBu',
+        aspect='auto'
+    )
+    st.plotly_chart(fig_dlt)
+
+    # Algorithm Groups Matrix
+    st.subheader("Matriz de Grupos de Algoritmos")
+    algo_groups_df = pd.DataFrame({
+        'Grupo': ['Alta Segurança', 'Alta Eficiência', 'Escalabilidade', 'IoT'],
+        'Segurança': [0.90, 0.75, 0.80, 0.70],
+        'Escalabilidade': [0.60, 0.85, 0.90, 0.95],
+        'Eficiência': [0.70, 0.90, 0.85, 0.80],
+        'Governança': [0.85, 0.70, 0.75, 0.65]
+    }).set_index('Grupo')
+
+    # Create heatmap for algorithm groups
+    fig_groups = px.imshow(
+        algo_groups_df,
+        color_continuous_scale='RdBu',
+        aspect='auto'
+    )
+    st.plotly_chart(fig_groups)
+
+    # Consensus Algorithms Matrix
+    st.subheader("Matriz de Algoritmos de Consenso")
+    algo_df = pd.DataFrame({
+        'Algoritmo': ['PBFT', 'PoW', 'PoS', 'PoA', 'Tangle'],
+        'Segurança': [0.90, 0.95, 0.85, 0.80, 0.75],
+        'Escalabilidade': [0.70, 0.40, 0.85, 0.80, 0.95],
+        'Eficiência': [0.80, 0.30, 0.85, 0.90, 0.95],
+        'Governança': [0.85, 0.50, 0.80, 0.75, 0.70]
+    }).set_index('Algoritmo')
+
+    # Create heatmap for consensus algorithms
+    fig_algo = px.imshow(
+        algo_df,
+        color_continuous_scale='RdBu',
+        aspect='auto'
+    )
+    st.plotly_chart(fig_algo)
+
+    # Add explanatory text
+    st.info('''
+    ### Como interpretar as matrizes:
+    1. **Matriz de DLTs**: Mostra o desempenho geral de cada DLT nas principais métricas
+    2. **Matriz de Grupos**: Apresenta as características de cada grupo de algoritmos
+    3. **Matriz de Algoritmos**: Detalha o desempenho específico de cada algoritmo de consenso
+
+    As cores mais escuras indicam valores mais altos (melhor desempenho).
+    ''')
+
     # Use cases and examples
     with st.expander("🎯 Casos de Uso"):
         st.write(recommendation['details']['use_cases'])
