@@ -1,11 +1,11 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-from decision_logic import get_recommendation, get_consensus_group_algorithms
+from dlt_data import questions, dlt_metrics, dlt_type_weights, dlt_classes, consensus_algorithms
+from decision_logic import get_consensus_group_algorithms, get_recommendation
 from database import save_recommendation
-from dlt_data import questions
 
-def create_progress_animation(current_phase, answers):
+def create_progress_animation(current_phase, answers, questions):
     """Create an animated progress visualization."""
     phases = ['Aplicação', 'Consenso', 'Infraestrutura', 'Internet']
     fig = go.Figure()
@@ -102,9 +102,34 @@ def create_evaluation_matrices(recommendation):
         if 'evaluation_matrix' not in recommendation:
             st.warning("Matriz de avaliação não encontrada na recomendação.")
             return
-            
+        
         st.subheader("Matriz de Avaliação Detalhada")
         
+        # Add weight explanation section
+        adjusted_weights = recommendation.get('adjusted_weights', {})
+        weight_explanations = recommendation.get('weight_explanations', {})
+        
+        if adjusted_weights and weight_explanations:
+            st.info(f'''
+            ### Como os pesos foram ajustados baseado em suas respostas:
+
+            1. Segurança: {adjusted_weights['security']:.2%}
+               - Ajustado devido a: {", ".join(weight_explanations['security']) if weight_explanations['security'] else "Peso base mantido"}
+
+            2. Escalabilidade: {adjusted_weights['scalability']:.2%}
+               - Ajustado devido a: {", ".join(weight_explanations['scalability']) if weight_explanations['scalability'] else "Peso base mantido"}
+
+            3. Eficiência Energética: {adjusted_weights['energy_efficiency']:.2%}
+               - Ajustado devido a: {", ".join(weight_explanations['energy_efficiency']) if weight_explanations['energy_efficiency'] else "Peso base mantido"}
+
+            4. Governança: {adjusted_weights['governance']:.2%}
+               - Ajustado devido a: {", ".join(weight_explanations['governance']) if weight_explanations['governance'] else "Peso base mantido"}
+
+            A DLT recomendada ({recommendation['dlt']}) obteve a maior pontuação considerando
+            estes pesos ajustados às suas necessidades específicas.
+            ''')
+        
+        # Add styling
         st.markdown('''
         <style>
             .recommended {
@@ -127,15 +152,12 @@ def create_evaluation_matrices(recommendation):
         </style>
         ''', unsafe_allow_html=True)
         
+        # Add score interpretation guide
         st.info("""
         💡 **Como interpretar os scores:**
         - ✅ Valores ≥ 0.8: Pontos fortes
         - ❌ Valores < 0.8: Áreas que precisam de atenção
-        - A pontuação total considera as características com os seguintes pesos:
-          - Segurança: 40%
-          - Escalabilidade: 25%
-          - Eficiência Energética: 20%
-          - Governança: 15%
+        - A pontuação total é calculada usando os pesos ajustados mostrados acima
         """)
         
         # Display selected consensus group information
@@ -155,18 +177,38 @@ def create_evaluation_matrices(recommendation):
         # Get algorithms for the selected group
         group_info = get_consensus_group_algorithms(consensus_group)
         
-        # Display available algorithms
+        # Display available algorithms with tooltips
         st.write("**Algoritmos disponíveis neste grupo:**")
         for algorithm in group_info.get('algorithms', []):
             characteristics = group_info.get('characteristics', {}).get(algorithm, {})
-            st.write(f"- **{algorithm}**")
-            cols = st.columns(4)
-            cols[0].metric("Segurança", f"{characteristics.get('security', 0.0):.2f}")
-            cols[1].metric("Escalabilidade", f"{characteristics.get('scalability', 0.0):.2f}")
-            cols[2].metric("Eficiência", f"{characteristics.get('energy_efficiency', 0.0):.2f}")
-            cols[3].metric("Governança", f"{characteristics.get('governance', 0.0):.2f}")
+            
+            # Create expandable section for each algorithm
+            with st.expander(f"🔍 {algorithm}"):
+                cols = st.columns(4)
+                
+                # Add tooltips for each metric
+                cols[0].metric(
+                    "Segurança",
+                    f"{characteristics.get('security', 0.0):.2f}",
+                    help="Capacidade de proteger dados e resistir a ataques"
+                )
+                cols[1].metric(
+                    "Escalabilidade",
+                    f"{characteristics.get('scalability', 0.0):.2f}",
+                    help="Capacidade de crescer mantendo performance"
+                )
+                cols[2].metric(
+                    "Eficiência",
+                    f"{characteristics.get('energy_efficiency', 0.0):.2f}",
+                    help="Consumo de recursos e eficiência energética"
+                )
+                cols[3].metric(
+                    "Governança",
+                    f"{characteristics.get('governance', 0.0):.2f}",
+                    help="Flexibilidade e controle do sistema"
+                )
         
-        # Create comparison table
+        # Create comparison table with enhanced styling
         try:
             scores_df = pd.DataFrame({
                 'Tipo de DLT': [recommendation['evaluation_matrix'][dlt].get('type', 'N/A') 
@@ -185,7 +227,8 @@ def create_evaluation_matrices(recommendation):
             }).sort_values('Score Total', ascending=False)
             
             def highlight_recommended(row):
-                return ['background-color: #e6f3ff' if row.name == 0 else '' for _ in row]
+                is_recommended = row['DLT'] == recommendation['dlt']
+                return ['background-color: #e6f3ff; font-weight: bold' if is_recommended else '' for _ in row]
             
             def highlight_metrics(val):
                 if isinstance(val, float):
@@ -227,7 +270,7 @@ def run_decision_tree():
             break
     
     if current_phase:
-        progress_fig = create_progress_animation(current_phase, st.session_state.answers)
+        progress_fig = create_progress_animation(current_phase, st.session_state.answers, questions)
         st.plotly_chart(progress_fig, use_container_width=True)
     
     current_question = None
