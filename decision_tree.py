@@ -1,15 +1,15 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-from dlt_data import questions, dlt_metrics, dlt_type_weights, dlt_classes, consensus_algorithms
-from decision_logic import get_consensus_group_algorithms, get_recommendation
-from database import save_recommendation
+from dlt_data import questions
+from decision_logic import get_recommendation, dlt_classification
 
 def create_progress_animation(current_phase, answers, questions):
-    """Create an animated progress visualization."""
+    """Create an animated progress visualization with enhanced interactivity."""
     phases = ['Aplicação', 'Consenso', 'Infraestrutura', 'Internet']
     fig = go.Figure()
     
+    # Calculate progress for each phase
     phase_progress = {phase: 0 for phase in phases}
     phase_total = {phase: 0 for phase in phases}
     phase_characteristics = {phase: set() for phase in phases}
@@ -21,22 +21,26 @@ def create_progress_animation(current_phase, answers, questions):
         if q['id'] in answers:
             phase_progress[phase] += 1
     
+    # Create nodes for each phase
     for i, phase in enumerate(phases):
+        # Determine node styling
         if phase == current_phase:
-            color = '#3498db'
+            color = '#3498db'  # Active phase (blue)
             size = 45
         elif phase_progress[phase] > 0:
-            color = '#2ecc71'
+            color = '#2ecc71'  # Completed phase (green)
             size = 40
         else:
-            color = '#bdc3c7'
+            color = '#bdc3c7'  # Pending phase (gray)
             size = 35
-            
+        
+        # Create tooltip with detailed information
         tooltip = f"<b>{phase}</b><br>"
         tooltip += f"Progresso: {phase_progress[phase]}/{phase_total[phase]}<br>"
         tooltip += "<br>Características:<br>"
         tooltip += "<br>".join([f"- {char}" for char in phase_characteristics[phase]])
         
+        # Add node
         fig.add_trace(go.Scatter(
             x=[i], y=[0],
             mode='markers',
@@ -51,6 +55,7 @@ def create_progress_animation(current_phase, answers, questions):
             showlegend=False
         ))
         
+        # Add phase label
         fig.add_annotation(
             x=i, y=-0.2,
             text=f"{phase}<br>({phase_progress[phase]}/{phase_total[phase]})",
@@ -58,6 +63,7 @@ def create_progress_animation(current_phase, answers, questions):
             font=dict(size=12)
         )
         
+        # Add connecting lines between phases
         if i < len(phases) - 1:
             fig.add_trace(go.Scatter(
                 x=[i, i+1],
@@ -71,6 +77,7 @@ def create_progress_animation(current_phase, answers, questions):
                 showlegend=False
             ))
     
+    # Update layout
     fig.update_layout(
         showlegend=False,
         height=200,
@@ -92,113 +99,169 @@ def create_progress_animation(current_phase, answers, questions):
     
     return fig
 
+def create_hierarchical_visualization(recommendation):
+    """Create a visualization showing the DLT selection path."""
+    if not recommendation or recommendation['dlt'] == "Não disponível":
+        return None
+    
+    selected_dlt = recommendation['dlt']
+    dlt_info = dlt_classification[selected_dlt]
+    
+    # Create Sankey diagram data
+    nodes = []
+    links = []
+    
+    # Add nodes for each level
+    nodes.extend([
+        # DLT Types
+        dict(label="DLT Types"),
+        dict(label=dlt_info['type']),
+        # Algorithm Groups
+        dict(label="Algorithm Groups"),
+        dict(label=dlt_info['group']),
+        # Algorithms
+        dict(label="Algorithms"),
+    ])
+    
+    # Add nodes for each algorithm
+    for algo in dlt_info['algorithms']:
+        nodes.append(dict(label=algo))
+    
+    # Create links
+    links.extend([
+        # Link from Types to selected type
+        dict(source=0, target=1, value=1),
+        # Link from selected type to Groups
+        dict(source=1, target=2, value=1),
+        # Link from Groups to selected group
+        dict(source=2, target=3, value=1),
+        # Link from selected group to Algorithms
+        dict(source=3, target=4, value=1),
+    ])
+    
+    # Add links to algorithms
+    for i, _ in enumerate(dlt_info['algorithms']):
+        links.append(dict(source=4, target=5+i, value=1))
+    
+    # Create Sankey diagram
+    fig = go.Figure(data=[go.Sankey(
+        node=dict(
+            pad=15,
+            thickness=20,
+            line=dict(color="black", width=0.5),
+            label=[node['label'] for node in nodes],
+            color=['#3498db' if i < 5 else '#2ecc71' for i in range(len(nodes))]
+        ),
+        link=dict(
+            source=[link['source'] for link in links],
+            target=[link['target'] for link in links],
+            value=[link['value'] for link in links]
+        )
+    )])
+    
+    fig.update_layout(
+        title_text="DLT Selection Path",
+        font_size=12,
+        height=400
+    )
+    
+    return fig
+
 def create_evaluation_matrices(recommendation):
-    """Create and display evaluation matrices."""
-    try:
-        if not recommendation or not isinstance(recommendation, dict):
-            st.warning("Recomendação indisponível ou inválida.")
-            return
-            
-        if 'evaluation_matrix' not in recommendation:
-            st.warning("Matriz de avaliação não encontrada na recomendação.")
-            return
+    """Create and display evaluation matrices with hierarchical relationships."""
+    if not recommendation or recommendation['dlt'] == "Não disponível":
+        st.warning("Recomendação indisponível.")
+        return
+    
+    st.header("Recomendação de DLT e Análise")
+    
+    # Show hierarchical visualization
+    st.subheader("🔄 Caminho de Seleção")
+    hierarchy_fig = create_hierarchical_visualization(recommendation)
+    if hierarchy_fig:
+        st.plotly_chart(hierarchy_fig, use_container_width=True)
+    
+    # Display DLT details
+    st.subheader("📊 Detalhes da DLT Recomendada")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.write(f"**DLT:** {recommendation['dlt']}")
+        st.write(f"**Tipo:** {recommendation['dlt_type']}")
+        st.write(f"**Grupo:** {recommendation['group']}")
+    
+    with col2:
+        st.write("**Algoritmos Disponíveis:**")
+        for algo in recommendation['algorithms']:
+            st.write(f"- {algo}")
+    
+    # Technical details in expandable sections
+    with st.expander("📋 Características Técnicas"):
+        st.write(recommendation['details']['technical_characteristics'])
         
-        st.subheader("Classificação e Recomendação de DLTs")
+        # Create metrics visualization
+        metrics_df = pd.DataFrame({
+            'Métrica': list(recommendation['metrics'].keys()),
+            'Valor': list(recommendation['metrics'].values())
+        })
         
-        # Display classification levels
-        with st.expander("ℹ️ Estrutura de Classificação"):
-            st.write("1. Tipo de DLT:", recommendation.get('dlt_type', 'N/A'))
-            st.write("2. Grupo de Algoritmo:", recommendation.get('consensus_group', 'N/A'))
-            st.write("3. Algoritmo de Consenso:", recommendation.get('consensus', 'N/A'))
-
-        # Show recommendation with justification
-        st.subheader("Recomendação Principal")
-        st.write(f"DLT Recomendada: {recommendation['dlt']}")
+        fig = go.Figure(data=[
+            go.Bar(
+                x=metrics_df['Métrica'],
+                y=metrics_df['Valor'],
+                marker_color='#3498db'
+            )
+        ])
         
-        # Get detailed information from the reference table
-        dlt_info = recommendation.get('dlt_details', {})
+        fig.update_layout(
+            title="Métricas Técnicas",
+            xaxis_title="Métricas",
+            yaxis_title="Pontuação",
+            yaxis_range=[0, 1]
+        )
         
-        with st.expander("📊 Características Técnicas"):
-            if 'technical_characteristics' in dlt_info:
-                st.write(dlt_info['technical_characteristics'])
-            else:
-                metrics = recommendation['evaluation_matrix'].get(recommendation['dlt'], {}).get('metrics', {})
-                for metric, value in metrics.items():
-                    st.metric(metric.replace('_', ' ').title(), f"{value:.2f}")
-        
-        with st.expander("🎯 Casos de Uso"):
-            if 'use_cases' in dlt_info:
-                st.write(dlt_info['use_cases'])
-            else:
-                st.write("Informação não disponível")
-        
-        with st.expander("⚠️ Desafios e Limitações"):
-            if 'challenges' in dlt_info:
-                st.write(dlt_info['challenges'])
-            else:
-                st.write("Informação não disponível")
-        
-        with st.expander("📚 Referências Bibliográficas"):
-            if 'references' in dlt_info:
-                st.write(dlt_info['references'])
-            else:
-                st.write("Informação não disponível")
-
-        # Weight information display
-        if 'adjusted_weights' in recommendation and 'weight_explanations' in recommendation:
-            with st.expander("⚖️ Pesos e Justificativas"):
-                weights = recommendation['adjusted_weights']
-                explanations = recommendation['weight_explanations']
-                
-                for metric, weight in weights.items():
-                    st.write(f"**{metric.replace('_', ' ').title()}:** {weight:.2%}")
-                    if explanations.get(metric):
-                        st.write("*Justificativa:* " + ", ".join(explanations[metric]))
-                    st.write("---")
-
-        # Create comparison table with enhanced styling
-        st.subheader("Comparação de DLTs")
-        try:
-            scores_df = pd.DataFrame({
-                'Tipo de DLT': [recommendation['evaluation_matrix'][dlt].get('type', 'N/A') 
-                               for dlt in recommendation['evaluation_matrix']],
-                'DLT': list(recommendation['evaluation_matrix'].keys()),
-                'Score Total': [recommendation['weighted_scores'].get(dlt, 0.0) 
-                               for dlt in recommendation['evaluation_matrix']],
-                'Segurança': [recommendation['evaluation_matrix'][dlt].get('metrics', {}).get('security', 0.0) 
-                             for dlt in recommendation['evaluation_matrix']],
-                'Escalabilidade': [recommendation['evaluation_matrix'][dlt].get('metrics', {}).get('scalability', 0.0) 
-                                  for dlt in recommendation['evaluation_matrix']],
-                'Eficiência': [recommendation['evaluation_matrix'][dlt].get('metrics', {}).get('energy_efficiency', 0.0) 
-                              for dlt in recommendation['evaluation_matrix']],
-                'Governança': [recommendation['evaluation_matrix'][dlt].get('metrics', {}).get('governance', 0.0) 
-                              for dlt in recommendation['evaluation_matrix']]
-            }).sort_values('Score Total', ascending=False)
-            
-            def highlight_recommended(row):
-                is_recommended = row['DLT'] == recommendation['dlt']
-                return ['background-color: #e6f3ff; font-weight: bold' if is_recommended else '' for _ in row]
-            
-            def highlight_metrics(val):
-                if isinstance(val, float):
-                    if val >= 0.8:
-                        return 'color: #2ecc71; font-weight: bold'
-                    elif val <= 0.4:
-                        return 'color: #e74c3c'
-                return ''
-            
-            scores_styled = scores_df.style\
-                .apply(highlight_recommended, axis=1)\
-                .map(highlight_metrics, subset=['Segurança', 'Escalabilidade', 'Eficiência', 'Governança'])
-            
-            st.table(scores_styled)
-            st.caption("💡 A linha destacada em azul indica a DLT recomendada. Métricas em verde são pontos fortes (≥0.8) e em vermelho são pontos de atenção (≤0.4).")
-            
-        except Exception as e:
-            st.error(f"Erro ao criar tabela comparativa: {str(e)}")
-            
-    except Exception as e:
-        st.error(f"Erro ao criar matrizes de avaliação: {str(e)}")
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with st.expander("🎯 Casos de Uso"):
+        st.write(recommendation['details']['use_cases'])
+    
+    with st.expander("⚠️ Desafios e Limitações"):
+        st.write(recommendation['details']['challenges'])
+    
+    with st.expander("📚 Referências"):
+        st.write(recommendation['details']['references'])
+    
+    # Create comparison table
+    st.subheader("📊 Comparação de DLTs")
+    comparison_data = []
+    for dlt_name, matrix_info in recommendation['evaluation_matrix'].items():
+        comparison_data.append({
+            'DLT': dlt_name,
+            'Tipo': matrix_info['type'],
+            'Grupo': matrix_info['group'],
+            'Score': matrix_info['score'],
+            **matrix_info['metrics']
+        })
+    
+    comparison_df = pd.DataFrame(comparison_data)
+    comparison_df = comparison_df.sort_values('Score', ascending=False)
+    
+    # Style the dataframe
+    def highlight_max(s):
+        is_max = s == s.max()
+        return ['background-color: #e6f3ff' if v else '' for v in is_max]
+    
+    styled_df = comparison_df.style\
+        .apply(highlight_max)\
+        .format({
+            'Score': '{:.2f}',
+            'security': '{:.2f}',
+            'scalability': '{:.2f}',
+            'energy_efficiency': '{:.2f}',
+            'governance': '{:.2f}'
+        })
+    
+    st.table(styled_df)
 
 def run_decision_tree():
     """Main function to run the decision tree interface."""
@@ -242,14 +305,4 @@ def run_decision_tree():
     
     if len(st.session_state.answers) == len(questions):
         recommendation = get_recommendation(st.session_state.answers)
-        
         create_evaluation_matrices(recommendation)
-        
-        if st.session_state.get('authenticated', False):
-            if st.button("💾 Salvar Recomendação"):
-                save_recommendation(
-                    st.session_state.username,
-                    "Healthcare",
-                    recommendation
-                )
-                st.success("Recomendação salva com sucesso!")
