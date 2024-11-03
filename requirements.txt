@@ -1,4 +1,4 @@
-streamlit==1.25.0  # ou a versão mais recente
+streamlit==1.18.0
 plotly
 pandas
 networkx

@@ -6,6 +6,24 @@ from dlt_data import questions
 from decision_logic import get_recommendation
 from database import save_recommendation
 
+def reset_all_states():
+    """Reset all session states related to the decision tree and metrics."""
+    keys_to_reset = [
+        'answers',
+        'current_recommendation',
+        'metrics_calculated',
+        'evaluation_matrices',
+        'step',
+        'scenario',
+        'weights',
+        'current_phase'
+    ]
+    for key in keys_to_reset:
+        if key in st.session_state:
+            del st.session_state[key]
+    # Return to initial page
+    st.session_state.page = 'Início'
+
 def create_progress_animation(current_phase, answers, questions):
     """Create an animated progress visualization with enhanced interactivity."""
     phases = ['Aplicação', 'Consenso', 'Infraestrutura', 'Internet']
@@ -128,149 +146,6 @@ def create_progress_animation(current_phase, answers, questions):
     
     return fig
 
-def create_dlt_types_matrix():
-    """Create matrix showing relationships between DLT types."""
-    dlt_types = {
-        'DLT Permissionada Privada': {'security': 0.9, 'scalability': 0.7, 'efficiency': 0.8, 'governance': 0.85},
-        'DLT Híbrida': {'security': 0.8, 'scalability': 0.85, 'efficiency': 0.75, 'governance': 0.8},
-        'DLT Pública': {'security': 0.85, 'scalability': 0.6, 'efficiency': 0.5, 'governance': 0.7},
-        'DLT com Consenso Delegado': {'security': 0.75, 'scalability': 0.9, 'efficiency': 0.85, 'governance': 0.75}
-    }
-    
-    df = pd.DataFrame(dlt_types).T
-    fig = px.imshow(
-        df,
-        color_continuous_scale='RdBu',
-        aspect='auto',
-        title="Matriz de Tipos de DLT"
-    )
-    return fig
-
-def create_algorithm_groups_matrix():
-    """Create matrix comparing different algorithm groups."""
-    algorithm_groups = {
-        'Alta Segurança': {'complexity': 0.8, 'performance': 0.7, 'decentralization': 0.9},
-        'Alta Eficiência': {'complexity': 0.6, 'performance': 0.9, 'decentralization': 0.7},
-        'Escalabilidade': {'complexity': 0.7, 'performance': 0.8, 'decentralization': 0.8},
-        'Governança': {'complexity': 0.75, 'performance': 0.75, 'decentralization': 0.85}
-    }
-    
-    df = pd.DataFrame(algorithm_groups).T
-    fig = px.imshow(
-        df,
-        color_continuous_scale='RdBu',
-        aspect='auto',
-        title="Matriz de Grupos de Algoritmos"
-    )
-    return fig
-
-def create_consensus_algorithms_matrix():
-    """Create matrix showing consensus algorithm characteristics."""
-    consensus_characteristics = {
-        'PBFT': {'security': 0.9, 'scalability': 0.7, 'energy': 0.8, 'governance': 0.85},
-        'PoW': {'security': 0.95, 'scalability': 0.5, 'energy': 0.3, 'governance': 0.7},
-        'PoS': {'security': 0.85, 'scalability': 0.8, 'energy': 0.9, 'governance': 0.8},
-        'PoA': {'security': 0.8, 'scalability': 0.9, 'energy': 0.85, 'governance': 0.75},
-        'Tangle': {'security': 0.8, 'scalability': 0.95, 'energy': 0.9, 'governance': 0.7}
-    }
-    
-    df = pd.DataFrame(consensus_characteristics).T
-    fig = px.imshow(
-        df,
-        color_continuous_scale='RdBu',
-        aspect='auto',
-        title="Matriz de Algoritmos de Consenso"
-    )
-    return fig
-
-def create_evaluation_matrices(recommendation):
-    """Create and display evaluation matrices with hierarchical relationships."""
-    if not recommendation or recommendation['dlt'] == "Não disponível":
-        st.warning("Recomendação indisponível.")
-        return
-    
-    # Update session state with current recommendation
-    st.session_state.current_recommendation = recommendation
-    
-    st.header("Recomendação de DLT e Análise")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        st.subheader(f"DLT Recomendada: {recommendation['dlt']}")
-        st.write(f"**Tipo:** {recommendation['dlt_type']}")
-        st.write(f"**Estrutura de Dados:** {recommendation['data_structure']}")
-        st.write(f"**Grupo:** {recommendation['group']}")
-        st.write("**Algoritmos:**")
-        for algo in recommendation['algorithms']:
-            st.write(f"• {algo}")
-    
-    with col2:
-        if 'metrics' in recommendation:
-            consistency_index = sum(recommendation['metrics'].values()) / len(recommendation['metrics'])
-            st.subheader(f"Índice de Consistência: {consistency_index:.2f}")
-            with st.expander("Explicação do Índice de Consistência"):
-                st.write("O índice de consistência indica o quão bem a DLT atende aos requisitos de forma balanceada.")
-                st.write("Valores mais próximos de 1 indicam maior consistência.")
-
-    # Display matrix sections
-    with st.expander("Matriz de Tipos de DLT"):
-        st.plotly_chart(create_dlt_types_matrix(), use_container_width=True)
-        st.write("""
-        Esta matriz mostra as relações entre diferentes tipos de DLT e suas características principais.
-        Cores mais escuras indicam maior adequação para cada característica.
-        """)
-
-    with st.expander("Matriz de Grupos de Algoritmos"):
-        st.plotly_chart(create_algorithm_groups_matrix(), use_container_width=True)
-        st.write("""
-        Comparação entre diferentes grupos de algoritmos baseada em complexidade,
-        performance e descentralização.
-        """)
-
-    with st.expander("Matriz de Algoritmos de Consenso"):
-        st.plotly_chart(create_consensus_algorithms_matrix(), use_container_width=True)
-        st.write("""
-        Características detalhadas de cada algoritmo de consenso,
-        incluindo segurança, escalabilidade, eficiência energética e governança.
-        """)
-
-    # Display decision path
-    st.subheader("Fluxo da Árvore de Decisão")
-    st.write("Seu caminho de decisão:")
-    for q in questions:
-        if q['id'] in st.session_state.answers:
-            st.write(f"• {q['phase']} - {q['text']}: **{st.session_state.answers[q['id']]}**")
-
-    # Display additional information sections
-    with st.expander("Casos de Uso"):
-        st.write(recommendation['details']['use_cases'])
-        st.subheader("Casos Reais")
-        st.write(recommendation['details']['real_cases'])
-    
-    with st.expander("Desafios e Limitações"):
-        st.write(recommendation['details']['challenges'])
-    
-    with st.expander("Referências"):
-        st.write(recommendation['details']['references'])
-    
-    # Save recommendation functionality
-    if st.session_state.authenticated:
-        if st.button("Salvar Recomendação", help="Clique para salvar esta recomendação no seu perfil"):
-            try:
-                # Before saving, ensure recommendation has required fields
-                save_data = {
-                    'dlt': recommendation.get('dlt', 'N/A'),
-                    'consensus': recommendation.get('algorithms', ['N/A'])[0],  # Get first algorithm or N/A
-                    'dlt_type': recommendation.get('dlt_type', 'N/A'),
-                    'group': recommendation.get('group', 'N/A')
-                }
-                save_recommendation(st.session_state.username, "Healthcare", save_data)
-                st.success("Recomendação salva com sucesso!")
-            except Exception as e:
-                st.error(f"Erro ao salvar recomendação: {str(e)}")
-    else:
-        st.info("Faça login para salvar suas recomendações.")
-
 def run_decision_tree():
     """Main function to run the decision tree interface with improved state management."""
     st.title("Framework de Seleção de DLT")
@@ -280,9 +155,7 @@ def run_decision_tree():
         st.session_state.answers = {}
     
     if st.button("Reiniciar", help="Clique para recomeçar o processo de seleção"):
-        st.session_state.answers = {}
-        if 'current_recommendation' in st.session_state:
-            del st.session_state.current_recommendation
+        reset_all_states()
         st.experimental_rerun()
     
     # Determine current phase
@@ -293,6 +166,7 @@ def run_decision_tree():
             break
     
     if current_phase:
+        st.session_state.current_phase = current_phase
         progress_fig = create_progress_animation(current_phase, st.session_state.answers, questions)
         st.plotly_chart(progress_fig, use_container_width=True)
     
@@ -314,7 +188,6 @@ def run_decision_tree():
         
         if st.button("Próxima Pergunta"):
             st.session_state.answers[current_question['id']] = response
-            # Update recommendation immediately after answer changes
             if len(st.session_state.answers) == len(questions):
                 st.session_state.current_recommendation = get_recommendation(st.session_state.answers)
             st.experimental_rerun()
@@ -323,4 +196,6 @@ def run_decision_tree():
     if len(st.session_state.answers) == len(questions):
         if 'current_recommendation' not in st.session_state:
             st.session_state.current_recommendation = get_recommendation(st.session_state.answers)
-        create_evaluation_matrices(st.session_state.current_recommendation)
+        st.session_state.current_phase = None  # Clear current phase when finished
+        from metrics import show_metrics
+        show_metrics()
