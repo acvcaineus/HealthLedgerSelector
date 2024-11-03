@@ -1,5 +1,7 @@
 import streamlit as st
 import plotly.graph_objects as go
+import plotly.express as px
+import pandas as pd
 from dlt_data import questions
 from decision_logic import get_recommendation
 from database import save_recommendation
@@ -126,6 +128,79 @@ def create_progress_animation(current_phase, answers, questions):
     
     return fig
 
+def create_dlt_types_matrix():
+    """Create matrix showing relationships between DLT types."""
+    dlt_types = {
+        'DLT Permissionada Privada': {'security': 0.9, 'scalability': 0.7, 'efficiency': 0.8, 'governance': 0.85},
+        'DLT Híbrida': {'security': 0.8, 'scalability': 0.85, 'efficiency': 0.75, 'governance': 0.8},
+        'DLT Pública': {'security': 0.85, 'scalability': 0.6, 'efficiency': 0.5, 'governance': 0.7},
+        'DLT com Consenso Delegado': {'security': 0.75, 'scalability': 0.9, 'efficiency': 0.85, 'governance': 0.75}
+    }
+    
+    df = pd.DataFrame(dlt_types).T
+    fig = px.imshow(
+        df,
+        color_continuous_scale='RdBu',
+        aspect='auto',
+        title="Matriz de Tipos de DLT"
+    )
+    return fig
+
+def create_algorithm_groups_matrix():
+    """Create matrix comparing different algorithm groups."""
+    algorithm_groups = {
+        'Alta Segurança': {'complexity': 0.8, 'performance': 0.7, 'decentralization': 0.9},
+        'Alta Eficiência': {'complexity': 0.6, 'performance': 0.9, 'decentralization': 0.7},
+        'Escalabilidade': {'complexity': 0.7, 'performance': 0.8, 'decentralization': 0.8},
+        'Governança': {'complexity': 0.75, 'performance': 0.75, 'decentralization': 0.85}
+    }
+    
+    df = pd.DataFrame(algorithm_groups).T
+    fig = px.imshow(
+        df,
+        color_continuous_scale='RdBu',
+        aspect='auto',
+        title="Matriz de Grupos de Algoritmos"
+    )
+    return fig
+
+def create_consensus_algorithms_matrix():
+    """Create matrix showing consensus algorithm characteristics."""
+    consensus_characteristics = {
+        'PBFT': {'security': 0.9, 'scalability': 0.7, 'energy': 0.8, 'governance': 0.85},
+        'PoW': {'security': 0.95, 'scalability': 0.5, 'energy': 0.3, 'governance': 0.7},
+        'PoS': {'security': 0.85, 'scalability': 0.8, 'energy': 0.9, 'governance': 0.8},
+        'PoA': {'security': 0.8, 'scalability': 0.9, 'energy': 0.85, 'governance': 0.75},
+        'Tangle': {'security': 0.8, 'scalability': 0.95, 'energy': 0.9, 'governance': 0.7}
+    }
+    
+    df = pd.DataFrame(consensus_characteristics).T
+    fig = px.imshow(
+        df,
+        color_continuous_scale='RdBu',
+        aspect='auto',
+        title="Matriz de Algoritmos de Consenso"
+    )
+    return fig
+
+def create_integration_matrix():
+    """Create matrix showing relationships between components."""
+    integration_data = {
+        'DLT Types': {'Consensus': 0.9, 'Infrastructure': 0.8, 'Application': 0.7},
+        'Consensus': {'DLT Types': 0.9, 'Infrastructure': 0.85, 'Application': 0.6},
+        'Infrastructure': {'DLT Types': 0.8, 'Consensus': 0.85, 'Application': 0.8},
+        'Application': {'DLT Types': 0.7, 'Consensus': 0.6, 'Infrastructure': 0.8}
+    }
+    
+    df = pd.DataFrame(integration_data)
+    fig = px.imshow(
+        df,
+        color_continuous_scale='RdBu',
+        aspect='auto',
+        title="Matriz de Integração"
+    )
+    return fig
+
 def create_evaluation_matrices(recommendation):
     """Create and display evaluation matrices with hierarchical relationships."""
     if not recommendation or recommendation['dlt'] == "Não disponível":
@@ -154,6 +229,35 @@ def create_evaluation_matrices(recommendation):
             with st.expander("Explicação do Índice de Consistência"):
                 st.write("O índice de consistência indica o quão bem a DLT atende aos requisitos de forma balanceada.")
                 st.write("Valores mais próximos de 1 indicam maior consistência.")
+
+    # Display matrix sections
+    with st.expander("Matriz de Tipos de DLT"):
+        st.plotly_chart(create_dlt_types_matrix(), use_container_width=True)
+        st.write("""
+        Esta matriz mostra as relações entre diferentes tipos de DLT e suas características principais.
+        Cores mais escuras indicam maior adequação para cada característica.
+        """)
+
+    with st.expander("Matriz de Grupos de Algoritmos"):
+        st.plotly_chart(create_algorithm_groups_matrix(), use_container_width=True)
+        st.write("""
+        Comparação entre diferentes grupos de algoritmos baseada em complexidade,
+        performance e descentralização.
+        """)
+
+    with st.expander("Matriz de Algoritmos de Consenso"):
+        st.plotly_chart(create_consensus_algorithms_matrix(), use_container_width=True)
+        st.write("""
+        Características detalhadas de cada algoritmo de consenso,
+        incluindo segurança, escalabilidade, eficiência energética e governança.
+        """)
+
+    with st.expander("Matriz de Integração"):
+        st.plotly_chart(create_integration_matrix(), use_container_width=True)
+        st.write("""
+        Visualização das relações entre diferentes componentes do sistema,
+        mostrando como eles se integram e interagem entre si.
+        """)
 
     # Display additional information sections
     with st.expander("Casos de Uso"):

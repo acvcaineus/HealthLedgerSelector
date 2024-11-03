@@ -53,6 +53,29 @@ def calcular_pruning(total_nos, nos_podados):
         'impacto_complexidade': impacto_complexidade
     }
 
+def calculate_precision_metrics(true_positives, false_positives, false_negatives, total_cases):
+    """Calculate precision, sensitivity, and accuracy metrics."""
+    try:
+        precision = true_positives / (true_positives + false_positives)
+    except ZeroDivisionError:
+        precision = 0
+
+    try:
+        sensitivity = true_positives / (true_positives + false_negatives)
+    except ZeroDivisionError:
+        sensitivity = 0
+
+    try:
+        accuracy = (true_positives + (total_cases - (true_positives + false_positives + false_negatives))) / total_cases
+    except ZeroDivisionError:
+        accuracy = 0
+
+    return {
+        'precision': precision,
+        'sensitivity': sensitivity,
+        'accuracy': accuracy
+    }
+
 def calculate_consistency_score(metrics, answers):
     """
     Calculate consistency score based on user answers and metrics.
@@ -91,11 +114,9 @@ def create_metrics_radar_chart(metrics_data, recommendation=None, answers=None):
     fig = go.Figure()
     
     if recommendation and answers:
-        # Update metrics data with current recommendation values
         metrics_data.update(recommendation['metrics'])
         consistency_score = calculate_consistency_score(metrics_data, answers)
         
-        # Add consistency score annotation
         fig.add_annotation(
             text=f"Índice de Consistência: {consistency_score:.2f}",
             xref="paper", yref="paper",
@@ -107,7 +128,6 @@ def create_metrics_radar_chart(metrics_data, recommendation=None, answers=None):
     categories = list(metrics_data.keys())
     values = list(metrics_data.values())
     
-    # Add main metrics
     fig.add_trace(go.Scatterpolar(
         r=values + [values[0]],
         theta=categories + [categories[0]],
@@ -139,8 +159,6 @@ def create_evaluation_matrix(metrics_data, recommendation=None, answers=None):
         metrics_data.update(recommendation['metrics'])
     
     df = pd.DataFrame([metrics_data])
-    
-    # Create custom color scale based on user preferences and metric importance
     colors = ['#053061', '#2166ac', '#4393c3', '#92c5de', '#d1e5f0', 
               '#f7f7f7', '#fddbc7', '#f4a582', '#d6604d', '#b2182b', '#67001f']
     
@@ -188,6 +206,12 @@ def show_metrics():
         gini = calcular_gini(classes)
         entropy = calcular_entropia(classes)
         depth = calcular_profundidade_decisoria(list(range(len(answers))))
+
+        # Calculate precision metrics
+        true_positives = len([a for a in answers.values() if a == 'Sim'])
+        false_positives = len([a for a in answers.values() if a == 'Não'])
+        false_negatives = nos_podados
+        precision_metrics = calculate_precision_metrics(true_positives, false_positives, false_negatives, total_nos)
         
         # Display formulas
         with st.expander("Fórmulas das Métricas"):
@@ -215,8 +239,23 @@ def show_metrics():
             onde peso_i é o peso da característica i
             e confianca_i é a confiança na característica i
             ```
+
+            ### Precisão
+            ```
+            precisao = verdadeiros_positivos / (verdadeiros_positivos + falsos_positivos)
+            ```
+
+            ### Sensibilidade
+            ```
+            sensibilidade = verdadeiros_positivos / (verdadeiros_positivos + falsos_negativos)
+            ```
+
+            ### Acurácia
+            ```
+            acuracia = (verdadeiros_positivos + verdadeiros_negativos) / total_casos
+            ```
             ''')
-        
+
         # Display metrics in columns
         st.subheader("Métricas Técnicas")
         col1, col2 = st.columns(2)
@@ -230,6 +269,28 @@ def show_metrics():
             if current_recommendation and 'metrics' in current_recommendation:
                 consistency_index = calculate_consistency_score(current_recommendation['metrics'], answers)
                 st.metric("Índice de Consistência", f"{consistency_index:.2f}")
+
+        # Precision Analysis Section
+        st.subheader("Análise de Precisão")
+        col3, col4 = st.columns(2)
+        with col3:
+            st.metric("Precisão", f"{precision_metrics['precision']:.3f}")
+            st.metric("Sensibilidade", f"{precision_metrics['sensitivity']:.3f}")
+        with col4:
+            st.metric("Acurácia", f"{precision_metrics['accuracy']:.3f}")
+
+        # Sensitivity Analysis Section
+        st.subheader("Análise de Sensibilidade")
+        with st.expander("Impacto das Mudanças de Peso"):
+            weight_impacts = {
+                'Segurança': {'atual': 0.4, 'impacto': 'Alto'},
+                'Escalabilidade': {'atual': 0.25, 'impacto': 'Médio'},
+                'Eficiência Energética': {'atual': 0.20, 'impacto': 'Médio'},
+                'Governança': {'atual': 0.15, 'impacto': 'Baixo'}
+            }
+            impact_df = pd.DataFrame(weight_impacts).T
+            st.table(impact_df)
+            st.write("Esta análise mostra como mudanças nos pesos afetam a recomendação final.")
         
         # Matrix explanations
         with st.expander("Explicação das Matrizes"):
@@ -255,7 +316,6 @@ def show_metrics():
             "governance": 0.70
         }
         
-        # Update metrics with current recommendation
         if current_recommendation and 'metrics' in current_recommendation:
             metrics_data.update({k.lower(): v for k, v in current_recommendation['metrics'].items()})
         
@@ -273,7 +333,10 @@ def show_metrics():
                 "Índice de Gini": gini,
                 "Entropia": entropy,
                 "Taxa de Poda": pruning_metrics['pruning_ratio'],
-                "Índice de Consistência": consistency_index if 'consistency_index' in locals() else 0
+                "Índice de Consistência": consistency_index if 'consistency_index' in locals() else 0,
+                "Precisão": precision_metrics['precision'],
+                "Sensibilidade": precision_metrics['sensitivity'],
+                "Acurácia": precision_metrics['accuracy']
             },
             "Métricas de Avaliação": metrics_data
         }
