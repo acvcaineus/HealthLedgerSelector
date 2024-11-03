@@ -1,6 +1,66 @@
 import statistics
 from dlt_data import questions, dlt_classes, consensus_algorithms, dlt_metrics, dlt_type_weights
 
+# Reference data for DLTs
+dlt_reference_data = {
+    'Hyperledger Fabric': {
+        'technical_characteristics': 'Alta segurança e resiliência contra falhas bizantinas. Máxima proteção de dados sensíveis em redes permissionadas e descentralizadas.',
+        'use_cases': 'Rastreabilidade de medicamentos na cadeia de suprimentos',
+        'challenges': 'Baixa escalabilidade para redes muito grandes',
+        'references': 'Mehmood et al. (2025) - "BLPCA-ledger: A lightweight plenum consensus protocols for consortium blockchain"'
+    },
+    'VeChain': {
+        'technical_characteristics': 'Simplicidade e eficiência em redes permissionadas menores. Validação rápida e leve, ideal para redes locais.',
+        'use_cases': 'Rastreamento de suprimentos médicos e cadeia farmacêutica',
+        'challenges': 'Dependência de validadores centralizados',
+        'references': 'Popoola et al. (2024) - "A critical literature review of security and privacy in smart home healthcare schemes adopting IoT & blockchain"'
+    },
+    'Quorum': {
+        'technical_characteristics': 'Alta escalabilidade e eficiência energética com governança descentralizada ou semi-descentralizada.',
+        'use_cases': 'Monitoramento e rastreamento de medicamentos',
+        'challenges': 'Escalabilidade limitada em redes públicas',
+        'references': 'Mehmood et al. (2025) - "BLPCA-ledger: A lightweight plenum consensus protocols for consortium blockchain"'
+    },
+    'IOTA': {
+        'technical_characteristics': 'Alta escalabilidade e eficiência para o monitoramento de dispositivos IoT em tempo real.',
+        'use_cases': 'Compartilhamento seguro de dados de pacientes via IoT',
+        'challenges': 'Maturidade tecnológica (não totalmente implementada)',
+        'references': 'Salim et al. (2024) - "Privacy-preserving and scalable federated blockchain scheme for healthcare 4.0"'
+    },
+    'Ripple': {
+        'technical_characteristics': 'Processamento eficiente de transações e alta segurança de dados.',
+        'use_cases': 'Processamento eficiente de transações e segurança de dados',
+        'challenges': 'Centralização nos validadores principais',
+        'references': 'Makhdoom et al. (2024) - "PrivySeC: A secure and privacy-compliant distributed framework for personal data sharing in IoT ecosystems"'
+    },
+    'Bitcoin': {
+        'technical_characteristics': 'Máxima segurança e descentralização para redes públicas.',
+        'use_cases': 'Armazenamento seguro de dados médicos críticos',
+        'challenges': 'Consumo energético elevado, escalabilidade limitada',
+        'references': 'Liu et al. (2024) - "A systematic study on integrating blockchain in healthcare for electronic health record management and tracking medical supplies"'
+    },
+    'Ethereum (PoW)': {
+        'technical_characteristics': 'Alta segurança e suporte a contratos inteligentes.',
+        'use_cases': 'Contratos inteligentes e registros médicos eletrônicos',
+        'challenges': 'Consumo de energia elevado',
+        'references': 'Makhdoom et al. (2024) - "PrivySeC: A secure and privacy-compliant distributed framework for personal data sharing in IoT ecosystems"'
+    },
+    'Ethereum 2.0': {
+        'technical_characteristics': 'Alta escalabilidade e eficiência energética com governança flexível.',
+        'use_cases': 'Aceleração de ensaios clínicos e compartilhamento de dados',
+        'challenges': 'Governança flexível, mas centralização é possível',
+        'references': 'Nawaz et al. (2024) - "Hyperledger sawtooth based supply chain traceability system for counterfeit drugs"'
+    }
+}
+
+def normalize_scores(scores):
+    """Normalize scores to a 0-1 range."""
+    min_score = min(scores.values())
+    max_score = max(scores.values())
+    if max_score == min_score:
+        return {k: 1.0 for k in scores}
+    return {k: (v - min_score) / (max_score - min_score) for k, v in scores.items()}
+
 def get_adjusted_weights(answers):
     """Calculate adjusted weights based on user answers."""
     base_weights = {
@@ -31,7 +91,6 @@ def get_adjusted_weights(answers):
     adjusted_weights = base_weights.copy()
     weight_explanations = {k: [] for k in base_weights.keys()}
     
-    # Apply adjustments based on answers
     for weight, related_questions in weight_adjustments.items():
         for question, adjustment in related_questions.items():
             if answers.get(question) == 'Sim':
@@ -40,47 +99,10 @@ def get_adjusted_weights(answers):
                     next(q['text'] for q in questions if q['id'] == question)
                 )
     
-    # Normalize weights to sum to 1
     total = sum(adjusted_weights.values())
     adjusted_weights = {k: v/total for k, v in adjusted_weights.items()}
     
     return adjusted_weights, weight_explanations
-
-def calculate_weighted_score(metrics, weights):
-    """Calculate weighted score based on metrics and adjusted weights."""
-    return sum(metrics[metric] * weights[metric] for metric in metrics.keys())
-
-def select_consensus_group(dlt_type, answers):
-    """Select the consensus group based on DLT type and healthcare requirements."""
-    type_to_group = {
-        "DLT Permissionada Privada": "Alta Segurança e Controle",
-        "DLT Permissionada Simples": "Alta Eficiência",
-        "DLT Híbrida": "Escalabilidade e Governança",
-        "DLT com Consenso Delegado": "Alta Escalabilidade IoT",
-        "DLT Pública": "Alta Segurança e Controle",
-        "DLT Pública Permissionless": "Escalabilidade e Governança"
-    }
-    
-    if answers.get('network_security') == 'Sim' and answers.get('privacy') == 'Sim':
-        selected_group = "Alta Segurança e Controle"
-        reason = "requisitos elevados de segurança e privacidade"
-    elif answers.get('scalability') == 'Sim' and answers.get('energy_efficiency') == 'Sim':
-        selected_group = "Alta Eficiência"
-        reason = "necessidade de alta eficiência e escalabilidade"
-    elif answers.get('data_volume') == 'Sim' and answers.get('interoperability') == 'Sim':
-        selected_group = "Escalabilidade e Governança"
-        reason = "requisitos de volume de dados e interoperabilidade"
-    else:
-        selected_group = type_to_group.get(dlt_type, "Alta Segurança e Controle")
-        reason = f"características padrão do tipo de DLT ({dlt_type})"
-    
-    explanation = f"Grupo selecionado devido a {reason}. "
-    explanation += "Este grupo oferece o melhor equilíbrio entre as características necessárias para seu caso de uso."
-    
-    return {
-        "group": selected_group,
-        "explanation": explanation
-    }
 
 def get_consensus_group_algorithms(group_name):
     """Get available algorithms for a specific consensus group."""
@@ -154,8 +176,39 @@ def get_consensus_group_algorithms(group_name):
             }
         }
     }
-    
     return group_algorithms.get(group_name, {"algorithms": [], "characteristics": {}})
+
+def select_consensus_group(dlt_type, answers):
+    """Select the consensus group based on DLT type and healthcare requirements."""
+    type_to_group = {
+        "DLT Permissionada Privada": "Alta Segurança e Controle",
+        "DLT Permissionada Simples": "Alta Eficiência",
+        "DLT Híbrida": "Escalabilidade e Governança",
+        "DLT com Consenso Delegado": "Alta Escalabilidade IoT",
+        "DLT Pública": "Alta Segurança e Controle",
+        "DLT Pública Permissionless": "Escalabilidade e Governança"
+    }
+    
+    if answers.get('network_security') == 'Sim' and answers.get('privacy') == 'Sim':
+        selected_group = "Alta Segurança e Controle"
+        reason = "requisitos elevados de segurança e privacidade"
+    elif answers.get('scalability') == 'Sim' and answers.get('energy_efficiency') == 'Sim':
+        selected_group = "Alta Eficiência"
+        reason = "necessidade de alta eficiência e escalabilidade"
+    elif answers.get('data_volume') == 'Sim' and answers.get('interoperability') == 'Sim':
+        selected_group = "Escalabilidade e Governança"
+        reason = "requisitos de volume de dados e interoperabilidade"
+    else:
+        selected_group = type_to_group.get(dlt_type, "Alta Segurança e Controle")
+        reason = f"características padrão do tipo de DLT ({dlt_type})"
+    
+    explanation = f"Grupo selecionado devido a {reason}. "
+    explanation += "Este grupo oferece o melhor equilíbrio entre as características necessárias para seu caso de uso."
+    
+    return {
+        "group": selected_group,
+        "explanation": explanation
+    }
 
 def create_empty_characteristics():
     """Create default characteristics structure."""
@@ -223,7 +276,8 @@ def select_consensus_algorithm(consensus_group, answers, weights):
         algorithm_scores = {}
         for algorithm in algorithms:
             if algorithm in characteristics:
-                score = calculate_weighted_score(characteristics[algorithm], weights)
+                score = sum(characteristics[algorithm][metric] * weight 
+                          for metric, weight in weights.items())
                 algorithm_scores[algorithm] = score
         
         if not algorithm_scores:
@@ -262,7 +316,8 @@ def get_recommendation(answers):
         # Calculate scores for each DLT using adjusted weights
         for dlt_name, dlt_info in dlt_metrics.items():
             metrics = dlt_info.get("metrics", {})
-            weighted_score = calculate_weighted_score(metrics, adjusted_weights)
+            weighted_score = sum(metrics[metric] * weight 
+                              for metric, weight in adjusted_weights.items())
             
             weighted_scores[dlt_name] = weighted_score
             evaluation_matrix[dlt_name] = {
@@ -271,11 +326,11 @@ def get_recommendation(answers):
                 "weighted_score": weighted_score
             }
         
-        if not weighted_scores:
-            return create_empty_recommendation()
+        # Normalize scores
+        normalized_scores = normalize_scores(weighted_scores)
         
-        # Select DLT with highest weighted score
-        recommended_dlt = max(weighted_scores.items(), key=lambda x: x[1])[0]
+        # Select DLT with highest normalized score
+        recommended_dlt = max(normalized_scores.items(), key=lambda x: x[1])[0]
         dlt_type = dlt_metrics.get(recommended_dlt, {}).get("type", "Não disponível")
         
         # Get consensus group based on DLT type and answers
@@ -288,9 +343,12 @@ def get_recommendation(answers):
             adjusted_weights
         )
         
-        confidence_value = calculate_confidence(weighted_scores, 
+        confidence_value = calculate_confidence(normalized_scores, 
                                            evaluation_matrix.get(recommended_dlt, {}).get("metrics", {}),
                                            answers)
+        
+        # Get detailed information from reference data
+        dlt_details = dlt_reference_data.get(recommended_dlt, {})
         
         return {
             "dlt": recommended_dlt,
@@ -301,11 +359,12 @@ def get_recommendation(answers):
             "consensus_characteristics": algorithm_info["characteristics"],
             "consensus_score": algorithm_info["score"],
             "evaluation_matrix": evaluation_matrix,
-            "weighted_scores": weighted_scores,
+            "weighted_scores": normalized_scores,
             "confidence": confidence_value > 0.7,
             "confidence_value": confidence_value,
             "adjusted_weights": adjusted_weights,
-            "weight_explanations": weight_explanations
+            "weight_explanations": weight_explanations,
+            "dlt_details": dlt_details
         }
         
     except Exception as e:

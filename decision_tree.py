@@ -103,112 +103,61 @@ def create_evaluation_matrices(recommendation):
             st.warning("Matriz de avaliação não encontrada na recomendação.")
             return
         
-        st.subheader("Matriz de Avaliação Detalhada")
+        st.subheader("Classificação e Recomendação de DLTs")
         
-        # Add weight explanation section
-        adjusted_weights = recommendation.get('adjusted_weights', {})
-        weight_explanations = recommendation.get('weight_explanations', {})
-        
-        if adjusted_weights and weight_explanations:
-            st.info(f'''
-            ### Como os pesos foram ajustados baseado em suas respostas:
+        # Display classification levels
+        with st.expander("ℹ️ Estrutura de Classificação"):
+            st.write("1. Tipo de DLT:", recommendation.get('dlt_type', 'N/A'))
+            st.write("2. Grupo de Algoritmo:", recommendation.get('consensus_group', 'N/A'))
+            st.write("3. Algoritmo de Consenso:", recommendation.get('consensus', 'N/A'))
 
-            1. Segurança: {adjusted_weights['security']:.2%}
-               - Ajustado devido a: {", ".join(weight_explanations['security']) if weight_explanations['security'] else "Peso base mantido"}
+        # Show recommendation with justification
+        st.subheader("Recomendação Principal")
+        st.write(f"DLT Recomendada: {recommendation['dlt']}")
+        
+        # Get detailed information from the reference table
+        dlt_info = recommendation.get('dlt_details', {})
+        
+        with st.expander("📊 Características Técnicas"):
+            if 'technical_characteristics' in dlt_info:
+                st.write(dlt_info['technical_characteristics'])
+            else:
+                metrics = recommendation['evaluation_matrix'].get(recommendation['dlt'], {}).get('metrics', {})
+                for metric, value in metrics.items():
+                    st.metric(metric.replace('_', ' ').title(), f"{value:.2f}")
+        
+        with st.expander("🎯 Casos de Uso"):
+            if 'use_cases' in dlt_info:
+                st.write(dlt_info['use_cases'])
+            else:
+                st.write("Informação não disponível")
+        
+        with st.expander("⚠️ Desafios e Limitações"):
+            if 'challenges' in dlt_info:
+                st.write(dlt_info['challenges'])
+            else:
+                st.write("Informação não disponível")
+        
+        with st.expander("📚 Referências Bibliográficas"):
+            if 'references' in dlt_info:
+                st.write(dlt_info['references'])
+            else:
+                st.write("Informação não disponível")
 
-            2. Escalabilidade: {adjusted_weights['scalability']:.2%}
-               - Ajustado devido a: {", ".join(weight_explanations['scalability']) if weight_explanations['scalability'] else "Peso base mantido"}
-
-            3. Eficiência Energética: {adjusted_weights['energy_efficiency']:.2%}
-               - Ajustado devido a: {", ".join(weight_explanations['energy_efficiency']) if weight_explanations['energy_efficiency'] else "Peso base mantido"}
-
-            4. Governança: {adjusted_weights['governance']:.2%}
-               - Ajustado devido a: {", ".join(weight_explanations['governance']) if weight_explanations['governance'] else "Peso base mantido"}
-
-            A DLT recomendada ({recommendation['dlt']}) obteve a maior pontuação considerando
-            estes pesos ajustados às suas necessidades específicas.
-            ''')
-        
-        # Add styling
-        st.markdown('''
-        <style>
-            .recommended {
-                background-color: #e6f3ff;
-                font-weight: bold;
-            }
-            .metric-high {
-                color: #2ecc71;
-                font-weight: bold;
-            }
-            .metric-low {
-                color: #e74c3c;
-            }
-            .selected-group {
-                background-color: #eafaf1;
-            }
-            .non-selected-group {
-                color: #95a5a6;
-            }
-        </style>
-        ''', unsafe_allow_html=True)
-        
-        # Add score interpretation guide
-        st.info("""
-        💡 **Como interpretar os scores:**
-        - ✅ Valores ≥ 0.8: Pontos fortes
-        - ❌ Valores < 0.8: Áreas que precisam de atenção
-        - A pontuação total é calculada usando os pesos ajustados mostrados acima
-        """)
-        
-        # Display selected consensus group information
-        st.subheader("Grupo de Consenso Selecionado")
-        dlt_name = recommendation.get('dlt', 'Não disponível')
-        consensus_group = recommendation.get('consensus_group', 'Não disponível')
-        group_explanation = recommendation.get('consensus_group_explanation', '')
-        
-        st.info(f"""
-        Com base nas características da DLT {dlt_name} e nos requisitos informados, 
-        o grupo de consenso selecionado é: **{consensus_group}**
-        
-        **Motivo da Seleção:**
-        {group_explanation}
-        """)
-        
-        # Get algorithms for the selected group
-        group_info = get_consensus_group_algorithms(consensus_group)
-        
-        # Display available algorithms with tooltips
-        st.write("**Algoritmos disponíveis neste grupo:**")
-        for algorithm in group_info.get('algorithms', []):
-            characteristics = group_info.get('characteristics', {}).get(algorithm, {})
-            
-            # Create expandable section for each algorithm
-            with st.expander(f"🔍 {algorithm}"):
-                cols = st.columns(4)
+        # Weight information display
+        if 'adjusted_weights' in recommendation and 'weight_explanations' in recommendation:
+            with st.expander("⚖️ Pesos e Justificativas"):
+                weights = recommendation['adjusted_weights']
+                explanations = recommendation['weight_explanations']
                 
-                # Add tooltips for each metric
-                cols[0].metric(
-                    "Segurança",
-                    f"{characteristics.get('security', 0.0):.2f}",
-                    help="Capacidade de proteger dados e resistir a ataques"
-                )
-                cols[1].metric(
-                    "Escalabilidade",
-                    f"{characteristics.get('scalability', 0.0):.2f}",
-                    help="Capacidade de crescer mantendo performance"
-                )
-                cols[2].metric(
-                    "Eficiência",
-                    f"{characteristics.get('energy_efficiency', 0.0):.2f}",
-                    help="Consumo de recursos e eficiência energética"
-                )
-                cols[3].metric(
-                    "Governança",
-                    f"{characteristics.get('governance', 0.0):.2f}",
-                    help="Flexibilidade e controle do sistema"
-                )
-        
+                for metric, weight in weights.items():
+                    st.write(f"**{metric.replace('_', ' ').title()}:** {weight:.2%}")
+                    if explanations.get(metric):
+                        st.write("*Justificativa:* " + ", ".join(explanations[metric]))
+                    st.write("---")
+
         # Create comparison table with enhanced styling
+        st.subheader("Comparação de DLTs")
         try:
             scores_df = pd.DataFrame({
                 'Tipo de DLT': [recommendation['evaluation_matrix'][dlt].get('type', 'N/A') 
@@ -242,7 +191,6 @@ def create_evaluation_matrices(recommendation):
                 .apply(highlight_recommended, axis=1)\
                 .map(highlight_metrics, subset=['Segurança', 'Escalabilidade', 'Eficiência', 'Governança'])
             
-            st.subheader("Tabela Comparativa de DLTs")
             st.table(scores_styled)
             st.caption("💡 A linha destacada em azul indica a DLT recomendada. Métricas em verde são pontos fortes (≥0.8) e em vermelho são pontos de atenção (≤0.4).")
             
@@ -294,11 +242,6 @@ def run_decision_tree():
     
     if len(st.session_state.answers) == len(questions):
         recommendation = get_recommendation(st.session_state.answers)
-        
-        st.header("Recomendação")
-        st.write(f"DLT Recomendada: {recommendation['dlt']}")
-        st.write(f"Tipo de DLT: {recommendation['dlt_type']}")
-        st.write(f"Algoritmo de Consenso: {recommendation['consensus']}")
         
         create_evaluation_matrices(recommendation)
         
