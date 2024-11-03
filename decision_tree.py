@@ -1,154 +1,9 @@
 import streamlit as st
-import plotly.graph_objects as go
-import plotly.express as px
 import pandas as pd
+import plotly.graph_objects as go
 from decision_logic import get_recommendation, get_consensus_group_algorithms
 from database import save_recommendation
 from dlt_data import questions
-
-def create_evaluation_matrices(recommendation):
-    """Create and display evaluation matrices."""
-    if not recommendation or 'evaluation_matrix' not in recommendation:
-        return
-        
-    st.subheader("Matriz de Avaliação Detalhada")
-    
-    st.markdown('''
-    <style>
-        .recommended {
-            background-color: #e6f3ff;
-            font-weight: bold;
-        }
-        .metric-high {
-            color: #2ecc71;
-            font-weight: bold;
-        }
-        .metric-low {
-            color: #e74c3c;
-        }
-        .selected-group {
-            background-color: #eafaf1;
-        }
-        .non-selected-group {
-            color: #95a5a6;
-        }
-    </style>
-    ''', unsafe_allow_html=True)
-    
-    st.info("""
-    💡 **Como interpretar os scores:**
-    - ✅ Valores ≥ 0.8: Pontos fortes
-    - ❌ Valores < 0.8: Áreas que precisam de atenção
-    - A pontuação total considera as características com os seguintes pesos:
-      - Segurança: 40%
-      - Escalabilidade: 25%
-      - Eficiência Energética: 20%
-      - Governança: 15%
-    """)
-    
-    # Display selected consensus group information
-    st.subheader("Grupo de Consenso Selecionado")
-    st.info(f"""
-    Com base nas características da DLT {recommendation['dlt']} e nos requisitos informados, 
-    o grupo de consenso selecionado é: **{recommendation['consensus_group']}**
-    
-    **Motivo da Seleção:**
-    {recommendation['consensus_group_explanation']}
-    """)
-    
-    # Get algorithms for the selected group
-    group_info = get_consensus_group_algorithms(recommendation['consensus_group'])
-    
-    # Display available algorithms
-    st.write("**Algoritmos disponíveis neste grupo:**")
-    for algorithm in group_info['algorithms']:
-        characteristics = group_info['characteristics'][algorithm]
-        st.write(f"- **{algorithm}**")
-        cols = st.columns(4)
-        cols[0].metric("Segurança", f"{characteristics['security']:.2f}")
-        cols[1].metric("Escalabilidade", f"{characteristics['scalability']:.2f}")
-        cols[2].metric("Eficiência", f"{characteristics['energy_efficiency']:.2f}")
-        cols[3].metric("Governança", f"{characteristics['governance']:.2f}")
-    
-    # Correlation table with highlighting
-    st.subheader("Matriz de Correlação DLT-Grupo-Algoritmo")
-    st.markdown("""
-    💡 **Como interpretar a correlação:**
-    - Cada DLT está associada a um grupo de consenso específico baseado em suas características
-    - Os algoritmos disponíveis são os mais adequados para cada combinação DLT-Grupo
-    - As linhas destacadas mostram a combinação recomendada
-    """)
-    
-    # Create correlation table with selected group highlighted
-    correlation_data = {
-        'DLT': ['Hyperledger Fabric', 'Corda', 'Quorum', 'VeChain', 'IOTA', 
-                'Ripple', 'Stellar', 'Bitcoin', 'Ethereum (PoW)', 'Ethereum 2.0'],
-        'Grupo de Consenso': ['Alta Segurança e Controle', 'Alta Segurança e Controle',
-                            'Escalabilidade e Governança', 'Alta Eficiência',
-                            'Alta Escalabilidade IoT', 'Alta Eficiência',
-                            'Alta Eficiência', 'Alta Segurança e Controle',
-                            'Alta Segurança e Controle', 'Escalabilidade e Governança']
-    }
-    
-    # Add algorithms column based on consensus group
-    correlation_data['Algoritmos Disponíveis'] = [
-        ', '.join(get_consensus_group_algorithms(group)['algorithms'])
-        for group in correlation_data['Grupo de Consenso']
-    ]
-    
-    correlation_df = pd.DataFrame(correlation_data)
-    
-    # Apply highlighting to the selected DLT and group
-    def highlight_selected(row):
-        if row['DLT'] == recommendation['dlt']:
-            return ['background-color: #eafaf1'] * len(row)
-        elif row['Grupo de Consenso'] == recommendation['consensus_group']:
-            return ['background-color: #f0f9ff'] * len(row)
-        return [''] * len(row)
-    
-    styled_df = correlation_df.style.apply(highlight_selected, axis=1)
-    st.table(styled_df)
-    
-    # Add explanation for group selection
-    st.info(f"""
-    **Por que este grupo de consenso foi selecionado?**
-    - A DLT {recommendation['dlt']} pertence ao grupo {recommendation['consensus_group']}
-    - O algoritmo {recommendation['consensus']} foi selecionado com score {recommendation['consensus_score']:.2f}
-    - Este grupo oferece o melhor equilíbrio entre segurança ({recommendation['consensus_characteristics']['security']:.2f}),
-      escalabilidade ({recommendation['consensus_characteristics']['scalability']:.2f}),
-      eficiência energética ({recommendation['consensus_characteristics']['energy_efficiency']:.2f}) e
-      governança ({recommendation['consensus_characteristics']['governance']:.2f})
-    """)
-    
-    # Display comparison table
-    scores_df = pd.DataFrame({
-        'Tipo de DLT': [recommendation['evaluation_matrix'][dlt]['type'] for dlt in recommendation['evaluation_matrix']],
-        'DLT': list(recommendation['evaluation_matrix'].keys()),
-        'Score Total': [recommendation['weighted_scores'][dlt] for dlt in recommendation['evaluation_matrix']],
-        'Segurança': [recommendation['evaluation_matrix'][dlt]['metrics']['security'] for dlt in recommendation['evaluation_matrix']],
-        'Escalabilidade': [recommendation['evaluation_matrix'][dlt]['metrics']['scalability'] for dlt in recommendation['evaluation_matrix']],
-        'Eficiência': [recommendation['evaluation_matrix'][dlt]['metrics']['energy_efficiency'] for dlt in recommendation['evaluation_matrix']],
-        'Governança': [recommendation['evaluation_matrix'][dlt]['metrics']['governance'] for dlt in recommendation['evaluation_matrix']]
-    }).sort_values('Score Total', ascending=False)
-    
-    def highlight_recommended(row):
-        return ['background-color: #e6f3ff' if row.name == 0 else '' for _ in row]
-    
-    def highlight_metrics(val):
-        if isinstance(val, float):
-            if val >= 0.8:
-                return 'color: #2ecc71; font-weight: bold'
-            elif val <= 0.4:
-                return 'color: #e74c3c'
-        return ''
-    
-    scores_styled = scores_df.style\
-        .apply(highlight_recommended, axis=1)\
-        .map(highlight_metrics, subset=['Segurança', 'Escalabilidade', 'Eficiência', 'Governança'])
-    
-    st.subheader("Tabela Comparativa de DLTs")
-    st.table(scores_styled)
-    st.caption("💡 A linha destacada em azul indica a DLT recomendada. Métricas em verde são pontos fortes (≥0.8) e em vermelho são pontos de atenção (≤0.4).")
 
 def create_progress_animation(current_phase, answers):
     """Create an animated progress visualization."""
@@ -236,6 +91,123 @@ def create_progress_animation(current_phase, answers):
     )
     
     return fig
+
+def create_evaluation_matrices(recommendation):
+    """Create and display evaluation matrices."""
+    try:
+        if not recommendation or not isinstance(recommendation, dict):
+            st.warning("Recomendação indisponível ou inválida.")
+            return
+            
+        if 'evaluation_matrix' not in recommendation:
+            st.warning("Matriz de avaliação não encontrada na recomendação.")
+            return
+            
+        st.subheader("Matriz de Avaliação Detalhada")
+        
+        st.markdown('''
+        <style>
+            .recommended {
+                background-color: #e6f3ff;
+                font-weight: bold;
+            }
+            .metric-high {
+                color: #2ecc71;
+                font-weight: bold;
+            }
+            .metric-low {
+                color: #e74c3c;
+            }
+            .selected-group {
+                background-color: #eafaf1;
+            }
+            .non-selected-group {
+                color: #95a5a6;
+            }
+        </style>
+        ''', unsafe_allow_html=True)
+        
+        st.info("""
+        💡 **Como interpretar os scores:**
+        - ✅ Valores ≥ 0.8: Pontos fortes
+        - ❌ Valores < 0.8: Áreas que precisam de atenção
+        - A pontuação total considera as características com os seguintes pesos:
+          - Segurança: 40%
+          - Escalabilidade: 25%
+          - Eficiência Energética: 20%
+          - Governança: 15%
+        """)
+        
+        # Display selected consensus group information
+        st.subheader("Grupo de Consenso Selecionado")
+        dlt_name = recommendation.get('dlt', 'Não disponível')
+        consensus_group = recommendation.get('consensus_group', 'Não disponível')
+        group_explanation = recommendation.get('consensus_group_explanation', '')
+        
+        st.info(f"""
+        Com base nas características da DLT {dlt_name} e nos requisitos informados, 
+        o grupo de consenso selecionado é: **{consensus_group}**
+        
+        **Motivo da Seleção:**
+        {group_explanation}
+        """)
+        
+        # Get algorithms for the selected group
+        group_info = get_consensus_group_algorithms(consensus_group)
+        
+        # Display available algorithms
+        st.write("**Algoritmos disponíveis neste grupo:**")
+        for algorithm in group_info.get('algorithms', []):
+            characteristics = group_info.get('characteristics', {}).get(algorithm, {})
+            st.write(f"- **{algorithm}**")
+            cols = st.columns(4)
+            cols[0].metric("Segurança", f"{characteristics.get('security', 0.0):.2f}")
+            cols[1].metric("Escalabilidade", f"{characteristics.get('scalability', 0.0):.2f}")
+            cols[2].metric("Eficiência", f"{characteristics.get('energy_efficiency', 0.0):.2f}")
+            cols[3].metric("Governança", f"{characteristics.get('governance', 0.0):.2f}")
+        
+        # Create comparison table
+        try:
+            scores_df = pd.DataFrame({
+                'Tipo de DLT': [recommendation['evaluation_matrix'][dlt].get('type', 'N/A') 
+                               for dlt in recommendation['evaluation_matrix']],
+                'DLT': list(recommendation['evaluation_matrix'].keys()),
+                'Score Total': [recommendation['weighted_scores'].get(dlt, 0.0) 
+                               for dlt in recommendation['evaluation_matrix']],
+                'Segurança': [recommendation['evaluation_matrix'][dlt].get('metrics', {}).get('security', 0.0) 
+                             for dlt in recommendation['evaluation_matrix']],
+                'Escalabilidade': [recommendation['evaluation_matrix'][dlt].get('metrics', {}).get('scalability', 0.0) 
+                                  for dlt in recommendation['evaluation_matrix']],
+                'Eficiência': [recommendation['evaluation_matrix'][dlt].get('metrics', {}).get('energy_efficiency', 0.0) 
+                              for dlt in recommendation['evaluation_matrix']],
+                'Governança': [recommendation['evaluation_matrix'][dlt].get('metrics', {}).get('governance', 0.0) 
+                              for dlt in recommendation['evaluation_matrix']]
+            }).sort_values('Score Total', ascending=False)
+            
+            def highlight_recommended(row):
+                return ['background-color: #e6f3ff' if row.name == 0 else '' for _ in row]
+            
+            def highlight_metrics(val):
+                if isinstance(val, float):
+                    if val >= 0.8:
+                        return 'color: #2ecc71; font-weight: bold'
+                    elif val <= 0.4:
+                        return 'color: #e74c3c'
+                return ''
+            
+            scores_styled = scores_df.style\
+                .apply(highlight_recommended, axis=1)\
+                .map(highlight_metrics, subset=['Segurança', 'Escalabilidade', 'Eficiência', 'Governança'])
+            
+            st.subheader("Tabela Comparativa de DLTs")
+            st.table(scores_styled)
+            st.caption("💡 A linha destacada em azul indica a DLT recomendada. Métricas em verde são pontos fortes (≥0.8) e em vermelho são pontos de atenção (≤0.4).")
+            
+        except Exception as e:
+            st.error(f"Erro ao criar tabela comparativa: {str(e)}")
+            
+    except Exception as e:
+        st.error(f"Erro ao criar matrizes de avaliação: {str(e)}")
 
 def run_decision_tree():
     """Main function to run the decision tree interface."""

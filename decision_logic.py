@@ -3,15 +3,13 @@ from dlt_data import questions, dlt_classes, consensus_algorithms, dlt_metrics, 
 
 def calculate_weighted_score(metrics, answers):
     """Calculate weighted score based on metrics and healthcare priorities."""
-    # Healthcare-specific weights
     weights = {
-        'security': 0.40,  # High security for patient data
-        'scalability': 0.25,  # Scalability for healthcare networks
-        'energy_efficiency': 0.20,  # Energy efficiency for continuous operation
-        'governance': 0.15  # Governance for regulatory compliance
+        'security': 0.40,
+        'scalability': 0.25,
+        'energy_efficiency': 0.20,
+        'governance': 0.15
     }
     
-    # Calculate weighted score
     return sum(metrics[metric] * weights[metric] for metric in metrics.keys())
 
 def select_consensus_group(dlt_type, answers):
@@ -25,15 +23,13 @@ def select_consensus_group(dlt_type, answers):
         "DLT Pública Permissionless": "Escalabilidade e Governança"
     }
     
-    # Adjust group based on healthcare requirements
     if answers.get('network_security') == 'Sim' and answers.get('privacy') == 'Sim':
-        return "Alta Segurança e Controle"
+        selected_group = "Alta Segurança e Controle"
     elif answers.get('scalability') == 'Sim' and answers.get('energy_efficiency') == 'Sim':
-        return "Alta Eficiência"
+        selected_group = "Alta Eficiência"
+    else:
+        selected_group = type_to_group.get(dlt_type, "Alta Segurança e Controle")
     
-    selected_group = type_to_group.get(dlt_type, "Alta Segurança e Controle")
-    
-    # Add explanation for group selection
     explanation = {
         "Alta Segurança e Controle": "Selecionado devido aos requisitos de segurança e privacidade dos dados médicos",
         "Alta Eficiência": "Selecionado devido aos requisitos de eficiência operacional e escalabilidade",
@@ -121,39 +117,63 @@ def get_consensus_group_algorithms(group_name):
     
     return group_algorithms.get(group_name, {"algorithms": [], "characteristics": {}})
 
+def create_empty_characteristics():
+    """Create default characteristics structure."""
+    return {
+        "security": 0.0,
+        "scalability": 0.0,
+        "energy_efficiency": 0.0,
+        "governance": 0.0
+    }
+
 def select_consensus_algorithm(consensus_group, answers):
     """Select the best consensus algorithm from the given group."""
-    group_info = get_consensus_group_algorithms(consensus_group)
-    algorithms = group_info["algorithms"]
-    characteristics = group_info["characteristics"]
-    
-    if not algorithms:
-        return "Não disponível"
-    
-    # Healthcare-specific weights for algorithm selection
-    weights = {
-        'security': 0.40,
-        'scalability': 0.25,
-        'energy_efficiency': 0.20,
-        'governance': 0.15
-    }
-    
-    algorithm_scores = {}
-    for algorithm in algorithms:
-        if algorithm in characteristics:
-            score = sum(weights[metric] * characteristics[algorithm][metric] 
-                       for metric in weights.keys())
-            algorithm_scores[algorithm] = score
-    
-    if not algorithm_scores:
-        return algorithms[0]
-    
-    selected_algorithm = max(algorithm_scores.items(), key=lambda x: x[1])
-    return {
-        "algorithm": selected_algorithm[0],
-        "score": selected_algorithm[1],
-        "characteristics": characteristics[selected_algorithm[0]]
-    }
+    try:
+        group_info = get_consensus_group_algorithms(consensus_group)
+        algorithms = group_info.get("algorithms", [])
+        characteristics = group_info.get("characteristics", {})
+        
+        if not algorithms:
+            return {
+                "algorithm": "Não disponível",
+                "score": 0.0,
+                "characteristics": create_empty_characteristics()
+            }
+        
+        weights = {
+            'security': 0.40,
+            'scalability': 0.25,
+            'energy_efficiency': 0.20,
+            'governance': 0.15
+        }
+        
+        algorithm_scores = {}
+        for algorithm in algorithms:
+            if algorithm in characteristics:
+                score = sum(weights[metric] * characteristics[algorithm].get(metric, 0.0) 
+                          for metric in weights.keys())
+                algorithm_scores[algorithm] = score
+        
+        if not algorithm_scores:
+            return {
+                "algorithm": algorithms[0],
+                "score": 0.0,
+                "characteristics": create_empty_characteristics()
+            }
+        
+        selected_algorithm = max(algorithm_scores.items(), key=lambda x: x[1])
+        return {
+            "algorithm": selected_algorithm[0],
+            "score": selected_algorithm[1],
+            "characteristics": characteristics.get(selected_algorithm[0], create_empty_characteristics())
+        }
+    except Exception as e:
+        print(f"Error in select_consensus_algorithm: {str(e)}")
+        return {
+            "algorithm": "Não disponível",
+            "score": 0.0,
+            "characteristics": create_empty_characteristics()
+        }
 
 def calculate_confidence(weighted_scores, characteristics, answers):
     """Calculate confidence score for the recommendation."""
@@ -169,16 +189,31 @@ def calculate_confidence(weighted_scores, characteristics, answers):
         consistency_factor = 1 - (std_dev / max_score) if max_score > 0 else 0
         answer_consistency = sum(1 for ans in answers.values() if ans == "Sim") / len(answers) if answers else 0
         
-        # Healthcare-specific confidence weights
         confidence = (
-            separation_factor * 0.40 +  # Higher weight for separation
-            consistency_factor * 0.35 +  # Higher weight for consistency
-            answer_consistency * 0.25    # Lower weight for answer consistency
+            separation_factor * 0.40 +
+            consistency_factor * 0.35 +
+            answer_consistency * 0.25
         )
         
         return confidence
     except (statistics.StatisticsError, ValueError, ZeroDivisionError):
         return 0.0
+
+def create_empty_recommendation():
+    """Create an empty recommendation structure with proper initialization."""
+    return {
+        "dlt": "Não disponível",
+        "dlt_type": "Não disponível",
+        "consensus_group": "Não disponível",
+        "consensus_group_explanation": "",
+        "consensus": "Não disponível",
+        "consensus_characteristics": create_empty_characteristics(),
+        "consensus_score": 0.0,
+        "evaluation_matrix": {},
+        "weighted_scores": {},
+        "confidence": False,
+        "confidence_value": 0.0
+    }
 
 def get_recommendation(answers):
     """Get DLT and consensus algorithm recommendations based on user answers."""
@@ -189,30 +224,29 @@ def get_recommendation(answers):
         weighted_scores = {}
         evaluation_matrix = {}
         
-        # Calculate weighted scores for each DLT
         for dlt_name, dlt_info in dlt_metrics.items():
-            metrics = dlt_info["metrics"]
+            metrics = dlt_info.get("metrics", {})
             weighted_score = calculate_weighted_score(metrics, answers)
             
             weighted_scores[dlt_name] = weighted_score
             evaluation_matrix[dlt_name] = {
-                "type": dlt_info["type"],
+                "type": dlt_info.get("type", "Não disponível"),
                 "metrics": metrics,
                 "weighted_score": weighted_score
             }
         
-        # Select DLT with highest weighted score
+        if not weighted_scores:
+            return create_empty_recommendation()
+            
         recommended_dlt = max(weighted_scores.items(), key=lambda x: x[1])[0]
-        dlt_type = dlt_metrics[recommended_dlt]["type"]
+        dlt_type = dlt_metrics.get(recommended_dlt, {}).get("type", "Não disponível")
         
-        # Select consensus group based on DLT type and healthcare requirements
         consensus_group_info = select_consensus_group(dlt_type, answers)
-        
-        # Select algorithm from consensus group
         algorithm_info = select_consensus_algorithm(consensus_group_info["group"], answers)
         
-        # Calculate confidence metrics
-        confidence_value = calculate_confidence(weighted_scores, evaluation_matrix[recommended_dlt]["metrics"], answers)
+        confidence_value = calculate_confidence(weighted_scores, 
+                                             evaluation_matrix.get(recommended_dlt, {}).get("metrics", {}),
+                                             answers)
         
         return {
             "dlt": recommended_dlt,
@@ -231,19 +265,3 @@ def get_recommendation(answers):
     except Exception as e:
         print(f"Error in get_recommendation: {str(e)}")
         return create_empty_recommendation()
-
-def create_empty_recommendation():
-    """Create an empty recommendation structure."""
-    return {
-        "dlt": "Não disponível",
-        "dlt_type": "Não disponível",
-        "consensus_group": "Não disponível",
-        "consensus_group_explanation": "",
-        "consensus": "Não disponível",
-        "consensus_characteristics": {},
-        "consensus_score": 0.0,
-        "evaluation_matrix": {},
-        "weighted_scores": {},
-        "confidence": False,
-        "confidence_value": 0.0
-    }
