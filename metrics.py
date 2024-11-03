@@ -1,115 +1,363 @@
-import streamlit as st
-import pandas as pd
+import math
+import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
+import streamlit as st
+import pandas as pd
 from decision_logic import get_recommendation
 
-def reset_metrics():
-    """Reset all stored metrics calculations."""
-    metrics_keys = [
-        'gini_index',
-        'entropy_value',
-        'pruning_metrics',
-        'precision_metrics',
-        'depth_metrics',
-        'consistency_score'
-    ]
-    for key in metrics_keys:
-        if key in st.session_state:
-            del st.session_state[key]
+def calcular_gini(classes):
+    """
+    Calcula a impureza de Gini para um conjunto de classes.
+    """
+    total = sum(classes.values())
+    gini = 1 - sum((count / total) ** 2 for count in classes.values())
+    return gini
 
-def calculate_metrics(recommendation):
-    """Calculate metrics based on the current recommendation."""
-    if not recommendation or 'metrics' not in recommendation:
-        return None
+def calcular_entropia(classes):
+    """
+    Calcula a entropia de Shannon para um conjunto de classes.
+    """
+    total = sum(classes.values())
+    entropia = -sum((count / total) * math.log2(count / total) 
+                   for count in classes.values() if count != 0)
+    return entropia
+
+def calcular_profundidade_decisoria(decisoes):
+    """
+    Calcula a profundidade média da árvore de decisão.
+    """
+    if not decisoes:
+        return 0
+    profundidade_total = sum(decisoes)
+    return profundidade_total / len(decisoes)
+
+def calcular_pruning(total_nos, nos_podados):
+    """
+    Calcula o pruning ratio e métricas relacionadas.
+    """
+    if total_nos == 0:
+        return {
+            'pruning_ratio': 0,
+            'eficiencia_poda': 0,
+            'impacto_complexidade': 0
+        }
     
-    metrics = recommendation['metrics']
-    
-    # Calculate overall score
-    weights = {'security': 0.25, 'scalability': 0.25, 'energy_efficiency': 0.25, 'governance': 0.25}
-    total_score = sum(metrics[key] * weight for key, weight in weights.items())
+    pruning_ratio = (total_nos - nos_podados) / total_nos
+    eficiencia_poda = 1 - (nos_podados / total_nos)
+    impacto_complexidade = math.log2(total_nos / (total_nos - nos_podados + 1))
     
     return {
-        'total_score': total_score,
-        'security_score': metrics['security'],
-        'scalability_score': metrics['scalability'],
-        'energy_efficiency_score': metrics['energy_efficiency'],
-        'governance_score': metrics['governance']
+        'pruning_ratio': pruning_ratio,
+        'eficiencia_poda': eficiencia_poda,
+        'impacto_complexidade': impacto_complexidade
     }
+
+def calculate_precision_metrics(true_positives, false_positives, false_negatives, total_cases):
+    """Calculate precision, sensitivity, and accuracy metrics."""
+    try:
+        precision = true_positives / (true_positives + false_positives)
+    except ZeroDivisionError:
+        precision = 0
+
+    try:
+        sensitivity = true_positives / (true_positives + false_negatives)
+    except ZeroDivisionError:
+        sensitivity = 0
+
+    try:
+        accuracy = (true_positives + (total_cases - (true_positives + false_positives + false_negatives))) / total_cases
+    except ZeroDivisionError:
+        accuracy = 0
+
+    return {
+        'precision': precision,
+        'sensitivity': sensitivity,
+        'accuracy': accuracy
+    }
+
+def calculate_consistency_score(metrics, answers):
+    """
+    Calculate consistency score based on user answers and metrics.
+    """
+    if not answers or not metrics:
+        return 0.0
+    
+    weights = {
+        'security': 0.4,
+        'scalability': 0.25,
+        'energy_efficiency': 0.20,
+        'governance': 0.15
+    }
+    
+    score = 0
+    total_weight = 0
+    
+    for key, weight in weights.items():
+        if key in metrics:
+            if answers.get('privacy') == 'Sim' and key == 'security':
+                score += metrics[key] * weight * 1.2
+            elif answers.get('scalability') == 'Sim' and key == 'scalability':
+                score += metrics[key] * weight * 1.2
+            elif answers.get('energy_efficiency') == 'Sim' and key == 'energy_efficiency':
+                score += metrics[key] * weight * 1.2
+            elif answers.get('governance_flexibility') == 'Sim' and key == 'governance':
+                score += metrics[key] * weight * 1.2
+            else:
+                score += metrics[key] * weight
+            total_weight += weight
+    
+    return score / total_weight if total_weight > 0 else 0
+
+def create_metrics_radar_chart(metrics_data, recommendation=None, answers=None):
+    """Creates a radar chart for metrics visualization with enhanced tooltips."""
+    fig = go.Figure()
+    
+    if recommendation and answers:
+        metrics_data.update(recommendation['metrics'])
+        consistency_score = calculate_consistency_score(metrics_data, answers)
+        
+        fig.add_annotation(
+            text=f"Índice de Consistência: {consistency_score:.2f}",
+            xref="paper", yref="paper",
+            x=0.5, y=1.1,
+            showarrow=False,
+            font=dict(size=14)
+        )
+    
+    categories = list(metrics_data.keys())
+    values = list(metrics_data.values())
+    
+    fig.add_trace(go.Scatterpolar(
+        r=values + [values[0]],
+        theta=categories + [categories[0]],
+        fill='toself',
+        name='Métricas Atuais',
+        line=dict(color='#3498db', width=2),
+        fillcolor='rgba(52, 152, 219, 0.3)'
+    ))
+    
+    fig.update_layout(
+        polar=dict(
+            radialaxis=dict(
+                visible=True,
+                range=[0, 1],
+                showline=True,
+                linewidth=1,
+                linecolor='lightgray',
+                tickfont=dict(size=10)
+            )
+        ),
+        showlegend=True,
+        title="Visão Geral das Métricas"
+    )
+    return fig
+
+def create_evaluation_matrix(metrics_data, recommendation=None, answers=None):
+    """Creates a heatmap for metrics evaluation with current recommendation data."""
+    if recommendation and 'metrics' in recommendation:
+        metrics_data.update(recommendation['metrics'])
+    
+    df = pd.DataFrame([metrics_data])
+    colors = ['#053061', '#2166ac', '#4393c3', '#92c5de', '#d1e5f0', 
+              '#f7f7f7', '#fddbc7', '#f4a582', '#d6604d', '#b2182b', '#67001f']
+    
+    fig = px.imshow(
+        df,
+        color_continuous_scale=colors,
+        aspect='auto',
+        title="Matriz de Avaliação de Métricas"
+    )
+    
+    fig.update_layout(
+        xaxis_title="Métricas",
+        yaxis_title="Avaliação",
+        yaxis_visible=False,
+        coloraxis_colorbar=dict(
+            title="Pontuação",
+            ticktext=["0.0", "0.2", "0.4", "0.6", "0.8", "1.0"],
+            tickvals=[0, 0.2, 0.4, 0.6, 0.8, 1],
+            lenmode="pixels",
+            len=200,
+        )
+    )
+    
+    return fig
 
 def show_metrics():
     """Display metrics and analysis with enhanced visualization and state synchronization."""
     st.header("Métricas Técnicas e Análise")
     
-    # Add reset button in metrics page
-    if st.button("Reiniciar Métricas", help="Limpar todos os cálculos de métricas"):
-        reset_metrics()
-        st.experimental_rerun()
-    
-    if 'current_recommendation' in st.session_state:
-        recommendation = st.session_state.current_recommendation
-        if recommendation and recommendation['dlt'] != "Não disponível":
-            metrics = calculate_metrics(recommendation)
+    if 'answers' in st.session_state and len(st.session_state.answers) > 0:
+        answers = st.session_state.answers
+        current_recommendation = None
+        
+        if 'current_recommendation' in st.session_state:
+            current_recommendation = st.session_state.current_recommendation
+        else:
+            current_recommendation = get_recommendation(answers)
+            st.session_state.current_recommendation = current_recommendation
+        
+        # Calculate metrics
+        total_nos = len(answers) * 2 + 1
+        nos_podados = total_nos - len(answers) - 1
+        pruning_metrics = calcular_pruning(total_nos, nos_podados)
+        classes = {'class_a': len(answers), 'class_b': nos_podados}
+        gini = calcular_gini(classes)
+        entropy = calcular_entropia(classes)
+        depth = calcular_profundidade_decisoria(list(range(len(answers))))
+
+        # Calculate precision metrics
+        true_positives = len([a for a in answers.values() if a == 'Sim'])
+        false_positives = len([a for a in answers.values() if a == 'Não'])
+        false_negatives = nos_podados
+        precision_metrics = calculate_precision_metrics(true_positives, false_positives, false_negatives, total_nos)
+        
+        # Display formulas
+        with st.expander("Fórmulas das Métricas"):
+            st.markdown('''
+            ### Índice de Gini
+            ```
+            gini = 1 - Σ(pi²)
+            onde pi é a proporção de cada classe
+            ```
             
-            if metrics:
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    st.subheader("Pontuações por Característica")
-                    metrics_df = pd.DataFrame({
-                        'Característica': ['Segurança', 'Escalabilidade', 'Eficiência Energética', 'Governança'],
-                        'Pontuação': [
-                            metrics['security_score'],
-                            metrics['scalability_score'],
-                            metrics['energy_efficiency_score'],
-                            metrics['governance_score']
-                        ]
-                    })
-                    
-                    fig = px.bar(metrics_df, x='Característica', y='Pontuação',
-                               title="Análise de Características",
-                               color='Pontuação',
-                               color_continuous_scale='RdYlBu')
-                    st.plotly_chart(fig)
-                
-                with col2:
-                    st.subheader("Avaliação Global")
-                    st.metric("Pontuação Total", f"{metrics['total_score']:.2f}")
-                    
-                    # Create radar chart
-                    fig = go.Figure()
-                    fig.add_trace(go.Scatterpolar(
-                        r=[metrics['security_score'], 
-                           metrics['scalability_score'],
-                           metrics['energy_efficiency_score'], 
-                           metrics['governance_score']],
-                        theta=['Segurança', 'Escalabilidade', 
-                               'Eficiência Energética', 'Governança'],
-                        fill='toself'
-                    ))
-                    
-                    fig.update_layout(
-                        polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
-                        showlegend=False,
-                        title="Radar de Características"
-                    )
-                    
-                    st.plotly_chart(fig)
-                
-                # Display evaluation matrix if available
-                if 'evaluation_matrix' in recommendation:
-                    st.subheader("Matriz de Avaliação")
-                    matrix_data = []
-                    for dlt, info in recommendation['evaluation_matrix'].items():
-                        matrix_data.append({
-                            'DLT': dlt,
-                            'Tipo': info['type'],
-                            'Estrutura': info['data_structure'],
-                            'Grupo': info['group'],
-                            'Score': info['score']
-                        })
-                    
-                    matrix_df = pd.DataFrame(matrix_data)
-                    st.dataframe(matrix_df)
+            ### Entropia
+            ```
+            entropia = -Σ(pi * log2(pi))
+            onde pi é a proporção de cada classe
+            ```
+            
+            ### Taxa de Poda
+            ```
+            taxa_poda = (total_nos - nos_podados) / total_nos
+            ```
+            
+            ### Índice de Consistência
+            ```
+            consistencia = Σ(peso_i * confianca_i) / Σ(peso_i)
+            onde peso_i é o peso da característica i
+            e confianca_i é a confiança na característica i
+            ```
+
+            ### Precisão
+            ```
+            precisao = verdadeiros_positivos / (verdadeiros_positivos + falsos_positivos)
+            ```
+
+            ### Sensibilidade
+            ```
+            sensibilidade = verdadeiros_positivos / (verdadeiros_positivos + falsos_negativos)
+            ```
+
+            ### Acurácia
+            ```
+            acuracia = (verdadeiros_positivos + verdadeiros_negativos) / total_casos
+            ```
+            ''')
+
+        # Display metrics in columns
+        st.subheader("Métricas Técnicas")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.metric("Índice de Gini", f"{gini:.3f}")
+            st.metric("Entropia", f"{entropy:.3f}")
+        
+        with col2:
+            st.metric("Taxa de Poda", f"{pruning_metrics['pruning_ratio']:.2%}")
+            if current_recommendation and 'metrics' in current_recommendation:
+                consistency_index = calculate_consistency_score(current_recommendation['metrics'], answers)
+                st.metric("Índice de Consistência", f"{consistency_index:.2f}")
+
+        # Precision Analysis Section
+        st.subheader("Análise de Precisão")
+        col3, col4 = st.columns(2)
+        with col3:
+            st.metric("Precisão", f"{precision_metrics['precision']:.3f}")
+            st.metric("Sensibilidade", f"{precision_metrics['sensitivity']:.3f}")
+        with col4:
+            st.metric("Acurácia", f"{precision_metrics['accuracy']:.3f}")
+
+        # Sensitivity Analysis Section
+        st.subheader("Análise de Sensibilidade")
+        with st.expander("Impacto das Mudanças de Peso"):
+            weight_impacts = {
+                'Segurança': {'atual': 0.4, 'impacto': 'Alto'},
+                'Escalabilidade': {'atual': 0.25, 'impacto': 'Médio'},
+                'Eficiência Energética': {'atual': 0.20, 'impacto': 'Médio'},
+                'Governança': {'atual': 0.15, 'impacto': 'Baixo'}
+            }
+            impact_df = pd.DataFrame(weight_impacts).T
+            st.table(impact_df)
+            st.write("Esta análise mostra como mudanças nos pesos afetam a recomendação final.")
+        
+        # Matrix explanations
+        with st.expander("Explicação das Matrizes"):
+            st.markdown("""
+            ### Matriz de Avaliação
+            A matriz mostra a pontuação de cada métrica em uma escala de calor:
+            - Tons mais escuros de azul indicam valores mais baixos
+            - Tons mais escuros de vermelho indicam valores mais altos
+            
+            ### Gráfico Radar
+            O gráfico radar permite visualizar:
+            - O equilíbrio entre as diferentes métricas
+            - Pontos fortes e fracos da recomendação
+            - Comparação com valores ideais
+            """)
+        
+        # Technical metrics visualization
+        st.subheader("Métricas Técnicas")
+        metrics_data = {
+            "security": 0.85,
+            "scalability": 0.75,
+            "energy_efficiency": 0.80,
+            "governance": 0.70
+        }
+        
+        if current_recommendation and 'metrics' in current_recommendation:
+            metrics_data.update({k.lower(): v for k, v in current_recommendation['metrics'].items()})
+        
+        # Create and display evaluation matrix
+        fig_matrix = create_evaluation_matrix(metrics_data, current_recommendation, answers)
+        st.plotly_chart(fig_matrix, use_container_width=True)
+        
+        # Create and display radar chart
+        fig_radar = create_metrics_radar_chart(metrics_data, current_recommendation, answers)
+        st.plotly_chart(fig_radar, use_container_width=True)
+        
+        # Generate downloadable report
+        report_data = {
+            "Métricas Técnicas": {
+                "Índice de Gini": gini,
+                "Entropia": entropy,
+                "Taxa de Poda": pruning_metrics['pruning_ratio'],
+                "Índice de Consistência": consistency_index if 'consistency_index' in locals() else 0,
+                "Precisão": precision_metrics['precision'],
+                "Sensibilidade": precision_metrics['sensitivity'],
+                "Acurácia": precision_metrics['accuracy']
+            },
+            "Métricas de Avaliação": metrics_data
+        }
+        
+        if current_recommendation:
+            report_data["Recomendação"] = {
+                "DLT": current_recommendation.get('dlt', 'N/A'),
+                "Tipo": current_recommendation.get('dlt_type', 'N/A'),
+                "Grupo": current_recommendation.get('group', 'N/A'),
+                "Consistência": calculate_consistency_score(metrics_data, answers)
+            }
+        
+        df_report = pd.DataFrame.from_dict(report_data, orient='index')
+        csv = df_report.to_csv().encode('utf-8')
+        
+        st.download_button(
+            label="Baixar Relatório Completo",
+            data=csv,
+            file_name="relatorio_metricas.csv",
+            mime="text/csv",
+            help="Baixe o relatório completo com todas as métricas e análises"
+        )
     else:
         st.info("Complete o questionário para visualizar as métricas detalhadas.")
