@@ -1,0 +1,63 @@
+import pandas as pd
+
+# Data for the frameworks
+data = {
+    "Framework": [
+        "Blockchain-Based Framework for Interoperable EHRs",
+        "CREDO-DLT Decision Support Tool",
+        "Medshare Data Sharing Framework",
+        "TrialChain para Ensaios Clínicos",
+        "PharmaChain para Cadeia de Suprimentos",
+        "Action-EHR Framework para EHRs",
+        "MedRec para Gerenciamento de Registros Médicos",
+        "Scalability Challenges para Healthcare Blockchain"
+    ],
+    "Perguntas para Seleção": [
+        "1. Acesso imutável? 2. Alta segurança? 3. Controle robusto? 4. Privacidade? 5. Transparência?",
+        "1. Funcionalidade? 2. Segurança? 3. Desempenho? 4. Compliance com ITU?",
+        "1. Segurança dos dados? 2. Controle de acesso? 3. Privacidade? 4. Interoperabilidade?",
+        "1. Presença de terceiros confiáveis? 2. Alta segurança dos dados? 3. Controle de acesso? 4. Transparência?",
+        "1. Acesso imutável? 2. Segurança dos dados? 3. Frequência de atualização? 4. Transparência das transações?",
+        "1. Controle de acesso? 2. Segurança dos dados? 3. Interoperabilidade?",
+        "1. Segurança dos dados? 2. Eficiência no acesso? 3. Controle de permissão?",
+        "1. Escalabilidade? 2. Eficiência Energética? 3. Interoperabilidade?"
+    ],
+    "DLTs Possíveis": [
+        "DLT permissionada privada",
+        "Todas as plataformas DLT relevantes",
+        "Blockchain permissionada",
+        "DLT permissionada privada/pública",
+        "DLT permissionada pública",
+        "Hyperledger Fabric, Ethereum",
+        "Blockchain permissionada",
+        "Quorum, Ethereum"
+    ],
+    "Fases de Implementação": [
+        "Fase 1: Avaliação Inicial; Fase 2: Definição de Requisitos Funcionais",
+        "Fase 1: Revisão Sistemática; Fase 2: Formalização de Métricas; Fase 3: Aplicação em Cenários Reais",
+        "Única fase sequencial",
+        "Fase 1: Avaliação Inicial; Fase 2: Definição de Governança",
+        "Fase 1: Integridade de Produtos; Fase 2: Verificabilidade Pública",
+        "Única fase sequencial",
+        "Fase única de implementação",
+        "Única fase de revisão"
+    ],
+    "Referência": [
+        "DUBOVITSKAYA, A. et al. Blockchain-Based Framework for Interoperable Electronic Health Records. 2023.",
+        "AZARI, A. et al. CREDO-DLT Decision Support Tool based on ITU recommendations. 2023.",
+        "LI, K.; SAI, A. R.; UROVI, V. Trust-less medical data sharing among cloud service providers via blockchain. 2024.",
+        "WILLIAMS, N. et al. Transparency and data integrity in clinical trials with TrialChain. 2020.",
+        "JOHNSON, T. et al. Ensuring the integrity of pharmaceutical products. 2021.",
+        "LI, Y.; LIU, J.; LI, S. Blockchain-based electronic health record management. 2019.",
+        "AZARIA, A. et al. MedRec: Medical Data Management. 2016.",
+        "LI, K.; SAI, A. R.; UROVI, V. Scalability Challenges in Healthcare: Systematic Review. 2023."
+    ]
+}
+
+# Create DataFrame
+frameworks_df = pd.DataFrame(data)
+
+import ace_tools as tools
+
+# Display the DataFrame to the user
+tools.display_dataframe_to_user("Frameworks de Seleção de DLTs", frameworks_df)
