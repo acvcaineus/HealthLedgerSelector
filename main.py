@@ -9,6 +9,10 @@ from metrics import (calcular_gini, calcular_entropia, calcular_profundidade_dec
                     calcular_pruning, calcular_peso_caracteristica)
 from utils import init_session_state
 
+@st.cache_data
+def convert_df(df):
+    return df.to_csv().encode('utf-8')
+
 def create_metrics_radar_chart(gini, entropy, depth, pruning):
     """Create a radar chart for technical metrics visualization."""
     fig = go.Figure()
@@ -163,9 +167,9 @@ def show_home_page():
         ],
         'Tipo de DLT': [
             'DLT Permissionada Privada', 'DLT Permissionada Simples', 'DLT Híbrida',
-            'DLT Híbrida', 'DLT com Consenso Delegado', 'DLT com Consenso Delegado',
+            'DLT Híbrida', 'DLT Pública (DAG)', 'DLT com Consenso Delegado',
             'DLT com Consenso Delegado', 'DLT Pública', 'DLT Pública',
-            'DLT Pública (Permissionless)'
+            'DLT Pública Permissionless'
         ],
         'Grupo de Algoritmo': [
             'Alta Segurança e Controle dos dados sensíveis',
@@ -178,10 +182,31 @@ def show_home_page():
             'Alta Segurança e Descentralização de dados críticos',
             'Alta Segurança e Descentralização de dados críticos',
             'Escalabilidade e Governança Flexível'
+        ],
+        'Algoritmos de Consenso': [
+            'RAFT, PBFT',
+            'RAFT',
+            'RAFT, IBFT',
+            'PoA',
+            'Tangle',
+            'Ripple Consensus Protocol',
+            'Stellar Consensus Protocol',
+            'PoW',
+            'PoW',
+            'PoS'
         ]
     }
     df = pd.DataFrame(dlt_data)
-    st.table(df)
+    st.dataframe(df)
+
+    # Add download button for consolidated data
+    csv = convert_df(df)
+    st.download_button(
+        label="Baixar Dados Consolidados",
+        data=csv,
+        file_name='dlt_dados_consolidados.csv',
+        mime='text/csv',
+    )
 
     st.markdown("---")
     st.subheader("Iniciar o Processo de Seleção de DLT")

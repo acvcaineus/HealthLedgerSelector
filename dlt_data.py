@@ -4,7 +4,7 @@ dlt_metrics = {
     "Corda": {"type": "DLT Permissionada Simples", "metrics": {"security": 0.70, "scalability": 0.55, "energy_efficiency": 0.75, "governance": 0.80}},
     "Quorum": {"type": "DLT Híbrida", "metrics": {"security": 0.78, "scalability": 0.70, "energy_efficiency": 0.80, "governance": 0.78}},
     "VeChain": {"type": "DLT Híbrida", "metrics": {"security": 0.75, "scalability": 0.80, "energy_efficiency": 0.85, "governance": 0.70}},
-    "IOTA": {"type": "DLT com Consenso Delegado", "metrics": {"security": 0.80, "scalability": 0.85, "energy_efficiency": 0.90, "governance": 0.60}},
+    "IOTA": {"type": "DLT Pública (DAG)", "metrics": {"security": 0.80, "scalability": 0.85, "energy_efficiency": 0.90, "governance": 0.60}},
     "Ripple": {"type": "DLT com Consenso Delegado", "metrics": {"security": 0.78, "scalability": 0.88, "energy_efficiency": 0.70, "governance": 0.80}},
     "Stellar": {"type": "DLT com Consenso Delegado", "metrics": {"security": 0.75, "scalability": 0.82, "energy_efficiency": 0.70, "governance": 0.85}},
     "Bitcoin": {"type": "DLT Pública", "metrics": {"security": 0.95, "scalability": 0.40, "energy_efficiency": 0.35, "governance": 0.50}},
@@ -19,6 +19,7 @@ dlt_type_weights = {
     "DLT Híbrida": {"security": 0.25, "scalability": 0.30, "energy_efficiency": 0.25, "governance": 0.20},
     "DLT com Consenso Delegado": {"security": 0.25, "scalability": 0.35, "energy_efficiency": 0.25, "governance": 0.15},
     "DLT Pública": {"security": 0.40, "scalability": 0.20, "energy_efficiency": 0.15, "governance": 0.25},
+    "DLT Pública (DAG)": {"security": 0.30, "scalability": 0.35, "energy_efficiency": 0.20, "governance": 0.15},
     "DLT Pública Permissionless": {"security": 0.30, "scalability": 0.30, "energy_efficiency": 0.20, "governance": 0.20}
 }
 
