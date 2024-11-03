@@ -127,6 +127,14 @@ def create_evaluation_matrices(recommendation):
     </style>
     ''', unsafe_allow_html=True)
     
+    # Add tooltips explaining the scoring
+    st.info("""
+    💡 **Como interpretar os scores:**
+    - ✅ Valores ≥ 0.8: Pontos fortes
+    - ❌ Valores < 0.8: Áreas que precisam de atenção
+    - A pontuação total considera todas as características com pesos iguais (25% cada)
+    """)
+    
     # DLT Types Matrix
     st.subheader("Matriz de Tipos de DLT")
     dlt_types_df = pd.DataFrame({
@@ -201,10 +209,10 @@ def create_evaluation_matrices(recommendation):
         'Tipo de DLT': [recommendation['evaluation_matrix'][dlt]['type'] for dlt in recommendation['evaluation_matrix']],
         'DLT': list(recommendation['evaluation_matrix'].keys()),
         'Score Total': [recommendation['weighted_scores'][dlt] for dlt in recommendation['evaluation_matrix']],
-        'Segurança': [recommendation['evaluation_matrix'][dlt]['raw_metrics']['security'] for dlt in recommendation['evaluation_matrix']],
-        'Escalabilidade': [recommendation['evaluation_matrix'][dlt]['raw_metrics']['scalability'] for dlt in recommendation['evaluation_matrix']],
-        'Eficiência': [recommendation['evaluation_matrix'][dlt]['raw_metrics']['energy_efficiency'] for dlt in recommendation['evaluation_matrix']],
-        'Governança': [recommendation['evaluation_matrix'][dlt]['raw_metrics']['governance'] for dlt in recommendation['evaluation_matrix']]
+        'Segurança': [recommendation['evaluation_matrix'][dlt]['metrics']['security'] for dlt in recommendation['evaluation_matrix']],
+        'Escalabilidade': [recommendation['evaluation_matrix'][dlt]['metrics']['scalability'] for dlt in recommendation['evaluation_matrix']],
+        'Eficiência': [recommendation['evaluation_matrix'][dlt]['metrics']['energy_efficiency'] for dlt in recommendation['evaluation_matrix']],
+        'Governança': [recommendation['evaluation_matrix'][dlt]['metrics']['governance'] for dlt in recommendation['evaluation_matrix']]
     }).sort_values('Score Total', ascending=False)
     
     def highlight_recommended(row):
@@ -225,6 +233,36 @@ def create_evaluation_matrices(recommendation):
     st.subheader("Tabela Comparativa de DLTs")
     st.table(scores_styled)
     st.caption("💡 A linha destacada em azul indica a DLT recomendada. Métricas em verde são pontos fortes (≥0.8) e em vermelho são pontos de atenção (≤0.4).")
+
+    # Add explanation section for recommendation
+    st.header("Explicação da Recomendação")
+
+    # Add explanation for the chosen DLT
+    st.subheader(f"Por que {recommendation['dlt']} foi escolhida:")
+    st.write(f"""
+    - **Tipo de DLT:** {recommendation['dlt_type']}
+    - **Pontuação Total:** {recommendation['weighted_scores'][recommendation['dlt']]:.2f}
+    - **Pontos Fortes:**
+      - Segurança: {recommendation['evaluation_matrix'][recommendation['dlt']]['metrics']['security']:.2f}
+      - Escalabilidade: {recommendation['evaluation_matrix'][recommendation['dlt']]['metrics']['scalability']:.2f}
+      - Eficiência Energética: {recommendation['evaluation_matrix'][recommendation['dlt']]['metrics']['energy_efficiency']:.2f}
+      - Governança: {recommendation['evaluation_matrix'][recommendation['dlt']]['metrics']['governance']:.2f}
+    """)
+
+    # Add explanations for why other DLTs were not chosen
+    st.subheader("Por que outras DLTs não foram selecionadas:")
+    for dlt, score in sorted(recommendation['weighted_scores'].items(), key=lambda x: x[1], reverse=True)[1:]:
+        with st.expander(f"{dlt} (Score: {score:.2f})"):
+            metrics = recommendation['evaluation_matrix'][dlt]['metrics']
+            st.write(f"""
+            **Razões:**
+            - Segurança: {metrics['security']:.2f} {'✅' if metrics['security'] >= 0.8 else '❌'}
+            - Escalabilidade: {metrics['scalability']:.2f} {'✅' if metrics['scalability'] >= 0.8 else '❌'}
+            - Eficiência Energética: {metrics['energy_efficiency']:.2f} {'✅' if metrics['energy_efficiency'] >= 0.8 else '❌'}
+            - Governança: {metrics['governance']:.2f} {'✅' if metrics['governance'] >= 0.8 else '❌'}
+            
+            **Diferença para a DLT escolhida:** {(recommendation['weighted_scores'][recommendation['dlt']] - score):.2f} pontos
+            """)
 
 def select_consensus_algorithm(dlt_type, answers):
     """Select the best consensus algorithm based on DLT type and characteristics."""
@@ -261,13 +299,13 @@ def select_consensus_algorithm(dlt_type, answers):
     algorithm_scores = {}
     for algorithm in algorithm_groups[matching_group]["algorithms"]:
         score = 0
-        if "security" in answers and answers["security"] == "Sim":
+        if answers.get('network_security') == 'Sim':
             score += 0.4  # Security weight
-        if "scalability" in answers and answers["scalability"] == "Sim":
+        if answers.get('scalability') == 'Sim':
             score += 0.3  # Scalability weight
-        if "energy_efficiency" in answers and answers["energy_efficiency"] == "Sim":
+        if answers.get('energy_efficiency') == 'Sim':
             score += 0.2  # Energy efficiency weight
-        if "governance_flexibility" in answers and answers["governance_flexibility"] == "Sim":
+        if answers.get('governance_flexibility') == 'Sim':
             score += 0.1  # Governance weight
         algorithm_scores[algorithm] = score
     
