@@ -190,17 +190,13 @@ def create_evaluation_matrices(recommendation):
     comparison_df = comparison_df.set_index('DLT')
     comparison_df = comparison_df.sort_values('Score', ascending=False)
     
-    def highlight_selected(df):
-        return pd.DataFrame(
-            np.where(df.index == recommendation['dlt'],
-                    'background-color: #e6f3ff; font-weight: bold',
-                    ''),
-            index=df.index,
-            columns=df.columns
-        )
+    def highlight_selected(s):
+        # Handle single Series input
+        is_selected = s.name == recommendation['dlt']
+        return 'background-color: #e6f3ff; font-weight: bold' if is_selected else ''
     
     styled_df = comparison_df.style\
-        .apply(highlight_selected)\
+        .apply(highlight_selected, axis=0)\
         .format({
             'Score': '{:.2f}',
             'Segurança': '{:.2f}',
