@@ -66,7 +66,6 @@ def create_progress_animation(current_phase, answers, questions):
             font=dict(size=12, color='rgba(0,0,0,0.7)')
         )
         
-        # Add connecting lines between phases with improved styling
         if i < len(phases) - 1:
             fig.add_trace(go.Scatter(
                 x=[i, i+1],
@@ -80,7 +79,6 @@ def create_progress_animation(current_phase, answers, questions):
                 showlegend=False
             ))
     
-    # Update layout with improved aesthetics
     fig.update_layout(
         showlegend=False,
         height=200,
@@ -109,9 +107,11 @@ def create_evaluation_matrices(recommendation):
         st.warning("Recomendação indisponível.")
         return
     
+    # Update session state with current recommendation
+    st.session_state.current_recommendation = recommendation
+    
     st.header("Recomendação de DLT e Análise")
-
-    # Display recommendation and consistency index side by side
+    
     col1, col2 = st.columns(2)
     with col1:
         st.subheader(f"DLT Recomendada: {recommendation['dlt']}")
@@ -121,7 +121,7 @@ def create_evaluation_matrices(recommendation):
         st.write("**Algoritmos:**")
         for algo in recommendation['algorithms']:
             st.write(f"• {algo}")
-
+    
     with col2:
         consistency_index = sum(recommendation['metrics'].values()) / len(recommendation['metrics'])
         st.subheader(f"Índice de Consistência: {consistency_index:.2f}")
@@ -162,65 +162,8 @@ def create_evaluation_matrices(recommendation):
         file_name='metricas_tecnicas.csv',
         mime='text/csv'
     )
-
-    # Evaluation matrices
-    st.subheader("Matrizes de Avaliação")
     
-    # DLT comparison matrix
-    with st.expander("Matriz de Comparação de DLTs"):
-        dlt_metrics_df = pd.DataFrame({
-            'DLT': ['Hyperledger Fabric', 'Quorum', 'VeChain', 'IOTA', 'Ethereum 2.0'],
-            'Segurança': [0.85, 0.78, 0.75, 0.80, 0.85],
-            'Escalabilidade': [0.65, 0.70, 0.80, 0.85, 0.75],
-            'Eficiência': [0.80, 0.80, 0.85, 0.90, 0.65],
-            'Governança': [0.75, 0.78, 0.70, 0.60, 0.80]
-        }).set_index('DLT')
-        
-        fig_dlt = px.imshow(
-            dlt_metrics_df,
-            color_continuous_scale='RdBu',
-            aspect='auto',
-            title="Comparação de DLTs"
-        )
-        st.plotly_chart(fig_dlt)
-
-    # Algorithm groups matrix
-    with st.expander("Matriz de Grupos de Algoritmos"):
-        algo_groups_df = pd.DataFrame({
-            'Grupo': ['Alta Segurança', 'Alta Eficiência', 'Escalabilidade', 'IoT'],
-            'Segurança': [0.90, 0.75, 0.80, 0.70],
-            'Escalabilidade': [0.60, 0.85, 0.90, 0.95],
-            'Eficiência': [0.70, 0.90, 0.85, 0.80],
-            'Governança': [0.85, 0.70, 0.75, 0.65]
-        }).set_index('Grupo')
-        
-        fig_groups = px.imshow(
-            algo_groups_df,
-            color_continuous_scale='RdBu',
-            aspect='auto',
-            title="Grupos de Algoritmos"
-        )
-        st.plotly_chart(fig_groups)
-
-    # Consensus algorithms matrix
-    with st.expander("Matriz de Algoritmos de Consenso"):
-        consensus_df = pd.DataFrame({
-            'Algoritmo': ['PBFT', 'PoW', 'PoS', 'PoA', 'Tangle'],
-            'Segurança': [0.90, 0.95, 0.85, 0.80, 0.75],
-            'Escalabilidade': [0.70, 0.40, 0.85, 0.80, 0.95],
-            'Eficiência': [0.80, 0.30, 0.85, 0.90, 0.95],
-            'Governança': [0.85, 0.50, 0.80, 0.75, 0.70]
-        }).set_index('Algoritmo')
-        
-        fig_consensus = px.imshow(
-            consensus_df,
-            color_continuous_scale='RdBu',
-            aspect='auto',
-            title="Algoritmos de Consenso"
-        )
-        st.plotly_chart(fig_consensus)
-
-    # Additional information sections
+    # Display additional information sections
     with st.expander("Casos de Uso"):
         st.write(recommendation['details']['use_cases'])
         st.subheader("Casos Reais")
@@ -232,7 +175,7 @@ def create_evaluation_matrices(recommendation):
     with st.expander("Referências"):
         st.write(recommendation['details']['references'])
     
-    # Save button moved to the end
+    # Save recommendation functionality
     if st.session_state.authenticated:
         if st.button("Salvar Recomendação", help="Clique para salvar esta recomendação no seu perfil"):
             try:
@@ -253,16 +196,20 @@ def create_evaluation_matrices(recommendation):
         st.info("Faça login para salvar suas recomendações.")
 
 def run_decision_tree():
-    """Main function to run the decision tree interface."""
+    """Main function to run the decision tree interface with improved state management."""
     st.title("Framework de Seleção de DLT")
     
+    # Initialize session state for answers if not present
     if 'answers' not in st.session_state:
         st.session_state.answers = {}
     
     if st.button("Reiniciar", help="Clique para recomeçar o processo de seleção"):
         st.session_state.answers = {}
+        if 'current_recommendation' in st.session_state:
+            del st.session_state.current_recommendation
         st.experimental_rerun()
     
+    # Determine current phase
     current_phase = None
     for q in questions:
         if q['id'] not in st.session_state.answers:
@@ -273,6 +220,7 @@ def run_decision_tree():
         progress_fig = create_progress_animation(current_phase, st.session_state.answers, questions)
         st.plotly_chart(progress_fig, use_container_width=True)
     
+    # Handle current question
     current_question = None
     for q in questions:
         if q['id'] not in st.session_state.answers:
@@ -290,8 +238,13 @@ def run_decision_tree():
         
         if st.button("Próxima Pergunta"):
             st.session_state.answers[current_question['id']] = response
+            # Update recommendation immediately after answer changes
+            if len(st.session_state.answers) == len(questions):
+                st.session_state.current_recommendation = get_recommendation(st.session_state.answers)
             st.experimental_rerun()
     
+    # Display recommendation when all questions are answered
     if len(st.session_state.answers) == len(questions):
-        recommendation = get_recommendation(st.session_state.answers)
-        create_evaluation_matrices(recommendation)
+        if 'current_recommendation' not in st.session_state:
+            st.session_state.current_recommendation = get_recommendation(st.session_state.answers)
+        create_evaluation_matrices(st.session_state.current_recommendation)
