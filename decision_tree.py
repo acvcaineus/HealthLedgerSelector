@@ -186,12 +186,18 @@ def create_evaluation_matrices(recommendation):
         })
 
     comparison_df = pd.DataFrame(comparison_data)
+    comparison_df = comparison_df.drop_duplicates(subset=['DLT'])
+    comparison_df = comparison_df.set_index('DLT')
     comparison_df = comparison_df.sort_values('Score', ascending=False)
     
-    def highlight_selected(s):
-        is_selected = pd.Series(index=s.index, data=False)
-        is_selected[recommendation['dlt']] = True
-        return ['background-color: #e6f3ff; font-weight: bold' if v else '' for v in is_selected]
+    def highlight_selected(df):
+        return pd.DataFrame(
+            np.where(df.index == recommendation['dlt'],
+                    'background-color: #e6f3ff; font-weight: bold',
+                    ''),
+            index=df.index,
+            columns=df.columns
+        )
     
     styled_df = comparison_df.style\
         .apply(highlight_selected)\
