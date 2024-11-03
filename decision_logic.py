@@ -31,22 +31,104 @@ def select_consensus_group(dlt_type, answers):
     elif answers.get('scalability') == 'Sim' and answers.get('energy_efficiency') == 'Sim':
         return "Alta Eficiência"
     
-    return type_to_group.get(dlt_type, "Alta Segurança e Controle")
+    selected_group = type_to_group.get(dlt_type, "Alta Segurança e Controle")
+    
+    # Add explanation for group selection
+    explanation = {
+        "Alta Segurança e Controle": "Selecionado devido aos requisitos de segurança e privacidade dos dados médicos",
+        "Alta Eficiência": "Selecionado devido aos requisitos de eficiência operacional e escalabilidade",
+        "Escalabilidade e Governança": "Selecionado devido aos requisitos de flexibilidade e governança",
+        "Alta Escalabilidade IoT": "Selecionado devido aos requisitos de IoT e alta escalabilidade"
+    }
+    
+    return {
+        "group": selected_group,
+        "explanation": explanation.get(selected_group, "")
+    }
+
+def get_consensus_group_algorithms(group_name):
+    """Get available algorithms for a specific consensus group."""
+    group_algorithms = {
+        "Alta Segurança e Controle": {
+            "algorithms": ["PBFT", "PoW"],
+            "characteristics": {
+                "PBFT": {
+                    "security": 0.95,
+                    "scalability": 0.70,
+                    "energy_efficiency": 0.85,
+                    "governance": 0.80
+                },
+                "PoW": {
+                    "security": 0.90,
+                    "scalability": 0.40,
+                    "energy_efficiency": 0.35,
+                    "governance": 0.60
+                }
+            }
+        },
+        "Alta Eficiência": {
+            "algorithms": ["PoA", "RAFT"],
+            "characteristics": {
+                "PoA": {
+                    "security": 0.75,
+                    "scalability": 0.85,
+                    "energy_efficiency": 0.90,
+                    "governance": 0.70
+                },
+                "RAFT": {
+                    "security": 0.70,
+                    "scalability": 0.90,
+                    "energy_efficiency": 0.95,
+                    "governance": 0.75
+                }
+            }
+        },
+        "Escalabilidade e Governança": {
+            "algorithms": ["PoS", "DPoS"],
+            "characteristics": {
+                "PoS": {
+                    "security": 0.85,
+                    "scalability": 0.80,
+                    "energy_efficiency": 0.90,
+                    "governance": 0.85
+                },
+                "DPoS": {
+                    "security": 0.80,
+                    "scalability": 0.90,
+                    "energy_efficiency": 0.85,
+                    "governance": 0.90
+                }
+            }
+        },
+        "Alta Escalabilidade IoT": {
+            "algorithms": ["Tangle", "DAG"],
+            "characteristics": {
+                "Tangle": {
+                    "security": 0.75,
+                    "scalability": 0.95,
+                    "energy_efficiency": 0.90,
+                    "governance": 0.70
+                },
+                "DAG": {
+                    "security": 0.70,
+                    "scalability": 0.95,
+                    "energy_efficiency": 0.95,
+                    "governance": 0.75
+                }
+            }
+        }
+    }
+    
+    return group_algorithms.get(group_name, {"algorithms": [], "characteristics": {}})
 
 def select_consensus_algorithm(consensus_group, answers):
     """Select the best consensus algorithm from the given group."""
-    group_algorithms = {
-        "Alta Segurança e Controle": ["PBFT", "PoW"],
-        "Alta Eficiência": ["PoA", "RAFT"],
-        "Escalabilidade e Governança": ["PoS", "DPoS"],
-        "Alta Escalabilidade IoT": ["Tangle", "DAG"]
-    }
+    group_info = get_consensus_group_algorithms(consensus_group)
+    algorithms = group_info["algorithms"]
+    characteristics = group_info["characteristics"]
     
-    if consensus_group not in group_algorithms:
+    if not algorithms:
         return "Não disponível"
-    
-    algorithms = group_algorithms[consensus_group]
-    algorithm_scores = {}
     
     # Healthcare-specific weights for algorithm selection
     weights = {
@@ -56,19 +138,22 @@ def select_consensus_algorithm(consensus_group, answers):
         'governance': 0.15
     }
     
+    algorithm_scores = {}
     for algorithm in algorithms:
-        score = 0
-        if answers.get('network_security') == 'Sim':
-            score += weights['security']
-        if answers.get('scalability') == 'Sim':
-            score += weights['scalability']
-        if answers.get('energy_efficiency') == 'Sim':
-            score += weights['energy_efficiency']
-        if answers.get('governance_flexibility') == 'Sim':
-            score += weights['governance']
-        algorithm_scores[algorithm] = score
+        if algorithm in characteristics:
+            score = sum(weights[metric] * characteristics[algorithm][metric] 
+                       for metric in weights.keys())
+            algorithm_scores[algorithm] = score
     
-    return max(algorithm_scores.items(), key=lambda x: x[1])[0] if algorithm_scores else algorithms[0]
+    if not algorithm_scores:
+        return algorithms[0]
+    
+    selected_algorithm = max(algorithm_scores.items(), key=lambda x: x[1])
+    return {
+        "algorithm": selected_algorithm[0],
+        "score": selected_algorithm[1],
+        "characteristics": characteristics[selected_algorithm[0]]
+    }
 
 def calculate_confidence(weighted_scores, characteristics, answers):
     """Calculate confidence score for the recommendation."""
@@ -121,10 +206,10 @@ def get_recommendation(answers):
         dlt_type = dlt_metrics[recommended_dlt]["type"]
         
         # Select consensus group based on DLT type and healthcare requirements
-        consensus_group = select_consensus_group(dlt_type, answers)
+        consensus_group_info = select_consensus_group(dlt_type, answers)
         
         # Select algorithm from consensus group
-        consensus_algorithm = select_consensus_algorithm(consensus_group, answers)
+        algorithm_info = select_consensus_algorithm(consensus_group_info["group"], answers)
         
         # Calculate confidence metrics
         confidence_value = calculate_confidence(weighted_scores, evaluation_matrix[recommended_dlt]["metrics"], answers)
@@ -132,8 +217,11 @@ def get_recommendation(answers):
         return {
             "dlt": recommended_dlt,
             "dlt_type": dlt_type,
-            "consensus_group": consensus_group,
-            "consensus": consensus_algorithm,
+            "consensus_group": consensus_group_info["group"],
+            "consensus_group_explanation": consensus_group_info["explanation"],
+            "consensus": algorithm_info["algorithm"],
+            "consensus_characteristics": algorithm_info["characteristics"],
+            "consensus_score": algorithm_info["score"],
             "evaluation_matrix": evaluation_matrix,
             "weighted_scores": weighted_scores,
             "confidence": confidence_value > 0.7,
@@ -150,7 +238,10 @@ def create_empty_recommendation():
         "dlt": "Não disponível",
         "dlt_type": "Não disponível",
         "consensus_group": "Não disponível",
+        "consensus_group_explanation": "",
         "consensus": "Não disponível",
+        "consensus_characteristics": {},
+        "consensus_score": 0.0,
         "evaluation_matrix": {},
         "weighted_scores": {},
         "confidence": False,

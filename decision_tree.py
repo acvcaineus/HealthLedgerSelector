@@ -2,19 +2,153 @@ import streamlit as st
 import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
-from decision_logic import get_recommendation
+from decision_logic import get_recommendation, get_consensus_group_algorithms
 from database import save_recommendation
-from dlt_data import questions, dlt_metrics
+from dlt_data import questions
 
-def get_consensus_group_algorithms(consensus_group):
-    """Return algorithms for a given consensus group."""
-    group_algorithms = {
-        "Alta Segurança e Controle": ["PBFT", "PoW"],
-        "Alta Eficiência": ["PoA", "RAFT"],
-        "Escalabilidade e Governança": ["PoS", "DPoS"],
-        "Alta Escalabilidade IoT": ["Tangle", "DAG"]
+def create_evaluation_matrices(recommendation):
+    """Create and display evaluation matrices."""
+    if not recommendation or 'evaluation_matrix' not in recommendation:
+        return
+        
+    st.subheader("Matriz de Avaliação Detalhada")
+    
+    st.markdown('''
+    <style>
+        .recommended {
+            background-color: #e6f3ff;
+            font-weight: bold;
+        }
+        .metric-high {
+            color: #2ecc71;
+            font-weight: bold;
+        }
+        .metric-low {
+            color: #e74c3c;
+        }
+        .selected-group {
+            background-color: #eafaf1;
+        }
+        .non-selected-group {
+            color: #95a5a6;
+        }
+    </style>
+    ''', unsafe_allow_html=True)
+    
+    st.info("""
+    💡 **Como interpretar os scores:**
+    - ✅ Valores ≥ 0.8: Pontos fortes
+    - ❌ Valores < 0.8: Áreas que precisam de atenção
+    - A pontuação total considera as características com os seguintes pesos:
+      - Segurança: 40%
+      - Escalabilidade: 25%
+      - Eficiência Energética: 20%
+      - Governança: 15%
+    """)
+    
+    # Display selected consensus group information
+    st.subheader("Grupo de Consenso Selecionado")
+    st.info(f"""
+    Com base nas características da DLT {recommendation['dlt']} e nos requisitos informados, 
+    o grupo de consenso selecionado é: **{recommendation['consensus_group']}**
+    
+    **Motivo da Seleção:**
+    {recommendation['consensus_group_explanation']}
+    """)
+    
+    # Get algorithms for the selected group
+    group_info = get_consensus_group_algorithms(recommendation['consensus_group'])
+    
+    # Display available algorithms
+    st.write("**Algoritmos disponíveis neste grupo:**")
+    for algorithm in group_info['algorithms']:
+        characteristics = group_info['characteristics'][algorithm]
+        st.write(f"- **{algorithm}**")
+        cols = st.columns(4)
+        cols[0].metric("Segurança", f"{characteristics['security']:.2f}")
+        cols[1].metric("Escalabilidade", f"{characteristics['scalability']:.2f}")
+        cols[2].metric("Eficiência", f"{characteristics['energy_efficiency']:.2f}")
+        cols[3].metric("Governança", f"{characteristics['governance']:.2f}")
+    
+    # Correlation table with highlighting
+    st.subheader("Matriz de Correlação DLT-Grupo-Algoritmo")
+    st.markdown("""
+    💡 **Como interpretar a correlação:**
+    - Cada DLT está associada a um grupo de consenso específico baseado em suas características
+    - Os algoritmos disponíveis são os mais adequados para cada combinação DLT-Grupo
+    - As linhas destacadas mostram a combinação recomendada
+    """)
+    
+    # Create correlation table with selected group highlighted
+    correlation_data = {
+        'DLT': ['Hyperledger Fabric', 'Corda', 'Quorum', 'VeChain', 'IOTA', 
+                'Ripple', 'Stellar', 'Bitcoin', 'Ethereum (PoW)', 'Ethereum 2.0'],
+        'Grupo de Consenso': ['Alta Segurança e Controle', 'Alta Segurança e Controle',
+                            'Escalabilidade e Governança', 'Alta Eficiência',
+                            'Alta Escalabilidade IoT', 'Alta Eficiência',
+                            'Alta Eficiência', 'Alta Segurança e Controle',
+                            'Alta Segurança e Controle', 'Escalabilidade e Governança']
     }
-    return group_algorithms.get(consensus_group, [])
+    
+    # Add algorithms column based on consensus group
+    correlation_data['Algoritmos Disponíveis'] = [
+        ', '.join(get_consensus_group_algorithms(group)['algorithms'])
+        for group in correlation_data['Grupo de Consenso']
+    ]
+    
+    correlation_df = pd.DataFrame(correlation_data)
+    
+    # Apply highlighting to the selected DLT and group
+    def highlight_selected(row):
+        if row['DLT'] == recommendation['dlt']:
+            return ['background-color: #eafaf1'] * len(row)
+        elif row['Grupo de Consenso'] == recommendation['consensus_group']:
+            return ['background-color: #f0f9ff'] * len(row)
+        return [''] * len(row)
+    
+    styled_df = correlation_df.style.apply(highlight_selected, axis=1)
+    st.table(styled_df)
+    
+    # Add explanation for group selection
+    st.info(f"""
+    **Por que este grupo de consenso foi selecionado?**
+    - A DLT {recommendation['dlt']} pertence ao grupo {recommendation['consensus_group']}
+    - O algoritmo {recommendation['consensus']} foi selecionado com score {recommendation['consensus_score']:.2f}
+    - Este grupo oferece o melhor equilíbrio entre segurança ({recommendation['consensus_characteristics']['security']:.2f}),
+      escalabilidade ({recommendation['consensus_characteristics']['scalability']:.2f}),
+      eficiência energética ({recommendation['consensus_characteristics']['energy_efficiency']:.2f}) e
+      governança ({recommendation['consensus_characteristics']['governance']:.2f})
+    """)
+    
+    # Display comparison table
+    scores_df = pd.DataFrame({
+        'Tipo de DLT': [recommendation['evaluation_matrix'][dlt]['type'] for dlt in recommendation['evaluation_matrix']],
+        'DLT': list(recommendation['evaluation_matrix'].keys()),
+        'Score Total': [recommendation['weighted_scores'][dlt] for dlt in recommendation['evaluation_matrix']],
+        'Segurança': [recommendation['evaluation_matrix'][dlt]['metrics']['security'] for dlt in recommendation['evaluation_matrix']],
+        'Escalabilidade': [recommendation['evaluation_matrix'][dlt]['metrics']['scalability'] for dlt in recommendation['evaluation_matrix']],
+        'Eficiência': [recommendation['evaluation_matrix'][dlt]['metrics']['energy_efficiency'] for dlt in recommendation['evaluation_matrix']],
+        'Governança': [recommendation['evaluation_matrix'][dlt]['metrics']['governance'] for dlt in recommendation['evaluation_matrix']]
+    }).sort_values('Score Total', ascending=False)
+    
+    def highlight_recommended(row):
+        return ['background-color: #e6f3ff' if row.name == 0 else '' for _ in row]
+    
+    def highlight_metrics(val):
+        if isinstance(val, float):
+            if val >= 0.8:
+                return 'color: #2ecc71; font-weight: bold'
+            elif val <= 0.4:
+                return 'color: #e74c3c'
+        return ''
+    
+    scores_styled = scores_df.style\
+        .apply(highlight_recommended, axis=1)\
+        .map(highlight_metrics, subset=['Segurança', 'Escalabilidade', 'Eficiência', 'Governança'])
+    
+    st.subheader("Tabela Comparativa de DLTs")
+    st.table(scores_styled)
+    st.caption("💡 A linha destacada em azul indica a DLT recomendada. Métricas em verde são pontos fortes (≥0.8) e em vermelho são pontos de atenção (≤0.4).")
 
 def create_progress_animation(current_phase, answers):
     """Create an animated progress visualization."""
@@ -102,214 +236,6 @@ def create_progress_animation(current_phase, answers):
     )
     
     return fig
-
-def create_evaluation_matrices(recommendation):
-    """Create and display evaluation matrices."""
-    if not recommendation or 'evaluation_matrix' not in recommendation:
-        return
-        
-    st.subheader("Matriz de Avaliação Detalhada")
-    
-    st.markdown('''
-    <style>
-        .recommended {
-            background-color: #e6f3ff;
-            font-weight: bold;
-        }
-        .metric-high {
-            color: #2ecc71;
-            font-weight: bold;
-        }
-        .metric-low {
-            color: #e74c3c;
-        }
-    </style>
-    ''', unsafe_allow_html=True)
-    
-    st.info("""
-    💡 **Como interpretar os scores:**
-    - ✅ Valores ≥ 0.8: Pontos fortes
-    - ❌ Valores < 0.8: Áreas que precisam de atenção
-    - A pontuação total considera todas as características com pesos iguais (25% cada)
-    """)
-    
-    st.subheader("Matriz de Tipos de DLT")
-    dlt_types_df = pd.DataFrame({
-        'Tipo': ['DLT Permissionada Privada', 'DLT Permissionada Simples', 'DLT Híbrida', 
-                 'DLT com Consenso Delegado', 'DLT Pública', 'DLT Pública Permissionless'],
-        'Segurança': [0.85, 0.70, 0.78, 0.80, 0.95, 0.85],
-        'Escalabilidade': [0.65, 0.55, 0.75, 0.85, 0.40, 0.75],
-        'Eficiência': [0.80, 0.75, 0.80, 0.90, 0.35, 0.65],
-        'Governança': [0.75, 0.80, 0.78, 0.60, 0.50, 0.80]
-    }).set_index('Tipo')
-    
-    fig_types = px.imshow(
-        dlt_types_df,
-        color_continuous_scale='RdBu',
-        aspect='auto'
-    )
-    fig_types.update_layout(
-        title="Comparação de Tipos de DLT",
-        height=400
-    )
-    st.plotly_chart(fig_types)
-    
-    st.subheader("Matriz de Grupos de Consenso")
-    consensus_groups_df = pd.DataFrame({
-        'Grupo': ['Alta Segurança e Controle', 'Alta Eficiência', 'Escalabilidade e Governança', 'Alta Escalabilidade IoT'],
-        'Segurança': [0.90, 0.75, 0.80, 0.70],
-        'Escalabilidade': [0.60, 0.85, 0.90, 0.95],
-        'Eficiência': [0.70, 0.90, 0.85, 0.80],
-        'Governança': [0.85, 0.80, 0.95, 0.75]
-    }).set_index('Grupo')
-    
-    fig_consensus = px.imshow(
-        consensus_groups_df,
-        color_continuous_scale='RdBu',
-        aspect='auto'
-    )
-    fig_consensus.update_layout(
-        title="Comparação de Grupos de Consenso",
-        height=400
-    )
-    st.plotly_chart(fig_consensus)
-    
-    st.subheader("Matriz de Correlação DLT-Grupo-Algoritmo")
-    st.markdown("""
-    💡 **Como interpretar a correlação:**
-    - Cada DLT está associada a um grupo de consenso específico baseado em suas características
-    - Os algoritmos disponíveis são os mais adequados para cada combinação DLT-Grupo
-    - A escolha do algoritmo considera segurança, escalabilidade, eficiência e governança
-    """)
-    
-    correlation_data = {
-        'DLT': ['Hyperledger Fabric', 'Corda', 'Quorum', 'VeChain', 'IOTA', 'Ripple', 'Stellar', 'Bitcoin', 'Ethereum (PoW)', 'Ethereum 2.0'],
-        'Grupo de Consenso': ['Alta Segurança e Controle', 'Alta Segurança e Controle', 'Escalabilidade e Governança', 'Alta Eficiência', 'Alta Escalabilidade IoT', 'Alta Eficiência', 'Alta Eficiência', 'Alta Segurança e Controle', 'Alta Segurança e Controle', 'Escalabilidade e Governança'],
-        'Algoritmos Disponíveis': ['PBFT, PoW', 'PBFT, PoW', 'PoS, DPoS', 'PoA, RAFT', 'Tangle, DAG', 'PoA, RAFT', 'PoA, RAFT', 'PBFT, PoW', 'PBFT, PoW', 'PoS, DPoS']
-    }
-    correlation_df = pd.DataFrame(correlation_data)
-    st.table(correlation_df)
-    
-    st.info("""
-    📌 **Relações DLT-Algoritmo:**
-    
-    **Alta Segurança e Controle:**
-    - PBFT: Ideal para redes permissionadas que precisam de alta segurança
-    - PoW: Oferece máxima segurança em redes públicas
-    
-    **Alta Eficiência:**
-    - PoA: Otimizado para redes com validadores conhecidos
-    - RAFT: Eficiente para redes menores e controladas
-    
-    **Escalabilidade e Governança:**
-    - PoS: Equilibra segurança e eficiência energética
-    - DPoS: Oferece alta escalabilidade com governança flexível
-    
-    **Alta Escalabilidade IoT:**
-    - Tangle: Específico para redes IoT com alta demanda
-    - DAG: Oferece escalabilidade superior em redes distribuídas
-    """)
-    
-    scores_df = pd.DataFrame({
-        'Tipo de DLT': [recommendation['evaluation_matrix'][dlt]['type'] for dlt in recommendation['evaluation_matrix']],
-        'DLT': list(recommendation['evaluation_matrix'].keys()),
-        'Score Total': [recommendation['weighted_scores'][dlt] for dlt in recommendation['evaluation_matrix']],
-        'Segurança': [recommendation['evaluation_matrix'][dlt]['metrics']['security'] for dlt in recommendation['evaluation_matrix']],
-        'Escalabilidade': [recommendation['evaluation_matrix'][dlt]['metrics']['scalability'] for dlt in recommendation['evaluation_matrix']],
-        'Eficiência': [recommendation['evaluation_matrix'][dlt]['metrics']['energy_efficiency'] for dlt in recommendation['evaluation_matrix']],
-        'Governança': [recommendation['evaluation_matrix'][dlt]['metrics']['governance'] for dlt in recommendation['evaluation_matrix']]
-    }).sort_values('Score Total', ascending=False)
-    
-    def highlight_recommended(row):
-        return ['background-color: #e6f3ff' if row.name == 0 else '' for _ in row]
-    
-    def highlight_metrics(val):
-        if isinstance(val, float):
-            if val >= 0.8:
-                return 'color: #2ecc71; font-weight: bold'
-            elif val <= 0.4:
-                return 'color: #e74c3c'
-        return ''
-    
-    scores_styled = scores_df.style\
-        .apply(highlight_recommended, axis=1)\
-        .map(highlight_metrics, subset=['Segurança', 'Escalabilidade', 'Eficiência', 'Governança'])
-    
-    st.subheader("Tabela Comparativa de DLTs")
-    st.table(scores_styled)
-    st.caption("💡 A linha destacada em azul indica a DLT recomendada. Métricas em verde são pontos fortes (≥0.8) e em vermelho são pontos de atenção (≤0.4).")
-
-    st.header("Explicação da Recomendação")
-
-    st.subheader(f"Por que {recommendation['dlt']} foi escolhida:")
-    st.write(f"""
-    - **Tipo de DLT:** {recommendation['dlt_type']}
-    - **Pontuação Total:** {recommendation['weighted_scores'][recommendation['dlt']]:.2f}
-    - **Pontos Fortes:**
-      - Segurança: {recommendation['evaluation_matrix'][recommendation['dlt']]['metrics']['security']:.2f}
-      - Escalabilidade: {recommendation['evaluation_matrix'][recommendation['dlt']]['metrics']['scalability']:.2f}
-      - Eficiência Energética: {recommendation['evaluation_matrix'][recommendation['dlt']]['metrics']['energy_efficiency']:.2f}
-      - Governança: {recommendation['evaluation_matrix'][recommendation['dlt']]['metrics']['governance']:.2f}
-    """)
-
-    st.subheader("Por que outras DLTs não foram selecionadas:")
-    for dlt, score in sorted(recommendation['weighted_scores'].items(), key=lambda x: x[1], reverse=True)[1:]:
-        with st.expander(f"{dlt} (Score: {score:.2f})"):
-            metrics = recommendation['evaluation_matrix'][dlt]['metrics']
-            st.write(f"""
-            **Razões:**
-            - Segurança: {metrics['security']:.2f} {'✅' if metrics['security'] >= 0.8 else '❌'}
-            - Escalabilidade: {metrics['scalability']:.2f} {'✅' if metrics['scalability'] >= 0.8 else '❌'}
-            - Eficiência Energética: {metrics['energy_efficiency']:.2f} {'✅' if metrics['energy_efficiency'] >= 0.8 else '❌'}
-            - Governança: {metrics['governance']:.2f} {'✅' if metrics['governance'] >= 0.8 else '❌'}
-            
-            **Diferença para a DLT escolhida:** {(recommendation['weighted_scores'][recommendation['dlt']] - score):.2f} pontos
-            """)
-
-def select_consensus_algorithm(dlt_type, answers):
-    """Select the best consensus algorithm based on DLT type and characteristics."""
-    algorithm_groups = {
-        "Alta Segurança e Controle": {
-            "algorithms": ["PBFT", "PoW"],
-            "dlt_types": ["DLT Permissionada Privada", "DLT Pública"]
-        },
-        "Alta Eficiência": {
-            "algorithms": ["PoA", "RAFT"],
-            "dlt_types": ["DLT Permissionada Simples"]
-        },
-        "Escalabilidade e Governança": {
-            "algorithms": ["PoS", "DPoS"],
-            "dlt_types": ["DLT Híbrida", "DLT Pública Permissionless"]
-        },
-        "Alta Escalabilidade IoT": {
-            "algorithms": ["Tangle", "DAG"],
-            "dlt_types": ["DLT com Consenso Delegado"]
-        }
-    }
-    
-    matching_group = None
-    for group, info in algorithm_groups.items():
-        if dlt_type in info["dlt_types"]:
-            matching_group = group
-            break
-    
-    if not matching_group:
-        return "Não disponível"
-    
-    algorithm_scores = {}
-    for algorithm in algorithm_groups[matching_group]["algorithms"]:
-        score = 0
-        if answers.get('network_security') == 'Sim':
-            score += 0.4
-        if answers.get('scalability') == 'Sim':
-            score += 0.3
-        if answers.get('energy_efficiency') == 'Sim':
-            score += 0.2
-        if answers.get('governance_flexibility') == 'Sim':
-            score += 0.1
-        algorithm_scores[algorithm] = score
-    
-    return max(algorithm_scores.items(), key=lambda x: x[1])[0] if algorithm_scores else "Não disponível"
 
 def run_decision_tree():
     """Main function to run the decision tree interface."""
