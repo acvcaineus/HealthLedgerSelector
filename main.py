@@ -237,6 +237,53 @@ def show_home_page():
        - Métricas de avaliação para validar a recomendação
     ''')
 
+    # New section for scoring methodology
+    st.markdown('''
+    ## Metodologia de Ponderação e Scores
+
+    ### Pesos das Características
+    - Segurança (40%): Fundamental para proteção de dados sensíveis de saúde
+    - Escalabilidade (25%): Capacidade de crescimento e adaptação
+    - Eficiência Energética (20%): Sustentabilidade e custo operacional
+    - Governança (15%): Controle e gerenciamento do sistema
+
+    ### Sistema de Pontuação
+    - Cada DLT é avaliada em uma escala de 0 a 1
+    - Scores são calculados usando média ponderada das características
+    - Índice de Consistência valida a adequação da recomendação
+
+    ### Métricas de Avaliação
+    1. Índice de Gini: Mede a pureza da classificação
+    2. Entropia: Avalia a incerteza na decisão
+    3. Taxa de Poda: Indica a otimização do modelo
+    4. Acurácia: Precisão global das recomendações
+    ''')
+
+    # New section for framework features
+    st.markdown('''
+    ## Funcionalidades do Framework
+
+    1. **Recomendação Personalizada**:
+       - Questionário adaptativo em 4 fases
+       - Análise multicritério com pesos customizáveis
+       - Visualização detalhada das métricas
+
+    2. **Análise Comparativa**:
+       - Comparação entre diferentes DLTs
+       - Matrizes de avaliação interativas
+       - Visualização de métricas técnicas
+
+    3. **Suporte à Decisão**:
+       - Explicações detalhadas das recomendações
+       - Casos de uso relacionados
+       - Referências acadêmicas recentes
+
+    4. **Recursos Adicionais**:
+       - Salvamento de recomendações
+       - Download de relatórios detalhados
+       - Visualização de métricas de confiabilidade
+    ''')
+
     st.markdown("## Referência de DLTs e Algoritmos")
     st.write("Abaixo está uma tabela detalhada com as principais DLTs e suas características para aplicações em saúde:")
     
