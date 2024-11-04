@@ -145,21 +145,96 @@ def create_dlt_types_matrix():
     return fig
 
 def create_algorithm_groups_matrix():
-    """Create matrix comparing different algorithm groups."""
+    """Create matrix comparing different algorithm groups with detailed characteristics."""
     algorithm_groups = {
-        'Alta Segurança': {'Complexidade': 0.8, 'Desempenho': 0.7, 'Descentralização': 0.9},
-        'Alta Eficiência': {'Complexidade': 0.6, 'Desempenho': 0.9, 'Descentralização': 0.7},
-        'Escalabilidade': {'Complexidade': 0.7, 'Desempenho': 0.8, 'Descentralização': 0.8},
-        'Governança': {'Complexidade': 0.75, 'Desempenho': 0.75, 'Descentralização': 0.85}
+        'Alta Segurança e Controle': {
+            'Segurança': 0.95,
+            'Escalabilidade': 0.70,
+            'Eficiência': 0.75,
+            'Governança': 0.90,
+            'Interoperabilidade': 0.80
+        },
+        'Alta Eficiência Operacional': {
+            'Segurança': 0.85,
+            'Escalabilidade': 0.90,
+            'Eficiência': 0.95,
+            'Governança': 0.75,
+            'Interoperabilidade': 0.85
+        },
+        'Escalabilidade e Governança': {
+            'Segurança': 0.80,
+            'Escalabilidade': 0.95,
+            'Eficiência': 0.85,
+            'Governança': 0.85,
+            'Interoperabilidade': 0.90
+        },
+        'Alta Escalabilidade IoT': {
+            'Segurança': 0.85,
+            'Escalabilidade': 0.95,
+            'Eficiência': 0.90,
+            'Governança': 0.70,
+            'Interoperabilidade': 0.95
+        }
     }
     
     df = pd.DataFrame(algorithm_groups).T
-    fig = px.imshow(
-        df,
-        color_continuous_scale='RdBu',
-        aspect='auto',
-        title="Matriz de Grupos de Algoritmos"
+    
+    fig = go.Figure(data=go.Heatmap(
+        z=[[val for val in row] for row in df.values],
+        x=df.columns,
+        y=df.index,
+        colorscale='RdBu',
+        text=[[f'{val:.2f}' for val in row] for row in df.values],
+        texttemplate='%{text}',
+        textfont={"size": 12},
+        showscale=True,
+        hoverongaps=False,
+        hovertemplate="Grupo: %{y}<br>" +
+                      "Característica: %{x}<br>" +
+                      "Valor: %{z:.2f}<br>" +
+                      "<extra></extra>"
+    ))
+    
+    group_descriptions = {
+        'Alta Segurança e Controle': 'Referência: Mehmood et al. (2025)<br>DLTs: Hyperledger Fabric, Corda<br>Algoritmos: PBFT, RAFT',
+        'Alta Eficiência Operacional': 'Referência: Popoola et al. (2024)<br>DLTs: VeChain, Quorum<br>Algoritmos: PoA, RAFT',
+        'Escalabilidade e Governança': 'Referência: Salim et al. (2024)<br>DLTs: Ethereum 2.0, EOS<br>Algoritmos: PoS, DPoS',
+        'Alta Escalabilidade IoT': 'Referência: Javed et al. (2024)<br>DLTs: IOTA<br>Algoritmos: Tangle'
+    }
+    
+    for i, group in enumerate(df.index):
+        fig.add_annotation(
+            x=-0.2,
+            y=i,
+            text=group_descriptions[group],
+            showarrow=False,
+            xanchor='right',
+            yanchor='middle',
+            xref='paper',
+            yref='y',
+            font=dict(size=10),
+            align='right',
+            bgcolor='rgba(255,255,255,0.8)',
+            bordercolor='rgba(0,0,0,0.3)',
+            borderwidth=1,
+            borderpad=4,
+            hoverlabel=dict(bgcolor='white')
+        )
+    
+    fig.update_layout(
+        title=dict(
+            text='Matriz de Grupos de Algoritmos<br><sup>Baseado em pesquisas acadêmicas 2024-2025</sup>',
+            x=0.5,
+            xanchor='center'
+        ),
+        width=1000,
+        height=600,
+        xaxis_title='Características',
+        yaxis_title='Grupos de Algoritmos',
+        xaxis={'side': 'bottom'},
+        margin=dict(l=300, r=20, t=100, b=50)
     )
+    
     return fig
 
 def create_consensus_algorithms_matrix():
@@ -187,7 +262,6 @@ def create_evaluation_matrices(recommendation):
         st.warning("Recomendação indisponível.")
         return
     
-    # Update session state with current recommendation
     st.session_state.current_recommendation = recommendation
     
     st.header("Recomendação de DLT e Análise")
@@ -210,7 +284,6 @@ def create_evaluation_matrices(recommendation):
                 st.write("O índice de consistência indica o quão bem a DLT atende aos requisitos de forma balanceada.")
                 st.write("Valores mais próximos de 1 indicam maior consistência.")
 
-    # Display matrix sections
     with st.expander("Matriz de Tipos de DLT"):
         st.plotly_chart(create_dlt_types_matrix(), use_container_width=True)
         st.write("""
@@ -232,7 +305,6 @@ def create_evaluation_matrices(recommendation):
         incluindo segurança, escalabilidade, eficiência energética e governança.
         """)
 
-    # Display additional information sections
     with st.expander("Casos de Uso"):
         st.write(recommendation['details']['use_cases'])
         st.subheader("Casos Reais")
@@ -244,14 +316,12 @@ def create_evaluation_matrices(recommendation):
     with st.expander("Referências"):
         st.write(recommendation['details']['references'])
     
-    # Save recommendation functionality
     if st.session_state.authenticated:
         if st.button("Salvar Recomendação", help="Clique para salvar esta recomendação no seu perfil"):
             try:
-                # Before saving, ensure recommendation has required fields
                 save_data = {
                     'dlt': recommendation.get('dlt', 'N/A'),
-                    'consensus': recommendation.get('algorithms', ['N/A'])[0],  # Get first algorithm or N/A
+                    'consensus': recommendation.get('algorithms', ['N/A'])[0],
                     'dlt_type': recommendation.get('dlt_type', 'N/A'),
                     'group': recommendation.get('group', 'N/A')
                 }
@@ -266,7 +336,6 @@ def run_decision_tree():
     """Main function to run the decision tree interface with improved state management."""
     st.title("Framework de Seleção de DLT")
     
-    # Initialize session state for answers if not present
     if 'answers' not in st.session_state:
         st.session_state.answers = {}
     
@@ -276,7 +345,6 @@ def run_decision_tree():
             del st.session_state.current_recommendation
         st.experimental_rerun()
     
-    # Determine current phase
     current_phase = None
     for q in questions:
         if q['id'] not in st.session_state.answers:
@@ -287,7 +355,6 @@ def run_decision_tree():
         progress_fig = create_progress_animation(current_phase, st.session_state.answers, questions)
         st.plotly_chart(progress_fig, use_container_width=True)
     
-    # Handle current question
     current_question = None
     for q in questions:
         if q['id'] not in st.session_state.answers:
@@ -305,12 +372,10 @@ def run_decision_tree():
         
         if st.button("Próxima Pergunta"):
             st.session_state.answers[current_question['id']] = response
-            # Update recommendation immediately after answer changes
             if len(st.session_state.answers) == len(questions):
                 st.session_state.current_recommendation = get_recommendation(st.session_state.answers)
             st.experimental_rerun()
     
-    # Display recommendation when all questions are answered
     if len(st.session_state.answers) == len(questions):
         if 'current_recommendation' not in st.session_state:
             st.session_state.current_recommendation = get_recommendation(st.session_state.answers)
